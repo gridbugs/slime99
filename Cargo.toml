@@ -1,0 +1,24 @@
+[workspace]
+
+members = [
+    "ecs",
+    "vector",
+    "rip",
+    "prototty",
+    "native",
+    "graphical",
+    "ansi-terminal",
+    "web",
+]
+
+[profile.release]
+lto = true
+
+[patch.crates-io]
+prototty_audio = { git = "https://github.com/stevebob/prototty" }
+prototty_native_audio = { git = "https://github.com/stevebob/prototty" }
+prototty_render = { git = "https://github.com/stevebob/prototty" }
+prototty_input = { git = "https://github.com/stevebob/prototty" }
+prototty_app = { git = "https://github.com/stevebob/prototty" }
+prototty_graphical = { git = "https://github.com/stevebob/prototty" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev = "c176e5d6e415a4d7769c7dd02c0f63cd747ca2db" }

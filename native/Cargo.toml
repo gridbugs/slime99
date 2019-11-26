@@ -1,0 +1,12 @@
+[package]
+name = "rip_native"
+version = "0.1.0"
+authors = ["Stephen Sherratt <stephen@sherra.tt>"]
+edition = "2018"
+
+[dependencies]
+log = "0.4"
+simon = "0.3"
+serde_json = "1.0"
+rip_prototty = { path = "../prototty" }
+prototty_file_storage = "0.28"

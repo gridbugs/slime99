@@ -1,0 +1,17 @@
+[package]
+name = "rip_web"
+version = "0.1.0"
+authors = ["Stephen Sherratt <stephen@sherra.tt>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+prototty_web = "0.28"
+prototty_storage = "0.28"
+rip_prototty = { path = "../prototty", features = ["wasm"]}
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
+wasm-logger = "0.2"
+log = "0.4"

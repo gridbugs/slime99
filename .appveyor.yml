@@ -1,0 +1,173 @@
+version: '{build}'
+clone_depth: 1
+environment:
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      HOST: x86_64-unknown-linux-gnu
+      TARGET: wasm32-unknown-unknown
+    - APPVEYOR_BUILD_WORKER_IMAGE: macOS
+      HOST: x86_64-apple-darwin
+      TARGET: x86_64-apple-darwin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      HOST: x86_64-pc-windows-gnu
+      TARGET: x86_64-pc-windows-gnu
+      BIN_NAME: rip-windows-x86_64
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      HOST: x86_64-unknown-linux-gnu
+      TARGET: x86_64-unknown-linux-gnu
+for:
+  -
+    matrix:
+      only:
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+          TARGET: x86_64-pc-windows-gnu
+    install:
+      - cmd: >-
+          appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
+
+          rustup-init -yv --default-toolchain stable --default-host %HOST%
+
+          set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+
+          rustc -V
+
+          cargo -V
+
+          set PATH=%PATH%;C:\mingw-w64\x86_64-7.2.0-posix-seh-rt_v5-rev1\mingw64\bin
+
+          g++ --version
+
+    build_script:
+      - cmd: >-
+          cargo rustc --release --manifest-path=graphical/Cargo.toml
+
+          set FULL_NAME=%BIN_NAME%-%APPVEYOR_REPO_BRANCH%
+
+          mkdir tmp
+
+          mkdir tmp\%FULL_NAME%
+
+          copy target\release\rip_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%.exe
+
+          powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('tmp', '%FULL_NAME%.zip'); }"
+
+    artifacts:
+    - path: '*.zip'
+      name: files.gridbugs.org
+
+    deploy:
+    - provider: Environment
+      name: files.gridbugs.org
+
+  -
+    matrix:
+      only:
+        - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+          TARGET: x86_64-unknown-linux-gnu
+    install:
+      - sh: >-
+          sudo apt-get install libasound2-dev
+
+          curl -sSf https://sh.rustup.rs | sh -s -- --quiet --default-host $HOST --default-toolchain stable --profile minimal -y
+
+          export PATH="$HOME/.cargo/bin:$PATH"
+
+          rustc -V
+
+          cargo -V
+
+    build_script:
+      - sh: >-
+          cargo build --release --manifest-path=graphical/Cargo.toml
+
+          cargo build --release --manifest-path=ansi-terminal/Cargo.toml
+
+          MODE=release ZIP_NAME=rip-linux-x86_64-$APPVEYOR_REPO_BRANCH scripts/make_zip_unix.sh
+
+    artifacts:
+    - path: '*.zip'
+      name: files.gridbugs.org
+
+    deploy:
+    - provider: Environment
+      name: files.gridbugs.org
+
+  -
+    matrix:
+      only:
+        - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+          TARGET: wasm32-unknown-unknown
+    install:
+      - sh: >-
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.1/install.sh | bash
+
+          nvm use v12
+
+          curl -sSf https://sh.rustup.rs | sh -s -- --quiet --default-host $HOST --default-toolchain stable --profile minimal -y
+
+          export PATH="$HOME/.cargo/bin:$PATH"
+
+          rustup target add $TARGET
+
+          cargo install wasm-bindgen-cli --force --version 0.2.55 # this has to match the version in Cargo.lock
+
+          rustc -V
+
+          cargo -V
+
+    build_script:
+      - sh: >-
+          pushd web
+
+          npm install
+
+          npm run build -- --mode production
+
+          mkdir rip
+
+          mv dist rip/$APPVEYOR_REPO_BRANCH
+
+          zip -r rip.zip rip
+
+          popd
+
+          mv web/rip.zip .
+
+    artifacts:
+    - path: '*.zip'
+      name: games.gridbugs.org
+
+    deploy:
+    - provider: Environment
+      name: games.gridbugs.org
+
+  -
+    matrix:
+      only:
+        - APPVEYOR_BUILD_WORKER_IMAGE: macOS
+          TARGET: x86_64-apple-darwin
+    install:
+      - sh: >-
+          curl -sSf https://sh.rustup.rs | sh -s -- --quiet --default-host $HOST --default-toolchain stable --profile minimal -y
+
+          export PATH="$HOME/.cargo/bin:$PATH"
+
+          rustc -V
+
+          cargo -V
+
+    build_script:
+      - sh: >-
+          cargo build --release --manifest-path=graphical/Cargo.toml
+
+          cargo build --release --manifest-path=ansi-terminal/Cargo.toml
+
+          MODE=release ZIP_NAME=rip-macos-x86_64-$APPVEYOR_REPO_BRANCH scripts/make_zip_unix.sh
+
+    artifacts:
+    - path: '*.zip'
+      name: files.gridbugs.org
+
+    deploy:
+    - provider: Environment
+      name: files.gridbugs.org
