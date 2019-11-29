@@ -3,7 +3,6 @@
 use prototty_graphical::*;
 #[cfg(feature = "prototty_graphical_gfx")]
 use prototty_graphical_gfx::*;
-use prototty_native_audio::{Error as NativeAudioError, NativeAudioPlayer};
 use rip_native::{simon::Arg, NativeCommon};
 use rip_prototty::{app, Frontend};
 
@@ -14,14 +13,8 @@ fn main() {
         file_storage,
         controls,
         save_file,
+        audio_player,
     } = NativeCommon::arg().with_help_default().parse_env_or_exit();
-    let audio_player = match NativeAudioPlayer::try_new_default_device() {
-        Ok(audio_player) => Some(audio_player),
-        Err(NativeAudioError::NoOutputDevice) => {
-            log::warn!("no output audio device - continuing without audio");
-            None
-        }
-    };
     let context = Context::new(ContextDescriptor {
         font_bytes: FontBytes {
             normal: include_bytes!("./fonts/PxPlus_IBM_CGAthin.ttf").to_vec(),

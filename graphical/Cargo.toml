@@ -12,6 +12,5 @@ log = "0.4"
 env_logger = "0.7"
 prototty_graphical = { version = "0.28", optional = true }
 prototty_graphical_gfx = { version = "0.28", optional = true }
-prototty_native_audio = "0.28"
 rip_prototty = { path = "../prototty" }
 rip_native = { path = "../native" }

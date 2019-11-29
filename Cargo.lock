@@ -1751,7 +1751,6 @@ version = "0.1.0"
 dependencies = [
  "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_ansi_terminal 0.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "prototty_native_audio 0.28.0 (git+https://github.com/stevebob/prototty)",
  "rip_native 0.1.0",
  "rip_prototty 0.1.0",
 ]
@@ -1764,7 +1763,6 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_graphical 0.28.0 (git+https://github.com/stevebob/prototty)",
  "prototty_graphical_gfx 0.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "prototty_native_audio 0.28.0 (git+https://github.com/stevebob/prototty)",
  "rip_native 0.1.0",
  "rip_prototty 0.1.0",
 ]
@@ -1775,6 +1773,7 @@ version = "0.1.0"
 dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_file_storage 0.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prototty_native_audio 0.28.0 (git+https://github.com/stevebob/prototty)",
  "rip_prototty 0.1.0",
  "serde_json 1.0.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "simon 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",

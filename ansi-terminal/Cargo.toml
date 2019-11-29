@@ -7,6 +7,5 @@ edition = "2018"
 [dependencies]
 env_logger = "0.7"
 prototty_ansi_terminal = "0.28"
-prototty_native_audio = "0.28"
 rip_native = { path = "../native" }
 rip_prototty = { path = "../prototty" }
