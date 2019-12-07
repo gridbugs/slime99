@@ -163,9 +163,12 @@ for:
           cargo build --release --manifest-path=ansi-terminal/Cargo.toml
 
           MODE=release ZIP_NAME=rip-macos-x86_64-$APPVEYOR_REPO_BRANCH scripts/make_zip_unix.sh
+          MODE=release APP_NAME=RIP scripts/make_dmg_macos.sh
 
     artifacts:
     - path: '*.zip'
+      name: files.gridbugs.org
+    - path: '*.dmg'
       name: files.gridbugs.org
 
     deploy:
