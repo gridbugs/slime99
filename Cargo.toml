@@ -15,6 +15,7 @@ members = [
 lto = true
 
 [patch.crates-io]
+grid_search_cardinal = { git = "https://github.com/stevebob/grid-search" }
 prototty_audio = { git = "https://github.com/stevebob/prototty" }
 prototty_native_audio = { git = "https://github.com/stevebob/prototty" }
 prototty_render = { git = "https://github.com/stevebob/prototty" }

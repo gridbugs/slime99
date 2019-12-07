@@ -6,6 +6,7 @@ edition = "2018"
 
 [features]
 default = ["prototty_graphical"]
+force_vulkan = ["prototty_graphical/force_vulkan"]
 
 [dependencies]
 log = "0.4"
