@@ -4,7 +4,7 @@ use rand::{Rng, SeedableRng};
 use rand_isaac::Isaac64Rng;
 use rgb24::Rgb24;
 use serde::{Deserialize, Serialize};
-use shadowcast::ShadowcastContext;
+use shadowcast::Context as ShadowcastContext;
 use std::time::Duration;
 
 mod behaviour;
@@ -14,9 +14,13 @@ mod world;
 
 use behaviour::{Agent, BehaviourContext};
 use ecs::ComponentTable;
-pub use visibility::{CellVisibility, VisibilityGrid};
+pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{Entity, World};
 pub use world::{Layer, Tile, ToRenderEntity};
+
+pub struct Config {
+    pub omniscient: Option<Omniscient>,
+}
 
 /// Events which the game can report back to the io layer so it can
 /// respond with a sound/visual effect.
@@ -40,14 +44,13 @@ pub struct Game {
     rng: Isaac64Rng,
     frame_count: u64,
     events: Vec<Event>,
-    #[serde(skip)]
     shadowcast_context: ShadowcastContext<u8>,
     behaviour_context: BehaviourContext,
     agents: ComponentTable<Agent>,
 }
 
 impl Game {
-    pub fn new<R: Rng>(rng: &mut R) -> Self {
+    pub fn new<R: Rng>(config: &Config, rng: &mut R) -> Self {
         let s = include_str!("terrain.txt");
         let rows = s.split('\n').filter(|s| !s.is_empty()).collect::<Vec<_>>();
         let size = Size::new_u16(rows[0].len() as u16, rows.len() as u16);
@@ -81,6 +84,12 @@ impl Game {
                         let entity = world.spawn_former_human(coord);
                         agents.insert(entity, Agent::new(size));
                     }
+                    'h' => {
+                        world.spawn_floor(coord);
+                        let entity = world.spawn_human(coord);
+                        agents.insert(entity, Agent::new(size));
+                    }
+
                     _ => panic!("unexpected char: {}", ch),
                 }
             }
@@ -96,18 +105,26 @@ impl Game {
             behaviour_context: BehaviourContext::new(size),
             agents,
         };
-        game.update_visibility();
+        game.update_behaviour();
+        game.update_visibility(config);
         game
     }
     pub fn is_gameplay_blocked(&self) -> bool {
         self.world.is_gameplay_blocked()
     }
-    fn update_visibility(&mut self) {
+    pub fn update_visibility(&mut self, config: &Config) {
         let player_coord = self.world.entity_coord(self.player);
-        self.visibility_grid
-            .update(player_coord, &self.world, &mut self.shadowcast_context);
+        self.visibility_grid.update(
+            player_coord,
+            &self.world,
+            &mut self.shadowcast_context,
+            config.omniscient,
+        );
     }
-    pub fn handle_input(&mut self, input: Input) {
+    pub fn update_behaviour(&mut self) {
+        self.behaviour_context.update(self.player, &self.world);
+    }
+    pub fn handle_input(&mut self, input: Input, config: &Config) {
         if !self.is_gameplay_blocked() {
             match input {
                 Input::Walk(direction) => self.world.character_walk_in_direction(self.player, direction),
@@ -115,12 +132,13 @@ impl Game {
                 Input::Wait => (),
             }
         }
-        self.update_visibility();
+        self.update_visibility(config);
+        self.update_behaviour();
         self.npc_turn();
     }
-    pub fn handle_tick(&mut self, _since_last_tick: Duration) {
+    pub fn handle_tick(&mut self, _since_last_tick: Duration, config: &Config) {
         self.events.clear();
-        self.update_visibility();
+        self.update_visibility(config);
         self.world.animation_tick(&mut self.events, &mut self.rng);
         self.frame_count += 1;
     }
@@ -144,10 +162,10 @@ impl Game {
     }
     pub fn npc_turn(&mut self) {
         for (entity, agent) in self.agents.iter_mut() {
-            let coord = self.world.entity_coord(entity);
             if let Some(input) = agent.act(
-                coord,
+                entity,
                 &self.world,
+                self.player,
                 &mut self.behaviour_context,
                 &mut self.shadowcast_context,
             ) {
