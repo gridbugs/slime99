@@ -2,12 +2,12 @@ version: '{build}'
 clone_depth: 10
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      HOST: x86_64-unknown-linux-gnu
-      TARGET: wasm32-unknown-unknown
     - APPVEYOR_BUILD_WORKER_IMAGE: macOS
       HOST: x86_64-apple-darwin
       TARGET: x86_64-apple-darwin
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      HOST: x86_64-unknown-linux-gnu
+      TARGET: wasm32-unknown-unknown
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       HOST: x86_64-pc-windows-gnu
       TARGET: x86_64-pc-windows-gnu
