@@ -39,7 +39,7 @@ for:
 
     build_script:
       - cmd: >-
-          cargo rustc --release --manifest-path=graphical/Cargo.toml
+          cargo build --release --manifest-path=graphical/Cargo.toml
 
           set FULL_NAME=%BIN_NAME%-%APPVEYOR_REPO_BRANCH%
 
