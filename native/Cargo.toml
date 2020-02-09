@@ -9,5 +9,5 @@ log = "0.4"
 simon = "0.3"
 serde_json = "1.0"
 rip_prototty = { path = "../prototty" }
-prototty_file_storage = "0.28"
-prototty_native_audio = "0.28"
+prototty_file_storage = "0.29"
+prototty_native_audio = "0.29"

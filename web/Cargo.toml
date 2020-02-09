@@ -8,8 +8,8 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-prototty_web = "0.28"
-prototty_storage = "0.28"
+prototty_web = "0.29"
+prototty_storage = "0.29"
 rip_prototty = { path = "../prototty", features = ["wasm"]}
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1"

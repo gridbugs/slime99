@@ -1,4 +1,4 @@
-use direction::CardinalDirection;
+use game::CardinalDirection;
 use hashbrown::HashMap;
 use prototty::input::KeyboardInput;
 use serde::{Deserialize, Serialize};

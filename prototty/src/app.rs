@@ -1,9 +1,12 @@
 use crate::controls::Controls;
-use crate::game::{AimEventRoutine, GameData, GameEventRoutine, GameReturn, GameView, InjectedInput, ScreenCoord};
+use crate::game::{
+    AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameView, InjectedInput, ScreenCoord,
+};
 pub use crate::game::{GameConfig, Omniscient, RngSeed};
 use common_event::*;
 use decorator::*;
 use event_routine::*;
+use maplit::*;
 use menu::{fade_spec, FadeMenuEntryView, MenuInstanceChoose};
 use prototty::input::*;
 use prototty::*;
@@ -35,31 +38,51 @@ enum MainMenuEntry {
 }
 
 impl MainMenuEntry {
-    fn init(frontend: Frontend) -> Vec<Self> {
+    fn init(frontend: Frontend) -> menu::MenuInstance<Self> {
         use MainMenuEntry::*;
-        match frontend {
-            Frontend::Native => vec![NewGame, Quit],
-            Frontend::Wasm => vec![NewGame],
+        let (items, hotkeys) = match frontend {
+            Frontend::Native => (vec![NewGame, Quit], hashmap!['n' => NewGame, 'q' => Quit]),
+            Frontend::Wasm => (vec![NewGame], hashmap!['n' => NewGame]),
+        };
+        menu::MenuInstanceBuilder {
+            items,
+            selected_index: 0,
+            hotkeys: Some(hotkeys),
         }
+        .build()
+        .unwrap()
     }
-    fn pause(frontend: Frontend) -> Vec<Self> {
+    fn pause(frontend: Frontend) -> menu::MenuInstance<Self> {
         use MainMenuEntry::*;
-        match frontend {
-            Frontend::Native => vec![Resume, SaveQuit, NewGame, Clear],
-            Frontend::Wasm => vec![Resume, Save, NewGame, Clear],
+        let (items, hotkeys) = match frontend {
+            Frontend::Native => (
+                vec![Resume, SaveQuit, NewGame, Clear],
+                hashmap!['r' => Resume, 'q' => SaveQuit, 'n' => NewGame, 'c' => Clear],
+            ),
+            Frontend::Wasm => (
+                vec![Resume, Save, NewGame, Clear],
+                hashmap!['r' => Resume, 's' => Save, 'n' => NewGame, 'c' => Clear],
+            ),
+        };
+        menu::MenuInstanceBuilder {
+            items,
+            selected_index: 0,
+            hotkeys: Some(hotkeys),
         }
+        .build()
+        .unwrap()
     }
 }
 
 impl<'a> From<&'a MainMenuEntry> for &'a str {
     fn from(main_menu_entry: &'a MainMenuEntry) -> Self {
         match main_menu_entry {
-            MainMenuEntry::NewGame => "New Game",
-            MainMenuEntry::Resume => "Resume",
-            MainMenuEntry::Quit => "Quit",
-            MainMenuEntry::SaveQuit => "Save and Quit",
-            MainMenuEntry::Save => "Save",
-            MainMenuEntry::Clear => "Clear",
+            MainMenuEntry::NewGame => "(n) New Game",
+            MainMenuEntry::Resume => "(r) Resume",
+            MainMenuEntry::Quit => "(q) Quit",
+            MainMenuEntry::SaveQuit => "(q) Save and Quit",
+            MainMenuEntry::Save => "(s) Save",
+            MainMenuEntry::Clear => "(c) Clear",
         }
     }
 }
@@ -90,9 +113,7 @@ impl<S: Storage, A: AudioPlayer> AppData<S, A> {
         Self {
             frontend,
             game: GameData::new(game_config, controls, storage, save_key, audio_player, rng_seed),
-            main_menu: menu::MenuInstance::new(MainMenuEntry::init(frontend))
-                .unwrap()
-                .into_choose_or_escape(),
+            main_menu: MainMenuEntry::init(frontend).into_choose_or_escape(),
             main_menu_type: MainMenuType::Init,
             last_mouse_coord: Coord::new(0, 0),
         }
@@ -236,7 +257,7 @@ where
 {
     fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData<S, A>, context: ViewContext<C>, frame: &mut F) {
         text::StringViewSingleLine::new(Style::new().with_bold(true)).view(
-            "RIP",
+            "Template Roguelike",
             context.add_offset(Coord::new(1, 1)),
             frame,
         );
@@ -390,9 +411,7 @@ fn main_menu<S: Storage, A: AudioPlayer>(
         if data.game.has_instance() {
             match data.main_menu_type {
                 MainMenuType::Init => {
-                    data.main_menu = menu::MenuInstance::new(MainMenuEntry::pause(data.frontend))
-                        .unwrap()
-                        .into_choose_or_escape();
+                    data.main_menu = MainMenuEntry::pause(data.frontend).into_choose_or_escape();
                     data.main_menu_type = MainMenuType::Pause;
                 }
                 MainMenuType::Pause => (),
@@ -401,9 +420,7 @@ fn main_menu<S: Storage, A: AudioPlayer>(
             match data.main_menu_type {
                 MainMenuType::Init => (),
                 MainMenuType::Pause => {
-                    data.main_menu = menu::MenuInstance::new(MainMenuEntry::init(data.frontend))
-                        .unwrap()
-                        .into_choose_or_escape();
+                    data.main_menu = MainMenuEntry::init(data.frontend).into_choose_or_escape();
                     data.main_menu_type = MainMenuType::Init;
                 }
             }
@@ -429,6 +446,13 @@ fn game_injecting_inputs<S: Storage, A: AudioPlayer>(
         .decorated(DecorateGame::new())
 }
 
+fn game_over<S: Storage, A: AudioPlayer>(
+) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
+    GameOverEventRoutine::new()
+        .select(SelectGame::new())
+        .decorated(DecorateGame::new())
+}
+
 fn aim<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = Option<ScreenCoord>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     make_either!(Ei = A | B);
@@ -448,20 +472,39 @@ fn aim<S: Storage, A: AudioPlayer>(
     })
 }
 
+enum GameLoopBreak {
+    GameOver,
+    Pause,
+}
+
 fn game_loop<S: Storage, A: AudioPlayer>(
-) -> impl EventRoutine<Return = GameReturn, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
+) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     make_either!(Ei = A | B);
-    Ei::A(game()).repeat(|game_return| match game_return {
-        GameReturn::Pause => Handled::Return(GameReturn::Pause),
-        GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_screen_coord| {
+    Ei::A(game())
+        .repeat(|game_return| match game_return {
+            GameReturn::Pause => Handled::Return(GameLoopBreak::Pause),
+            GameReturn::GameOver => Handled::Return(GameLoopBreak::GameOver),
+            GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_screen_coord| {
+                make_either!(Ei = A | B);
+                if let Some(screen_coord) = maybe_screen_coord {
+                    Ei::A(game_injecting_inputs(vec![InjectedInput::Fire(screen_coord)]))
+                } else {
+                    Ei::B(game())
+                }
+            }))),
+        })
+        .and_then(|game_loop_break| {
             make_either!(Ei = A | B);
-            if let Some(screen_coord) = maybe_screen_coord {
-                Ei::A(game_injecting_inputs(vec![InjectedInput::Fire(screen_coord)]))
-            } else {
-                Ei::B(game())
+            match game_loop_break {
+                GameLoopBreak::Pause => Ei::A(Value::new(())),
+                GameLoopBreak::GameOver => Ei::B(game_over().and_then(|()| {
+                    SideEffectThen::new(|data: &mut AppData<S, A>, _| {
+                        data.game.clear_instance();
+                        Value::new(())
+                    })
+                })),
             }
-        }))),
-    })
+        })
 }
 
 fn main_menu_cycle<S: Storage, A: AudioPlayer>(

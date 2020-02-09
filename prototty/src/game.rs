@@ -1,25 +1,29 @@
 use crate::audio::{Audio, AudioTable};
 use crate::controls::{AppInput, Controls};
 use direction::{CardinalDirection, Direction};
+use game::{
+    CellVisibility, CharacterInfo, ExternalEvent, Game, GameControlFlow, Layer, Tile, ToRenderEntity, VisibilityGrid,
+};
+pub use game::{Config as GameConfig, Input as GameInput, Omniscient};
 use line_2d::{Config as LineConfig, LineSegment};
 use prototty::event_routine::common_event::*;
 use prototty::event_routine::*;
 use prototty::input::*;
 use prototty::render::*;
+use prototty::text::*;
 use prototty_audio::{AudioPlayer, AudioProperties};
 use prototty_storage::{format, Storage};
 use rand::{Rng, SeedableRng};
 use rand_isaac::Isaac64Rng;
-use rip::{CellVisibility, Event, Game, Layer, Tile, ToRenderEntity, VisibilityGrid};
-pub use rip::{Config as GameConfig, Input as GameInput, Omniscient};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use std::time::Duration;
 
 const AUTO_SAVE_PERIOD: Duration = Duration::from_secs(2);
-const AIM_UI_DEPTH: i8 = 3;
-const PLAYER_OFFSET: Coord = Coord::new(16, 16);
+const AIM_UI_DEPTH: i8 = std::i8::MAX;
+const PLAYER_OFFSET: Coord = Coord::new(20, 18);
 const GAME_WINDOW_SIZE: Size = Size::new_u16((PLAYER_OFFSET.x as u16 * 2) + 1, (PLAYER_OFFSET.y as u16 * 2) + 1);
+const STORAGE_FORMAT: format::Json = format::Json;
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
 struct ScreenShake {
@@ -51,9 +55,14 @@ impl<'a, A: AudioPlayer> EffectContext<'a, A> {
     fn next_frame(&mut self) {
         *self.screen_shake = self.screen_shake.and_then(|screen_shake| screen_shake.next());
     }
-    fn handle_event(&mut self, event: Event) {
+    fn play_audio(&self, audio: Audio, properties: AudioProperties) {
+        log::info!("Playing sound: {:?} {:?}", audio, properties);
+        let sound = self.audio_table.get(audio);
+        self.audio_player.play(&sound, properties);
+    }
+    fn handle_event(&mut self, event: ExternalEvent) {
         match event {
-            Event::Explosion(coord) => {
+            ExternalEvent::Explosion(coord) => {
                 let direction: Direction = self.rng.gen();
                 *self.screen_shake = Some(ScreenShake {
                     remaining_frames: 2,
@@ -61,10 +70,9 @@ impl<'a, A: AudioPlayer> EffectContext<'a, A> {
                 });
                 const BASE_VOLUME: f32 = 50.;
                 let distance_squared = (self.player_coord.0 - coord).magnitude2();
-                let volume = (BASE_VOLUME / (distance_squared as f32)).min(1.);
+                let volume = (BASE_VOLUME / (distance_squared as f32).max(1.)).min(1.);
                 let properties = AudioProperties::default().with_volume(volume);
-                let sound = self.audio_table.get(Audio::Explosion);
-                self.audio_player.play(&sound, properties);
+                self.play_audio(Audio::Explosion, properties);
             }
         }
     }
@@ -74,27 +82,117 @@ pub enum InjectedInput {
     Fire(ScreenCoord),
 }
 
+mod status_line_parts {
+    pub const HP_TITLE: usize = 0;
+    pub const HP_CURRENT: usize = 1;
+    pub const HP_MAX: usize = 2;
+    pub const N: usize = 3;
+}
+
+struct StatusLineView {
+    buffer: Vec<RichTextPartOwned>,
+}
+
+impl StatusLineView {
+    fn new() -> Self {
+        let mut buffer = Vec::new();
+        for _ in 0..status_line_parts::N {
+            buffer.push(RichTextPartOwned {
+                text: String::new(),
+                style: Style::new(),
+            });
+        }
+        Self { buffer }
+    }
+    fn update(&mut self, player_info: &CharacterInfo) {
+        use std::fmt::Write;
+        {
+            let hp_title = &mut self.buffer[status_line_parts::HP_TITLE];
+            hp_title.style = Style::new().with_foreground(Rgb24::new(255, 255, 255));
+            hp_title.text.clear();
+            write!(&mut hp_title.text, "HP: ").unwrap();
+        }
+        {
+            let hp_current_colour = if player_info.hit_points.current < player_info.hit_points.max / 4 {
+                Rgb24::new(255, 0, 0)
+            } else {
+                Rgb24::new(255, 255, 255)
+            };
+            let hp_current = &mut self.buffer[status_line_parts::HP_CURRENT];
+            hp_current.style = Style::new().with_foreground(hp_current_colour);
+            hp_current.text.clear();
+            write!(&mut hp_current.text, "{}", player_info.hit_points.current).unwrap();
+        }
+        {
+            let hp_max = &mut self.buffer[status_line_parts::HP_MAX];
+            hp_max.style = Style::new().with_foreground(Rgb24::new(255, 255, 255));
+            hp_max.text.clear();
+            write!(&mut hp_max.text, "/{}", player_info.hit_points.max).unwrap();
+        }
+    }
+}
+
 pub struct GameView {
     last_offset: Coord,
+    status_line_view: StatusLineView,
 }
 
 impl GameView {
     pub fn new() -> Self {
         Self {
             last_offset: Coord::new(0, 0),
+            status_line_view: StatusLineView::new(),
         }
     }
     pub fn absolute_coord_to_game_relative_screen_coord(&self, coord: Coord) -> ScreenCoord {
         ScreenCoord(coord - self.last_offset)
     }
+    pub fn view<F: Frame, C: ColModify>(
+        &mut self,
+        game_to_render: GameToRender,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) {
+        let game = &game_to_render.game;
+        let player_info = game.player_info();
+        let player_coord = GameCoord::of_player(player_info);
+        let visibility_grid = game.visibility_grid();
+        let offset = game_to_render
+            .screen_shake
+            .as_ref()
+            .map(|d| d.coord())
+            .unwrap_or_else(|| Coord::new(0, 0));
+        for to_render_entity in game.to_render_entities() {
+            render_entity(
+                game_to_render.status,
+                &to_render_entity,
+                game,
+                visibility_grid,
+                player_coord,
+                offset,
+                context,
+                frame,
+            );
+        }
+        self.last_offset = context.offset;
+        self.status_line_view.update(player_info);
+        RichTextViewSingleLine.view(
+            self.status_line_view.buffer.iter().map(|s| s.as_rich_text_part()),
+            context.add_offset(Coord::new(1, 1 + GAME_WINDOW_SIZE.height() as i32)),
+            frame,
+        );
+    }
 }
 
-fn layer_depth(layer: Layer) -> i8 {
-    match layer {
-        Layer::Floor => 0,
-        Layer::Feature => 1,
-        Layer::Character => 2,
-        Layer::Particle => 3,
+fn layer_depth(layer: Option<Layer>) -> i8 {
+    if let Some(layer) = layer {
+        match layer {
+            Layer::Floor => 0,
+            Layer::Feature => 1,
+            Layer::Character => 2,
+        }
+    } else {
+        std::i8::MAX - 1
     }
 }
 
@@ -108,8 +206,8 @@ struct GameCoord(Coord);
 struct PlayerCoord(Coord);
 
 impl GameCoord {
-    fn of_player(game: &Game) -> Self {
-        Self(game.player_coord())
+    fn of_player(player_info: &CharacterInfo) -> Self {
+        Self(player_info.coord)
     }
 }
 
@@ -136,6 +234,7 @@ impl ScreenCoordToGameCoord {
 }
 
 fn render_entity<F: Frame, C: ColModify>(
+    game_status: GameStatus,
     to_render_entity: &ToRenderEntity,
     game: &Game,
     visibility_grid: &VisibilityGrid,
@@ -145,112 +244,91 @@ fn render_entity<F: Frame, C: ColModify>(
     frame: &mut F,
 ) {
     let entity_coord = GameCoord(to_render_entity.coord);
-    if let CellVisibility::VisibleWithLightColour(light_colour) = visibility_grid.cell_visibility(entity_coord.0) {
-        if light_colour == Rgb24::new(0, 0, 0) {
-            return;
-        }
-        let screen_coord = GameCoordToScreenCoord {
-            game_coord: entity_coord,
-            player_coord: GameCoord(player_coord.0 + offset),
-        }
-        .compute();
-        if !screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
-            return;
-        }
-        let depth = layer_depth(to_render_entity.layer);
-        let mut view_cell = match to_render_entity.tile {
-            Tile::Player => ViewCell::new().with_character('@'),
-            Tile::FormerHuman => ViewCell::new()
-                .with_character('f')
-                .with_foreground(Rgb24::new(255, 0, 0)),
-            Tile::Human => ViewCell::new()
-                .with_character('h')
-                .with_foreground(Rgb24::new(0, 255, 255)),
+    let light_colour = if let GameStatus::Over = game_status {
+        Rgb24::new(255, 0, 0)
+    } else if let CellVisibility::VisibleWithLightColour(light_colour) = visibility_grid.cell_visibility(entity_coord.0)
+    {
+        light_colour
+    } else {
+        return;
+    };
+    if game_status == GameStatus::Playing && light_colour == Rgb24::new(0, 0, 0) {
+        return;
+    }
+    let screen_coord = GameCoordToScreenCoord {
+        game_coord: entity_coord,
+        player_coord: GameCoord(player_coord.0 + offset),
+    }
+    .compute();
+    if !screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
+        return;
+    }
+    let depth = layer_depth(to_render_entity.layer);
+    let mut view_cell = match to_render_entity.tile {
+        Tile::Player => ViewCell::new().with_character('@'),
+        Tile::FormerHuman => ViewCell::new()
+            .with_character('f')
+            .with_foreground(Rgb24::new(255, 0, 0)),
+        Tile::Human => ViewCell::new()
+            .with_character('h')
+            .with_foreground(Rgb24::new(0, 255, 255)),
 
-            Tile::Floor => ViewCell::new().with_character('.').with_background(Rgb24::new(0, 0, 0)),
-            Tile::Carpet => ViewCell::new()
-                .with_character('.')
-                .with_background(Rgb24::new(0, 0, 127)),
-            Tile::Wall => if game.contains_wall(entity_coord.0 + Coord::new(0, 1)) {
-                ViewCell::new().with_character('█')
-            } else {
-                ViewCell::new().with_character('▀')
+        Tile::Floor => ViewCell::new().with_character('.').with_background(Rgb24::new(0, 0, 0)),
+        Tile::Carpet => ViewCell::new()
+            .with_character('.')
+            .with_background(Rgb24::new(0, 0, 127)),
+        Tile::Wall => if game.contains_wall(entity_coord.0 + Coord::new(0, 1)) {
+            ViewCell::new().with_character('█')
+        } else {
+            ViewCell::new().with_character('▀')
+        }
+        .with_foreground(Rgb24::new(255, 255, 255))
+        .with_background(Rgb24::new(127, 127, 127)),
+        Tile::Bullet => ViewCell::new().with_character('*'),
+        Tile::Smoke => {
+            if let Some(fade) = to_render_entity.fade {
+                frame.blend_cell_background_relative(
+                    screen_coord.0,
+                    depth,
+                    Rgb24::new_grey(187).normalised_mul(light_colour),
+                    (255 - fade) / 10,
+                    blend_mode::LinearInterpolate,
+                    context,
+                )
             }
-            .with_foreground(Rgb24::new(255, 255, 255))
-            .with_background(Rgb24::new(127, 127, 127)),
-            Tile::Bullet => ViewCell::new().with_character('*'),
-            Tile::Smoke => {
-                if let Some(fade) = to_render_entity.fade {
+            return;
+        }
+        Tile::ExplosionFlame => {
+            if let Some(fade) = to_render_entity.fade {
+                if let Some(colour_hint) = to_render_entity.colour_hint {
+                    let quad_fade = (((fade as u16) * (fade as u16)) / 256) as u8;
+                    let start_colour = colour_hint;
+                    let end_colour = Rgb24::new(255, 0, 0);
+                    let interpolated_colour = start_colour.linear_interpolate(end_colour, quad_fade);
+                    let lit_colour = interpolated_colour.normalised_mul(light_colour);
                     frame.blend_cell_background_relative(
                         screen_coord.0,
                         depth,
-                        Rgb24::new_grey(187).normalised_mul(light_colour),
-                        (255 - fade) / 10,
+                        lit_colour,
+                        (255 - fade) / 1,
                         blend_mode::LinearInterpolate,
                         context,
                     )
                 }
-                return;
             }
-            Tile::ExplosionFlame => {
-                if let Some(fade) = to_render_entity.fade {
-                    if let Some(colour_hint) = to_render_entity.colour_hint {
-                        let quad_fade = (((fade as u16) * (fade as u16)) / 256) as u8;
-                        let start_colour = colour_hint;
-                        let end_colour = Rgb24::new(255, 0, 0);
-                        let interpolated_colour = start_colour.linear_interpolate(end_colour, quad_fade);
-                        let lit_colour = interpolated_colour.normalised_mul(light_colour);
-                        frame.blend_cell_background_relative(
-                            screen_coord.0,
-                            depth,
-                            lit_colour,
-                            (255 - fade) / 1,
-                            blend_mode::LinearInterpolate,
-                            context,
-                        )
-                    }
-                }
-                return;
-            }
-        };
-        if let Some(foreground) = view_cell.style.foreground.as_mut() {
-            *foreground = foreground.normalised_mul(light_colour);
+            return;
         }
-        if let Some(background) = view_cell.style.background.as_mut() {
-            *background = background.normalised_mul(light_colour);
-        }
-        frame.set_cell_relative(screen_coord.0, depth, view_cell, context);
+    };
+    if let Some(foreground) = view_cell.style.foreground.as_mut() {
+        *foreground = foreground.normalised_mul(light_colour);
     }
-}
-
-impl<'a> View<GameToRender<'a>> for GameView {
-    fn view<F: Frame, C: ColModify>(
-        &mut self,
-        game_to_render: GameToRender<'a>,
-        context: ViewContext<C>,
-        frame: &mut F,
-    ) {
-        let game = &game_to_render.game;
-        let player_coord = GameCoord::of_player(&game);
-        let visibility_grid = game.visibility_grid();
-        let offset = game_to_render
-            .screen_shake
-            .as_ref()
-            .map(|d| d.coord())
-            .unwrap_or_else(|| Coord::new(0, 0));
-        for to_render_entity in game.to_render_entities() {
-            render_entity(
-                &to_render_entity,
-                game,
-                visibility_grid,
-                player_coord,
-                offset,
-                context,
-                frame,
-            );
-        }
-        self.last_offset = context.offset;
+    if let Some(background) = view_cell.style.background.as_mut() {
+        *background = background.normalised_mul(light_colour);
     }
+    if to_render_entity.blood {
+        view_cell.style.foreground = Some(Rgb24::new(255, 0, 0));
+    }
+    frame.set_cell_relative(screen_coord.0, depth, view_cell, context);
 }
 
 #[derive(Serialize, Deserialize)]
@@ -260,9 +338,16 @@ pub struct GameInstance {
     screen_shake: Option<ScreenShake>,
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+enum GameStatus {
+    Playing,
+    Over,
+}
+
 pub struct GameToRender<'a> {
     game: &'a Game,
     screen_shake: Option<ScreenShake>,
+    status: GameStatus,
 }
 
 #[derive(Clone)]
@@ -283,6 +368,14 @@ impl GameInstance {
         GameToRender {
             game: &self.game,
             screen_shake: self.screen_shake,
+            status: GameStatus::Playing,
+        }
+    }
+    fn to_render_game_over(&self) -> GameToRender {
+        GameToRender {
+            game: &self.game,
+            screen_shake: self.screen_shake,
+            status: GameStatus::Over,
         }
     }
 }
@@ -307,7 +400,7 @@ struct StorageWrapper<S: Storage> {
 impl<S: Storage> StorageWrapper<S> {
     pub fn save_instance(&mut self, instance: &GameInstance) {
         self.storage
-            .store(&self.save_key, instance, format::Bincode)
+            .store(&self.save_key, instance, STORAGE_FORMAT)
             .expect("failed to save instance");
     }
     pub fn clear_instance(&mut self) {
@@ -332,7 +425,7 @@ impl<S: Storage, A: AudioPlayer> GameData<S, A> {
         audio_player: A,
         rng_seed: RngSeed,
     ) -> Self {
-        let mut instance: Option<GameInstance> = storage.load(&save_key, format::Bincode).ok();
+        let mut instance: Option<GameInstance> = storage.load(&save_key, STORAGE_FORMAT).ok();
         if let Some(instance) = instance.as_mut() {
             instance.game.update_visibility(&game_config);
         }
@@ -382,7 +475,7 @@ impl<S: Storage, A: AudioPlayer> GameData<S, A> {
             if self.last_aim_with_mouse {
                 Ok(screen_coord_of_mouse)
             } else {
-                let player_coord = GameCoord::of_player(&instance.game);
+                let player_coord = GameCoord::of_player(instance.game.player_info());
                 let screen_coord = GameCoordToScreenCoord {
                     game_coord: player_coord,
                     player_coord,
@@ -517,13 +610,14 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                     Aim::Cancel => Handled::Return(None),
                     Aim::Ignore => Handled::Continue(s),
                     Aim::Frame(since_last) => {
-                        instance.game.handle_tick(since_last, game_config);
+                        let game_control_flow = instance.game.handle_tick(since_last, game_config);
+                        assert!(game_control_flow.is_none(), "meaningful event while aiming");
                         let mut event_context = EffectContext {
                             rng: &mut instance.rng,
                             screen_shake: &mut instance.screen_shake,
                             audio_player,
                             audio_table,
-                            player_coord: GameCoord::of_player(&instance.game),
+                            player_coord: GameCoord::of_player(instance.game.player_info()),
                         };
                         event_context.next_frame();
                         for event in instance.game.events() {
@@ -546,7 +640,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
     {
         if let Some(instance) = data.instance.as_ref() {
             view.view(instance.to_render(), context, frame);
-            let player_coord = GameCoord::of_player(&instance.game);
+            let player_coord = GameCoord::of_player(instance.game.player_info());
             let screen_coord = self.screen_coord;
             let game_coord = ScreenCoordToGameCoord {
                 screen_coord,
@@ -613,6 +707,7 @@ impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
 pub enum GameReturn {
     Pause,
     Aim,
+    GameOver,
 }
 
 impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
@@ -630,7 +725,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
         let audio_table = &data.audio_table;
         let game_config = &data.game_config;
         if let Some(instance) = data.instance.as_mut() {
-            let player_coord = GameCoord::of_player(&instance.game);
+            let player_coord = GameCoord::of_player(instance.game.player_info());
             for injected_input in self.injected_inputs.drain(..) {
                 match injected_input {
                     InjectedInput::Fire(screen_coord) => {
@@ -639,7 +734,13 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                             player_coord,
                         }
                         .compute();
-                        instance.game.handle_input(GameInput::Fire(raw_game_coord), game_config);
+                        if let Some(game_control_flow) =
+                            instance.game.handle_input(GameInput::Fire(raw_game_coord), game_config)
+                        {
+                            match game_control_flow {
+                                GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
+                            }
+                        }
                     }
                 }
             }
@@ -653,12 +754,18 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                             }
                             if !instance.game.is_gameplay_blocked() {
                                 if let Some(app_input) = controls.get(keyboard_input) {
-                                    match app_input {
+                                    let game_control_flow = match app_input {
                                         AppInput::Move(direction) => {
                                             instance.game.handle_input(GameInput::Walk(direction), game_config)
                                         }
+
                                         AppInput::Aim => return Handled::Return(GameReturn::Aim),
                                         AppInput::Wait => instance.game.handle_input(GameInput::Wait, game_config),
+                                    };
+                                    if let Some(game_control_flow) = game_control_flow {
+                                        match game_control_flow {
+                                            GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
+                                        }
                                     }
                                 }
                             }
@@ -668,7 +775,8 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                     Handled::Continue(s)
                 }
                 CommonEvent::Frame(period) => {
-                    instance.game.handle_tick(period, game_config);
+                    let maybe_control_flow = instance.game.handle_tick(period, game_config);
+
                     storage_wrapper.autosave_tick(instance, period);
                     let mut event_context = EffectContext {
                         rng: &mut instance.rng,
@@ -680,6 +788,11 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                     event_context.next_frame();
                     for event in instance.game.events() {
                         event_context.handle_event(event);
+                    }
+                    if let Some(game_control_flow) = maybe_control_flow {
+                        match game_control_flow {
+                            GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
+                        }
                     }
                     Handled::Continue(s)
                 }
@@ -697,6 +810,78 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
     {
         if let Some(instance) = data.instance.as_ref() {
             view.view(instance.to_render(), context, frame);
+        }
+    }
+}
+
+pub struct GameOverEventRoutine<S: Storage, A: AudioPlayer> {
+    s: PhantomData<S>,
+    a: PhantomData<A>,
+    duration: Duration,
+}
+
+impl<S: Storage, A: AudioPlayer> GameOverEventRoutine<S, A> {
+    pub fn new() -> Self {
+        Self {
+            s: PhantomData,
+            a: PhantomData,
+            duration: Duration::from_millis(0),
+        }
+    }
+}
+
+impl<S: Storage, A: AudioPlayer> EventRoutine for GameOverEventRoutine<S, A> {
+    type Return = ();
+    type Data = GameData<S, A>;
+    type View = GameView;
+    type Event = CommonEvent;
+
+    fn handle<EP>(self, data: &mut Self::Data, _view: &Self::View, event_or_peek: EP) -> Handled<Self::Return, Self>
+    where
+        EP: EventOrPeek<Event = Self::Event>,
+    {
+        let game_config = &data.game_config;
+        let audio_player = &data.audio_player;
+        let audio_table = &data.audio_table;
+        if let Some(instance) = data.instance.as_mut() {
+            event_or_peek_with_handled(event_or_peek, self, |mut s, event| match event {
+                CommonEvent::Input(input) => match input {
+                    Input::Keyboard(_) => Handled::Return(()),
+                    Input::Mouse(_) => Handled::Continue(s),
+                },
+                CommonEvent::Frame(period) => {
+                    s.duration += period;
+                    const NPC_TURN_PERIOD: Duration = Duration::from_millis(250);
+                    if s.duration > NPC_TURN_PERIOD {
+                        s.duration -= NPC_TURN_PERIOD;
+                        instance.game.handle_npc_turn();
+                    }
+                    let _ = instance.game.handle_tick(period, game_config);
+                    let mut event_context = EffectContext {
+                        rng: &mut instance.rng,
+                        screen_shake: &mut instance.screen_shake,
+                        audio_player,
+                        audio_table,
+                        player_coord: GameCoord::of_player(instance.game.player_info()),
+                    };
+                    event_context.next_frame();
+                    for event in instance.game.events() {
+                        event_context.handle_event(event);
+                    }
+                    Handled::Continue(s)
+                }
+            })
+        } else {
+            Handled::Return(())
+        }
+    }
+    fn view<F, C>(&self, data: &Self::Data, view: &mut Self::View, context: ViewContext<C>, frame: &mut F)
+    where
+        F: Frame,
+        C: ColModify,
+    {
+        if let Some(instance) = data.instance.as_ref() {
+            view.view(instance.to_render_game_over(), context, frame);
         }
     }
 }

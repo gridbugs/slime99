@@ -6,6 +6,8 @@ use prototty_graphical_gfx::*;
 use rip_native::{simon::Arg, NativeCommon};
 use rip_prototty::{app, Frontend};
 
+const CELL_SIZE: f64 = 16.;
+
 fn main() {
     env_logger::init();
     let NativeCommon {
@@ -21,18 +23,22 @@ fn main() {
             normal: include_bytes!("./fonts/PxPlus_IBM_CGAthin.ttf").to_vec(),
             bold: include_bytes!("./fonts/PxPlus_IBM_CGA.ttf").to_vec(),
         },
-        title: "RIP".to_string(),
+        title: "Template Roguelike".to_string(),
         window_dimensions: WindowDimensions::Windowed(Dimensions {
-            width: 640.,
-            height: 480.,
+            width: 720.,
+            height: 640.,
         }),
         cell_dimensions: Dimensions {
-            width: 12.,
-            height: 12.,
+            width: CELL_SIZE,
+            height: CELL_SIZE,
         },
         font_dimensions: Dimensions {
-            width: 12.,
-            height: 12.,
+            width: CELL_SIZE,
+            height: CELL_SIZE,
+        },
+        font_source_dimensions: Dimensions {
+            width: CELL_SIZE as f32,
+            height: CELL_SIZE as f32,
         },
         underline_width: 0.1,
         underline_top_offset: 0.8,

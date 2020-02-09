@@ -11,7 +11,7 @@ force_vulkan = ["prototty_graphical/force_vulkan"]
 [dependencies]
 log = "0.4"
 env_logger = "0.7"
-prototty_graphical = { version = "0.28", optional = true }
-prototty_graphical_gfx = { version = "0.28", optional = true }
+prototty_graphical = { version = "0.29", optional = true }
+prototty_graphical_gfx = { version = "0.29", optional = true }
 rip_prototty = { path = "../prototty" }
 rip_native = { path = "../native" }
