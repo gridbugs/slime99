@@ -2,19 +2,25 @@ version: '{build}'
 clone_depth: 10
 environment:
   matrix:
-    - APPVEYOR_BUILD_WORKER_IMAGE: macOS
-      HOST: x86_64-apple-darwin
-      TARGET: x86_64-apple-darwin
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      HOST: x86_64-unknown-linux-gnu
-      TARGET: wasm32-unknown-unknown
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       HOST: x86_64-pc-windows-gnu
       TARGET: x86_64-pc-windows-gnu
-      BIN_NAME: rip-windows-x86_64
+      BIN_NAME: rip
+      ARCHIVE_NAME: rip-windows-x86_64
+      MODE: release
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       HOST: x86_64-unknown-linux-gnu
       TARGET: x86_64-unknown-linux-gnu
+      MODE: release
+    - APPVEYOR_BUILD_WORKER_IMAGE: macOS
+      HOST: x86_64-apple-darwin
+      TARGET: x86_64-apple-darwin
+      MODE: release
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      HOST: x86_64-unknown-linux-gnu
+      TARGET: wasm32-unknown-unknown
+      MODE: release
+
 for:
   -
     matrix:
@@ -39,15 +45,27 @@ for:
 
     build_script:
       - cmd: >-
-          cargo build --release --manifest-path=graphical/Cargo.toml
+          echo on
 
-          set FULL_NAME=%BIN_NAME%-%APPVEYOR_REPO_BRANCH%
+          if "%MODE%" == "release" ( set RELEASE_FLAG=--release& set TARGET_DIR=release& set NAME_SUFFIX=) else ( set RELEASE_FLAG=& set TARGET_DIR=debug& set NAME_SUFFIX=-debug)
+
+          set FULL_NAME=%ARCHIVE_NAME%%NAME_SUFFIX%-%APPVEYOR_REPO_BRANCH%
 
           mkdir tmp
 
           mkdir tmp\%FULL_NAME%
 
-          copy target\release\rip_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%.exe
+          copy extras\windows\* tmp\%FULL_NAME%
+
+          cargo build %RELEASE_FLAG% --manifest-path=graphical/Cargo.toml
+
+          echo copy target\%TARGET_DIR%\rip_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%.exe
+
+          copy target\%TARGET_DIR%\rip_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%.exe
+
+          cargo build %RELEASE_FLAG% --manifest-path=graphical/Cargo.toml --no-default-features --features=prototty_graphical_gfx
+
+          copy target\%TARGET_DIR%\rip_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%-opengl.exe
 
           powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('tmp', '%FULL_NAME%.zip'); }"
 
@@ -78,15 +96,31 @@ for:
 
     build_script:
       - sh: >-
-          cargo build --release --manifest-path=graphical/Cargo.toml
+          if [ "$MODE" == "release" ]; then
+            TARGET_DIR="release"
+            RELEASE_FLAG="--release"
+            NAME_SUFFIX=""
+          else
+            TARGET_DIR="debug"
+            RELEASE_FLAG=""
+            NAME_SUFFIX="-debug"
+          fi
 
-          cargo build --release --manifest-path=ansi-terminal/Cargo.toml
+          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=prototty_graphical_gfx
 
-          strip target/release/rip_graphical
+          mv -v target/$TARGET_DIR/rip_graphical{,_opengl}
 
-          strip target/release/rip_terminal
+          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml
 
-          MODE=release ZIP_NAME=rip-linux-x86_64-$APPVEYOR_REPO_BRANCH scripts/make_zip_unix.sh
+          cargo build $RELEASE_FLAG --manifest-path=ansi-terminal/Cargo.toml
+
+          strip -v target/$TARGET_DIR/rip_graphical_opengl
+
+          strip -v target/$TARGET_DIR/rip_graphical
+
+          strip -v target/$TARGET_DIR/rip_ansi_terminal
+
+          MODE=$MODE ZIP_NAME=rip-linux-x86_64$NAME_SUFFIX-$APPVEYOR_REPO_BRANCH scripts/make_zip_unix.sh
 
     artifacts:
     - path: '*.zip'
@@ -125,7 +159,13 @@ for:
 
           npm install
 
-          npm run build -- --mode production
+          if [ "$MODE" == "release" ]; then
+            BUILD_MODE=production
+          else
+            BUILD_MODE=development
+          fi
+
+          npm run build -- --mode $BUILD_MODE
 
           mkdir rip
 
@@ -162,17 +202,33 @@ for:
 
     build_script:
       - sh: >-
-          cargo build --release --manifest-path=graphical/Cargo.toml
+          if [ "$MODE" == "release" ]; then
+            TARGET_DIR="release"
+            RELEASE_FLAG="--release"
+            NAME_SUFFIX=""
+          else
+            TARGET_DIR="debug"
+            RELEASE_FLAG=""
+            NAME_SUFFIX="-debug"
+          fi
 
-          cargo build --release --manifest-path=ansi-terminal/Cargo.toml
+          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=prototty_graphical_gfx
 
-          strip target/release/rip_graphical
+          mv -v target/$TARGET_DIR/rip_graphical{,_opengl}
 
-          strip target/release/rip_terminal
+          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml
 
-          MODE=release ZIP_NAME=rip-macos-x86_64-$APPVEYOR_REPO_BRANCH scripts/make_zip_unix.sh
+          cargo build $RELEASE_FLAG --manifest-path=ansi-terminal/Cargo.toml
 
-          MODE=release APP_NAME=RIP scripts/make_dmg_macos.sh
+          strip -v target/$TARGET_DIR/rip_graphical_opengl
+
+          strip -v target/$TARGET_DIR/rip_graphical
+
+          strip -v target/$TARGET_DIR/rip_ansi_terminal
+
+          MODE=$MODE ZIP_NAME=rip-macos-x86_64$NAME_SUFFIX-$APPVEYOR_REPO_BRANCH scripts/make_zip_unix.sh
+
+          MODE=$MODE APP_NAME=RIP scripts/make_dmg_macos.sh
 
     artifacts:
     - path: '*.zip'
