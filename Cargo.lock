@@ -562,6 +562,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "game"
+version = "0.1.0"
+dependencies = [
+ "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ecs 0.1.0",
+ "grid_2d 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "line_2d 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand_isaac 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rational 0.1.0",
+ "rgb24 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shadowcast 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "vector 0.1.0",
+]
+
+[[package]]
 name = "getopts"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1745,25 +1764,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rip"
-version = "0.1.0"
-dependencies = [
- "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "ecs 0.1.0",
- "grid_2d 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "line_2d 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand_isaac 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rational 0.1.0",
- "rgb24 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
- "shadowcast 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "vector 0.1.0",
-]
-
-[[package]]
 name = "rip_ansi_terminal"
 version = "0.1.0"
 dependencies = [
@@ -1802,6 +1802,7 @@ name = "rip_prototty"
 version = "0.1.0"
 dependencies = [
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "game 0.1.0",
  "hashbrown 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "line_2d 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1811,7 +1812,6 @@ dependencies = [
  "prototty_storage 0.29.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_isaac 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rip 0.1.0",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
