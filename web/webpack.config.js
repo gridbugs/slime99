@@ -13,7 +13,7 @@ module.exports = async (env, argv) => {
     entry: './index.js',
     output: {
       path: path.resolve(__dirname, 'dist'),
-      filename: 'index.js',
+      filename: `index.${revision}.js`,
       webassemblyModuleFilename: `app.${revision}.wasm`,
     },
     plugins: [
