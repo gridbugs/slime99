@@ -167,7 +167,7 @@ for:
 
           npm run build -- --mode $BUILD_MODE
 
-          mv dist/app.wasm dist/app.wasm.wrong-mime # s3 will use the wrong mime type when the wasm file is uploaded
+          for f in dist/*.wasm; do mv -v $f ${f%.wasm}.wrong-mime.wasm; done
 
           mkdir rip
 
