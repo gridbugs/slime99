@@ -2,6 +2,10 @@ version: '{build}'
 clone_depth: 10
 environment:
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      HOST: x86_64-unknown-linux-gnu
+      TARGET: wasm32-unknown-unknown
+      MODE: debug
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       HOST: x86_64-pc-windows-gnu
       TARGET: x86_64-pc-windows-gnu
@@ -15,10 +19,6 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: macOS
       HOST: x86_64-apple-darwin
       TARGET: x86_64-apple-darwin
-      MODE: release
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      HOST: x86_64-unknown-linux-gnu
-      TARGET: wasm32-unknown-unknown
       MODE: release
 
 for:
@@ -147,7 +147,7 @@ for:
 
           rustup target add $TARGET
 
-          cargo install wasm-bindgen-cli --force --version 0.2.55 # this has to match the version in Cargo.lock
+          cargo install wasm-bindgen-cli --force --version 0.2.58 # this has to match the version in Cargo.lock
 
           rustc -V
 
@@ -166,6 +166,8 @@ for:
           fi
 
           npm run build -- --mode $BUILD_MODE
+
+          mv dist/app.wasm dist/app.wasm.wrong-mime # s3 will use the wrong mime type when the wasm file is uploaded
 
           mkdir rip
 
