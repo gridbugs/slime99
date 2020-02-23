@@ -3,6 +3,8 @@
 members = [
     "ecs",
     "vector",
+    "procgen",
+    "rand-range",
     "game",
     "prototty",
     "native",

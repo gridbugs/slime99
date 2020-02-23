@@ -19,11 +19,13 @@ ecs_components! {
         colour_hint: Rgb24,
         npc: Npc,
         character: (),
-        colides_with: ColidesWith,
+        collides_with: CollidesWith,
         projectile_damage: ProjectileDamage,
         hit_points: HitPoints,
         blood: (),
         player: (),
+        ignore_lighting: (),
+        door_state: DoorState,
     }
 }
 pub use components::Components;
@@ -34,11 +36,16 @@ pub enum Tile {
     Wall,
     Floor,
     Carpet,
+    Window,
     Bullet,
     Smoke,
     ExplosionFlame,
     FormerHuman,
     Human,
+    Star,
+    Space,
+    DoorClosed,
+    DoorOpen,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -55,15 +62,16 @@ pub struct Npc {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum OnCollision {
     Explode(explosion_spec::Explosion),
+    Remove,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct ColidesWith {
+pub struct CollidesWith {
     pub solid: bool,
     pub character: bool,
 }
 
-impl Default for ColidesWith {
+impl Default for CollidesWith {
     fn default() -> Self {
         Self {
             solid: true,
@@ -88,4 +96,10 @@ impl HitPoints {
     pub fn new_full(max: u32) -> Self {
         Self { current: max, max }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DoorState {
+    Open,
+    Closed,
 }

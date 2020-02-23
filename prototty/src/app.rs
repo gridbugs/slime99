@@ -1,4 +1,5 @@
 use crate::controls::Controls;
+use crate::depth;
 use crate::game::{
     AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameView, InjectedInput, ScreenCoord,
 };
@@ -256,8 +257,8 @@ where
     E: EventRoutine<View = AppView, Data = AppData<S, A>>,
 {
     fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData<S, A>, context: ViewContext<C>, frame: &mut F) {
-        text::StringViewSingleLine::new(Style::new().with_bold(true)).view(
-            "Template Roguelike",
+        text::StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true)).view(
+            "RIP",
             context.add_offset(Coord::new(1, 1)),
             frame,
         );
@@ -289,7 +290,7 @@ impl<S: Storage, A: AudioPlayer> Decorate for DecorateMainMenu<S, A> {
                     },
                 },
             }
-            .view(data, context.add_depth(10), frame);
+            .view(data, context.add_depth(depth::GAME_MAX + 1), frame);
             event_routine_view.view.game.view(
                 instance.to_render(),
                 context.compose_col_modify(
@@ -550,7 +551,10 @@ fn event_routine<S: Storage, A: AudioPlayer>(
                     Handled::Continue(main_menu_cycle())
                 }
             })
-            .return_on_exit(|_| ()),
+            .return_on_exit(|data| {
+                data.game.save_instance();
+                ()
+            }),
     )
 }
 
