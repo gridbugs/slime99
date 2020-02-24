@@ -20,7 +20,7 @@ impl ColEncodeChoice {
             flag("", "greyscale", "").some_if(Greyscale),
             flag("", "ansi", "").some_if(Ansi),
         })
-        .with_default(Rgb)
+        .with_default(TrueColour)
     }
 }
 
@@ -62,6 +62,9 @@ fn main() {
         RngSeed::U64(seed) => seed,
         RngSeed::Random => rand::thread_rng().gen(),
     };
+    if let ColEncodeChoice::TrueColour = col_encode_choice {
+        println!("Running in true-colour mode.\nIf colours look wrong, run with `--rgb` or try a different terminal emulator.");
+    }
     println!("Initial RNG Seed: {}", rng_seed_u64);
     let context = Context::new().unwrap();
     let app = app(
