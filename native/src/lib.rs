@@ -58,7 +58,7 @@ impl NativeCommon {
                 if delete_save {
                     let result = file_storage.remove(&save_file);
                     if result.is_err() {
-                        log::error!("couldn't find save file to delete");
+                        log::warn!("couldn't find save file to delete");
                     }
                 }
                 let audio_player = match NativeAudioPlayer::try_new_default_device() {
