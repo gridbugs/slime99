@@ -1,5 +1,6 @@
 use crate::controls::Controls;
 use crate::depth;
+use crate::frontend::Frontend;
 use crate::game::{
     AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameView, InjectedInput, ScreenCoord,
 };
@@ -15,12 +16,6 @@ use prototty_audio::AudioPlayer;
 use prototty_storage::Storage;
 use render::{ColModifyDefaultForeground, ColModifyMap, Coord, Rgb24, Style};
 use std::marker::PhantomData;
-
-#[derive(Clone, Copy)]
-pub enum Frontend {
-    Wasm,
-    Native,
-}
 
 #[derive(Clone, Copy)]
 enum MainMenuType {
@@ -42,8 +37,10 @@ impl MainMenuEntry {
     fn init(frontend: Frontend) -> menu::MenuInstance<Self> {
         use MainMenuEntry::*;
         let (items, hotkeys) = match frontend {
-            Frontend::Native => (vec![NewGame, Quit], hashmap!['n' => NewGame, 'q' => Quit]),
-            Frontend::Wasm => (vec![NewGame], hashmap!['n' => NewGame]),
+            Frontend::Graphical | Frontend::AnsiTerminal => {
+                (vec![NewGame, Quit], hashmap!['n' => NewGame, 'q' => Quit])
+            }
+            Frontend::Web => (vec![NewGame], hashmap!['n' => NewGame]),
         };
         menu::MenuInstanceBuilder {
             items,
@@ -56,11 +53,11 @@ impl MainMenuEntry {
     fn pause(frontend: Frontend) -> menu::MenuInstance<Self> {
         use MainMenuEntry::*;
         let (items, hotkeys) = match frontend {
-            Frontend::Native => (
+            Frontend::Graphical | Frontend::AnsiTerminal => (
                 vec![Resume, SaveQuit, NewGame, Clear],
                 hashmap!['r' => Resume, 'q' => SaveQuit, 'n' => NewGame, 'c' => Clear],
             ),
-            Frontend::Wasm => (
+            Frontend::Web => (
                 vec![Resume, Save, NewGame, Clear],
                 hashmap!['r' => Resume, 's' => Save, 'n' => NewGame, 'c' => Clear],
             ),
@@ -113,7 +110,15 @@ impl<S: Storage, A: AudioPlayer> AppData<S, A> {
     ) -> Self {
         Self {
             frontend,
-            game: GameData::new(game_config, controls, storage, save_key, audio_player, rng_seed),
+            game: GameData::new(
+                game_config,
+                controls,
+                storage,
+                save_key,
+                audio_player,
+                rng_seed,
+                frontend,
+            ),
             main_menu: MainMenuEntry::init(frontend).into_choose_or_escape(),
             main_menu_type: MainMenuType::Init,
             last_mouse_coord: Coord::new(0, 0),
