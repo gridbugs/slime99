@@ -410,30 +410,45 @@ impl<S: Storage, A: AudioPlayer, E: EventRoutine<Data = AppData<S, A>, Event = C
     }
 }
 
+#[derive(Clone, Copy)]
+struct AutoPlay;
+
 fn main_menu<S: Storage, A: AudioPlayer>(
+    auto_play: Option<AutoPlay>,
 ) -> impl EventRoutine<Return = Result<MainMenuEntry, menu::Escape>, Data = AppData<S, A>, View = AppView, Event = CommonEvent>
 {
-    SideEffectThen::new(|data: &mut AppData<S, A>, _| {
-        if data.game.has_instance() {
-            match data.main_menu_type {
-                MainMenuType::Init => {
-                    data.main_menu = MainMenuEntry::pause(data.frontend).into_choose_or_escape();
-                    data.main_menu_type = MainMenuType::Pause;
-                }
-                MainMenuType::Pause => (),
+    make_either!(Ei = A | B);
+    SideEffectThen::new(move |data: &mut AppData<S, A>, _| {
+        if auto_play.is_some() {
+            if data.game.has_instance() {
+                Ei::A(Value::new(Ok(MainMenuEntry::Resume)))
+            } else {
+                Ei::A(Value::new(Ok(MainMenuEntry::NewGame)))
             }
         } else {
-            match data.main_menu_type {
-                MainMenuType::Init => (),
-                MainMenuType::Pause => {
-                    data.main_menu = MainMenuEntry::init(data.frontend).into_choose_or_escape();
-                    data.main_menu_type = MainMenuType::Init;
+            if data.game.has_instance() {
+                match data.main_menu_type {
+                    MainMenuType::Init => {
+                        data.main_menu = MainMenuEntry::pause(data.frontend).into_choose_or_escape();
+                        data.main_menu_type = MainMenuType::Pause;
+                    }
+                    MainMenuType::Pause => (),
+                }
+            } else {
+                match data.main_menu_type {
+                    MainMenuType::Init => (),
+                    MainMenuType::Pause => {
+                        data.main_menu = MainMenuEntry::init(data.frontend).into_choose_or_escape();
+                        data.main_menu_type = MainMenuType::Init;
+                    }
                 }
             }
+            Ei::B(
+                menu::FadeMenuInstanceRoutine::new()
+                    .select(SelectMainMenu::new())
+                    .decorated(DecorateMainMenu::new()),
+            )
         }
-        menu::FadeMenuInstanceRoutine::new()
-            .select(SelectMainMenu::new())
-            .decorated(DecorateMainMenu::new())
     })
 }
 
@@ -514,9 +529,10 @@ fn game_loop<S: Storage, A: AudioPlayer>(
 }
 
 fn main_menu_cycle<S: Storage, A: AudioPlayer>(
+    auto_play: Option<AutoPlay>,
 ) -> impl EventRoutine<Return = Option<Quit>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     make_either!(Ei = A | B | C | D | E | F);
-    main_menu().and_then(|entry| match entry {
+    main_menu(auto_play).and_then(|entry| match entry {
         Ok(MainMenuEntry::Quit) => Ei::A(Value::new(Some(Quit))),
         Ok(MainMenuEntry::SaveQuit) => Ei::D(SideEffectThen::new(|data: &mut AppData<S, A>, _| {
             data.game.save_instance();
@@ -524,7 +540,11 @@ fn main_menu_cycle<S: Storage, A: AudioPlayer>(
         })),
         Ok(MainMenuEntry::Save) => Ei::E(SideEffectThen::new(|data: &mut AppData<S, A>, _| {
             data.game.save_instance();
-            Value::new(None)
+            if data.game.has_instance() {
+                Either::Left(game_loop().map(|_| None))
+            } else {
+                Either::Right(Value::new(None))
+            }
         })),
         Ok(MainMenuEntry::Clear) => Ei::F(SideEffectThen::new(|data: &mut AppData<S, A>, _| {
             data.game.clear_instance();
@@ -546,14 +566,15 @@ fn main_menu_cycle<S: Storage, A: AudioPlayer>(
 }
 
 fn event_routine<S: Storage, A: AudioPlayer>(
+    initial_auto_play: Option<AutoPlay>,
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     MouseTracker::new(
-        main_menu_cycle()
+        main_menu_cycle(initial_auto_play)
             .repeat(|maybe_quit| {
                 if let Some(Quit) = maybe_quit {
                     Handled::Return(())
                 } else {
-                    Handled::Continue(main_menu_cycle())
+                    Handled::Continue(main_menu_cycle(None))
                 }
             })
             .return_on_exit(|data| {
@@ -582,5 +603,5 @@ pub fn app<S: Storage, A: AudioPlayer>(
         rng_seed,
     );
     let app_view = AppView::new();
-    event_routine().app_one_shot_ignore_return(app_data, app_view)
+    event_routine(Some(AutoPlay)).app_one_shot_ignore_return(app_data, app_view)
 }
