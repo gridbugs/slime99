@@ -21,8 +21,14 @@ impl World {
                 return;
             }
         }
-        if let Err(OccupiedBy(_occupant)) = self.spatial.update_coord(character, target_coord) {
-            // TODO melee
+        if let Err(OccupiedBy(occupant)) = self.spatial.update_coord(character, target_coord) {
+            self.melee_attack(character, occupant);
+        }
+    }
+
+    pub fn melee_attack(&mut self, attacker: Entity, victim: Entity) {
+        if self.ecs.components.tile.get(attacker) != self.ecs.components.tile.get(victim) {
+            self.damage_character(victim, 10);
         }
     }
 

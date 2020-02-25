@@ -139,7 +139,7 @@ dependencies = [
  "clang-sys 0.28.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "peeking_take_while 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-hash 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -526,9 +526,9 @@ name = "failure_derive"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "synstructure 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -574,7 +574,7 @@ dependencies = [
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "ecs 0.1.0",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "line_2d 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "procgen 0.1.0",
@@ -582,7 +582,7 @@ dependencies = [
  "rand_isaac 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_range 0.1.0",
  "rational 0.1.0",
- "rgb24 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rgb24 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "shadowcast 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "vector 0.1.0",
@@ -909,53 +909,54 @@ dependencies = [
 
 [[package]]
 name = "grid_search_cardinal"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "grid_search_cardinal_best 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_distance_map 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_point_to_point 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_best 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_distance_map 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_point_to_point 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "grid_search_cardinal_best"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "coord_2d 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_common 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "grid_search_cardinal_common"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "grid_search_cardinal_distance_map"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_common 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "grid_search_cardinal_point_to_point"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "coord_2d 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_common 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1398,9 +1399,9 @@ name = "proc-macro-hack"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1413,7 +1414,7 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.8"
+version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "unicode-xid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1432,7 +1433,7 @@ dependencies = [
 [[package]]
 name = "prototty"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "prototty_app 0.29.0 (git+https://github.com/stevebob/prototty)",
  "prototty_decorator 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1446,7 +1447,7 @@ dependencies = [
 [[package]]
 name = "prototty_ansi_terminal"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "libc 0.2.67 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_app 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1458,7 +1459,7 @@ dependencies = [
 [[package]]
 name = "prototty_app"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "prototty_input 0.29.0 (git+https://github.com/stevebob/prototty)",
  "prototty_render 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1467,12 +1468,12 @@ dependencies = [
 [[package]]
 name = "prototty_audio"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 
 [[package]]
 name = "prototty_decorator"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "prototty_render 0.29.0 (git+https://github.com/stevebob/prototty)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1481,7 +1482,7 @@ dependencies = [
 [[package]]
 name = "prototty_event_routine"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_app 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1492,7 +1493,7 @@ dependencies = [
 [[package]]
 name = "prototty_file_storage"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "prototty_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
 ]
@@ -1500,7 +1501,7 @@ dependencies = [
 [[package]]
 name = "prototty_graphical"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1517,12 +1518,12 @@ dependencies = [
 [[package]]
 name = "prototty_graphical_common"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 
 [[package]]
 name = "prototty_graphical_gfx"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "gfx 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.16.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1539,7 +1540,7 @@ dependencies = [
 [[package]]
 name = "prototty_input"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "coord_2d 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1548,7 +1549,7 @@ dependencies = [
 [[package]]
 name = "prototty_menu"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "prototty_event_routine 0.29.0 (git+https://github.com/stevebob/prototty)",
  "prototty_input 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1560,7 +1561,7 @@ dependencies = [
 [[package]]
 name = "prototty_native_audio"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_audio 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1570,18 +1571,18 @@ dependencies = [
 [[package]]
 name = "prototty_render"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "coord_2d 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "rgb24 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rgb24 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "prototty_storage"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "bincode 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1590,7 +1591,7 @@ dependencies = [
 [[package]]
 name = "prototty_text"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "prototty_render 0.29.0 (git+https://github.com/stevebob/prototty)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1599,7 +1600,7 @@ dependencies = [
 [[package]]
 name = "prototty_web"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#90d2ee395eb977ee555f9617ec58d42ca70d871b"
+source = "git+https://github.com/stevebob/prototty#e40943b968fd7c40b93ca7502930e08f40dee177"
 dependencies = [
  "base64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1633,7 +1634,7 @@ name = "quote"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1779,7 +1780,7 @@ dependencies = [
 
 [[package]]
 name = "rgb24"
-version = "0.2.2"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1961,9 +1962,9 @@ name = "serde_derive"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2116,10 +2117,10 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.15"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-xid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2140,9 +2141,9 @@ name = "synstructure"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-xid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2256,9 +2257,9 @@ dependencies = [
  "bumpalo 3.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-shared 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2276,9 +2277,9 @@ name = "wasm-bindgen-macro-support"
 version = "0.2.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-backend 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-shared 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2296,9 +2297,9 @@ dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen-backend 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "weedle 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -2766,11 +2767,11 @@ dependencies = [
 "checksum glyph_brush 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "5fca6f9d679bff1322c76c9a1ad4b8553b30a94f3f75bea6936e19032c2f2ec3"
 "checksum glyph_brush_layout 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "8b70adc570f1dc71b6b32e241cbcc2b42175f5aea71951fbf41e68b04aec24c7"
 "checksum grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a6306fc8cbaa31d281e3dd0197d5f017149ba5fc77d9f3fcec700f9c308eb53d"
-"checksum grid_search_cardinal 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f37cf7b327f7889c4e6669894e8dcc8c475610116573feee8eb74f1a41f22986"
-"checksum grid_search_cardinal_best 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "89dcb144f5d0acadee4b06f369534f591b770d8ed032cd75a8b150fa94d2abdc"
-"checksum grid_search_cardinal_common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6bd39be732e0ee5b1d648e1aef75624904f28727a8d7fd37aa991c34f098a467"
-"checksum grid_search_cardinal_distance_map 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f576563d5a5014f10dc3bbbf412688ced0cf8beffbfb70b858296c0c0e0daa38"
-"checksum grid_search_cardinal_point_to_point 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4c87194b7d8a6f60193c8b60da3772f5779723c508fa443ef0aab3dbbf6d4718"
+"checksum grid_search_cardinal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "be8a1dc5007d29b69e2a9370c90552c4ccd0772fec1d2b2bfa5bba64ee62129c"
+"checksum grid_search_cardinal_best 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "beeeed028883db7804278b3938761a3d44941da0bb8cd28e180704f9e6995f89"
+"checksum grid_search_cardinal_common 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "4f3550271d4d2b2e87e50f1e0bba56484492122bc71826e9758cfbdca01e4209"
+"checksum grid_search_cardinal_distance_map 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2c721a158445369501b275e12f75dabfadc45d300ef9ba6cd9f397a3af48a763"
+"checksum grid_search_cardinal_point_to_point 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "beaaadf15710644b1bf40bed89228f458735494898bbc6e6fc65ba8243799d74"
 "checksum hashbrown 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "728e7d31e63d53c436094370f1e6fa249f60a4bb318cc5dfbbbe0aa2bc5a29d7"
 "checksum heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "20564e78d53d2bb135c343b3f47714a56af2061f1c928fdb541dc7b9fdd94205"
 "checksum hermit-abi 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1010591b26bbfe835e9faeabeb11866061cc7dcebffd56ad7d0942d0e61aefd8"
@@ -2826,7 +2827,7 @@ dependencies = [
 "checksum ppv-lite86 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "74490b50b9fbe561ac330df47c08f3f33073d2d00c150f719147d7c54522fa1b"
 "checksum proc-macro-hack 0.5.11 (registry+https://github.com/rust-lang/crates.io-index)" = "ecd45702f76d6d3c75a80564378ae228a85f0b59d2f3ed43c91b4a69eb2ebfc5"
 "checksum proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)" = "cf3d2011ab5c909338f7887f4fc896d35932e29146c12c8d01da6b22a80ba759"
-"checksum proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "3acb317c6ff86a4e579dfa00fc5e6cca91ecbb4e7eb2df0468805b674eb88548"
+"checksum proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)" = "6c09721c6781493a2a492a96b5a5bf19b65917fe6728884e7c44dd0c60ca3435"
 "checksum prototty 0.29.0 (git+https://github.com/stevebob/prototty)" = "<none>"
 "checksum prototty_ansi_terminal 0.29.0 (git+https://github.com/stevebob/prototty)" = "<none>"
 "checksum prototty_app 0.29.0 (git+https://github.com/stevebob/prototty)" = "<none>"
@@ -2861,7 +2862,7 @@ dependencies = [
 "checksum relevant 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "bbc232e13d37f4547f5b9b42a5efc380cabe5dbc1807f8b893580640b2ab0308"
 "checksum rendy-descriptor 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f475bcc0505946e998590f1f0545c52ef4b559174a1b353a7ce6638def8b621e"
 "checksum rendy-memory 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ed492161a819feae7f27f418bb16035276ac20649c60d756699152cb5c1960ec"
-"checksum rgb24 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "34f924a81256679d846c59f5f399cd4824c679aff37141f32dc3954800374a8f"
+"checksum rgb24 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "ebd2c3752f69b10dfe678d8d1f3522132a754b98747b0b8fc154e061b5408b50"
 "checksum rodio 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1e0e0dfa7c8b17c6428f6e992a22ea595922cc86f946191b6b59e7ce96b77262"
 "checksum rust-argon2 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2bc8af4bda8e1ff4932523b94d3dd20ee30a87232323eda55903ffd71d2fb017"
 "checksum rustc-demangle 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)" = "4c691c0e608126e00913e33f0ccf3727d5fc84573623b8d65b2df340b5201783"
@@ -2893,7 +2894,7 @@ dependencies = [
 "checksum stdweb 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ef5430c8e36b713e13b48a9f709cc21e046723fe44ce34587b73a830203b533e"
 "checksum storage-map 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fd0a4829a5c591dc24a944a736d6b1e4053e51339a79fd5d4702c4c999a9c45e"
 "checksum syn 0.15.44 (registry+https://github.com/rust-lang/crates.io-index)" = "9ca4b3b69a77cbe1ffc9e198781b7acb0c7365a883670e8f1c1bc66fba79a5c5"
-"checksum syn 1.0.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a0294dc449adc58bb6592fff1a23d3e5e6e235afc6a0ffca2657d19e7bbffe5"
+"checksum syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)" = "123bd9499cfb380418d509322d7a6d52e5315f064fe4b3ad18a53d6b92c07859"
 "checksum synstructure 0.10.2 (registry+https://github.com/rust-lang/crates.io-index)" = "02353edf96d6e4dc81aea2d8490a7e9db177bf8acb0e951c24940bf866cb313f"
 "checksum synstructure 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)" = "67656ea1dc1b41b1451851562ea232ec2e5a80242139f7e679ceccfb5d61f545"
 "checksum term 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c0863a3345e70f61d613eab32ee046ccd1bcc5f9105fe402c61fcd0c13eeb8b5"

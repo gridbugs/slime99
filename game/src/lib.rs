@@ -90,6 +90,9 @@ impl Game {
         game.update_visibility(config);
         game
     }
+    pub fn size(&self) -> Size {
+        self.world.size()
+    }
     pub fn is_gameplay_blocked(&self) -> bool {
         self.world.is_gameplay_blocked()
     }
@@ -143,6 +146,7 @@ impl Game {
                 self.player,
                 &mut self.behaviour_context,
                 &mut self.shadowcast_context,
+                &mut self.rng,
             ) {
                 match input {
                     Input::Walk(direction) => self.world.character_walk_in_direction(entity, direction),

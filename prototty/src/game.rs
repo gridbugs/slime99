@@ -22,9 +22,17 @@ use std::marker::PhantomData;
 use std::time::Duration;
 
 const AIM_UI_DEPTH: i8 = depth::GAME_MAX;
-const PLAYER_OFFSET: Coord = Coord::new(22, 18);
+const PLAYER_OFFSET: Coord = Coord::new(30, 18);
 const GAME_WINDOW_SIZE: Size = Size::new_u16((PLAYER_OFFSET.x as u16 * 2) + 1, (PLAYER_OFFSET.y as u16 * 2) + 1);
 const STORAGE_FORMAT: format::Bincode = format::Bincode;
+const CAMERA_MODE: CameraMode = CameraMode::FollowPlayer;
+
+#[allow(dead_code)]
+#[derive(Clone, Copy)]
+enum CameraMode {
+    Fixed,
+    FollowPlayer,
+}
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
 struct ScreenShake {
@@ -166,6 +174,7 @@ impl GameView {
         for to_render_entity in game.to_render_entities() {
             render_entity(
                 game_to_render.status,
+                game_to_render.camera_mode,
                 &to_render_entity,
                 game,
                 visibility_grid,
@@ -182,6 +191,14 @@ impl GameView {
             context.add_offset(Coord::new(1, 1 + GAME_WINDOW_SIZE.height() as i32)),
             frame,
         );
+    }
+    fn view_map<F: Frame, C: ColModify>(&mut self, map_to_render: MapToRender, context: ViewContext<C>, frame: &mut F) {
+        let game = &map_to_render.game;
+        let offset = map_to_render.offset;
+        let visibility_grid = game.visibility_grid();
+        for to_render_entity in game.to_render_entities() {
+            map_render_entity(&to_render_entity, offset, visibility_grid, context, frame);
+        }
     }
 }
 
@@ -234,8 +251,39 @@ impl ScreenCoordToGameCoord {
     }
 }
 
+fn map_render_entity<F: Frame, C: ColModify>(
+    to_render_entity: &ToRenderEntity,
+    offset: Coord,
+    visibility_grid: &VisibilityGrid,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
+    let coord = to_render_entity.coord - offset;
+    if !coord.is_valid(GAME_WINDOW_SIZE) {
+        return;
+    }
+    let foreground_colour = match visibility_grid.cell_visibility(to_render_entity.coord) {
+        CellVisibility::NeverVisible => return,
+        CellVisibility::PreviouslyVisible => Rgb24::new(127, 127, 127),
+        CellVisibility::CurrentlyVisibleWithLightColour(_) => Rgb24::new(255, 255, 255),
+    };
+    let mut view_cell = match to_render_entity.tile {
+        Tile::Player => ViewCell::new().with_character('@').with_bold(true),
+        Tile::Wall => ViewCell::new().with_character('#').with_bold(true),
+        Tile::Window => ViewCell::new().with_character('=').with_bold(false),
+        Tile::DoorClosed | Tile::DoorOpen => ViewCell::new().with_character('+').with_bold(false),
+        Tile::Floor => ViewCell::new().with_character('.').with_bold(false),
+        _ => return,
+    };
+    let depth = layer_depth(to_render_entity.layer);
+    view_cell.style.background = Some(Rgb24::new(0, 0, 0));
+    view_cell.style.foreground = Some(foreground_colour);
+    frame.set_cell_relative(coord, depth, view_cell, context);
+}
+
 fn render_entity<F: Frame, C: ColModify>(
     game_status: GameStatus,
+    camera_mode: CameraMode,
     to_render_entity: &ToRenderEntity,
     game: &Game,
     visibility_grid: &VisibilityGrid,
@@ -249,31 +297,34 @@ fn render_entity<F: Frame, C: ColModify>(
         Rgb24::new(255, 0, 0)
     } else {
         match visibility_grid.cell_visibility(entity_coord.0) {
-            CellVisibility::VisibleWithLightColour(Some(light_colour)) => {
+            CellVisibility::CurrentlyVisibleWithLightColour(Some(light_colour)) => {
                 if to_render_entity.ignore_lighting {
                     Rgb24::new(255, 255, 255)
                 } else {
                     light_colour
                 }
             }
-            CellVisibility::VisibleWithLightColour(None) => {
+            CellVisibility::CurrentlyVisibleWithLightColour(None) => {
                 if to_render_entity.ignore_lighting {
                     Rgb24::new(255, 255, 255)
                 } else {
                     return;
                 }
             }
-            CellVisibility::NotVisible => return,
+            CellVisibility::PreviouslyVisible | CellVisibility::NeverVisible => return,
         }
     };
     if game_status == GameStatus::Playing && light_colour == Rgb24::new(0, 0, 0) {
         return;
     }
-    let screen_coord = GameCoordToScreenCoord {
-        game_coord: entity_coord,
-        player_coord: GameCoord(player_coord.0 + offset),
-    }
-    .compute();
+    let screen_coord = match camera_mode {
+        CameraMode::Fixed => ScreenCoord(to_render_entity.coord),
+        CameraMode::FollowPlayer => GameCoordToScreenCoord {
+            game_coord: entity_coord,
+            player_coord: GameCoord(player_coord.0 + offset),
+        }
+        .compute(),
+    };
     if !screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
         return;
     }
@@ -388,6 +439,12 @@ pub struct GameToRender<'a> {
     game: &'a Game,
     screen_shake: Option<ScreenShake>,
     status: GameStatus,
+    camera_mode: CameraMode,
+}
+
+struct MapToRender<'a> {
+    game: &'a Game,
+    offset: Coord,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -409,6 +466,7 @@ impl GameInstance {
             game: &self.game,
             screen_shake: self.screen_shake,
             status: GameStatus::Playing,
+            camera_mode: CAMERA_MODE,
         }
     }
     fn to_render_game_over(&self) -> GameToRender {
@@ -416,6 +474,7 @@ impl GameInstance {
             game: &self.game,
             screen_shake: self.screen_shake,
             status: GameStatus::Over,
+            camera_mode: CAMERA_MODE,
         }
     }
 }
@@ -631,7 +690,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                                 match app_input {
                                     AppInput::Aim => Aim::KeyboardFinalise,
                                     AppInput::Move(direction) => Aim::KeyboardDirection(direction),
-                                    AppInput::Wait => Aim::Ignore,
+                                    AppInput::Wait | AppInput::Map => Aim::Ignore,
                                 }
                             } else {
                                 match keyboard_input {
@@ -764,6 +823,7 @@ impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
 pub enum GameReturn {
     Pause,
     Aim,
+    Map,
     GameOver,
 }
 
@@ -818,6 +878,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
 
                                         AppInput::Aim => return Handled::Return(GameReturn::Aim),
                                         AppInput::Wait => instance.game.handle_input(GameInput::Wait, game_config),
+                                        AppInput::Map => return Handled::Return(GameReturn::Map),
                                     };
                                     if let Some(game_control_flow) = game_control_flow {
                                         match game_control_flow {
@@ -906,7 +967,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameOverEventRoutine<S, A> {
                 },
                 CommonEvent::Frame(period) => {
                     s.duration += period;
-                    const NPC_TURN_PERIOD: Duration = Duration::from_millis(250);
+                    const NPC_TURN_PERIOD: Duration = Duration::from_millis(100);
                     if s.duration > NPC_TURN_PERIOD {
                         s.duration -= NPC_TURN_PERIOD;
                         instance.game.handle_npc_turn();
@@ -937,6 +998,84 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameOverEventRoutine<S, A> {
     {
         if let Some(instance) = data.instance.as_ref() {
             view.view(instance.to_render_game_over(), context, frame);
+        }
+    }
+}
+
+pub struct MapEventRoutine<S: Storage, A: AudioPlayer> {
+    s: PhantomData<S>,
+    a: PhantomData<A>,
+    offset: Coord,
+}
+
+impl<S: Storage, A: AudioPlayer> MapEventRoutine<S, A> {
+    pub fn new_centred_on_player(instance: &GameInstance) -> Self {
+        let player_coord = GameCoord::of_player(instance.game.player_info());
+        let offset = ScreenCoordToGameCoord {
+            screen_coord: ScreenCoord(Coord::new(0, 0)),
+            player_coord,
+        }
+        .compute()
+        .0;
+        Self {
+            s: PhantomData,
+            a: PhantomData,
+            offset,
+        }
+    }
+}
+
+impl<S: Storage, A: AudioPlayer> EventRoutine for MapEventRoutine<S, A> {
+    type Return = ();
+    type Data = GameData<S, A>;
+    type View = GameView;
+    type Event = CommonEvent;
+
+    fn handle<EP>(self, data: &mut Self::Data, _view: &Self::View, event_or_peek: EP) -> Handled<Self::Return, Self>
+    where
+        EP: EventOrPeek<Event = Self::Event>,
+    {
+        let controls = &data.controls;
+        if let Some(_instance) = data.instance.as_mut() {
+            event_or_peek_with_handled(event_or_peek, self, |mut s, event| match event {
+                CommonEvent::Input(input) => match input {
+                    Input::Keyboard(keyboard_input) => {
+                        if let Some(app_input) = controls.get(keyboard_input) {
+                            match app_input {
+                                AppInput::Move(direction) => {
+                                    let new_offset = s.offset + direction.coord();
+                                    s.offset = new_offset;
+                                    Handled::Continue(s)
+                                }
+                                AppInput::Map => Handled::Return(()),
+                                _ => Handled::Continue(s),
+                            }
+                        } else {
+                            match keyboard_input {
+                                keys::ESCAPE => Handled::Return(()),
+                                _ => Handled::Continue(s),
+                            }
+                        }
+                    }
+                    Input::Mouse(_) => Handled::Continue(s),
+                },
+                CommonEvent::Frame(_) => Handled::Continue(s),
+            })
+        } else {
+            Handled::Return(())
+        }
+    }
+    fn view<F, C>(&self, data: &Self::Data, view: &mut Self::View, context: ViewContext<C>, frame: &mut F)
+    where
+        F: Frame,
+        C: ColModify,
+    {
+        if let Some(instance) = data.instance.as_ref() {
+            let map_to_render = MapToRender {
+                game: &instance.game,
+                offset: self.offset,
+            };
+            view.view_map(map_to_render, context, frame);
         }
     }
 }
