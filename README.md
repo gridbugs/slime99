@@ -4,7 +4,8 @@
 
 ## Latest Builds
 
-- [Windows](http://files.gridbugs.org/rip-windows-x86_64-master.zip)
-- [MacOS (app)](http://files.gridbugs.org/RIP-master.dmg)
-- [MacOS (binaries)](http://files.gridbugs.org/rip-macos-x86_64-master.zip)
-- [Linux](http://files.gridbugs.org/rip-linux-x86_64-master.zip)
+- [Play in Browser](https://games.gridbugs.org/rip/master)
+- [Windows](https://files.gridbugs.org/rip-windows-x86_64-master.zip)
+- [MacOS (app)](https://files.gridbugs.org/RIP-master.dmg)
+- [MacOS (binaries)](https://files.gridbugs.org/rip-macos-x86_64-master.zip)
+- [Linux](https://files.gridbugs.org/rip-linux-x86_64-master.zip)
