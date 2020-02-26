@@ -10,7 +10,7 @@ wasm = ["rand/wasm-bindgen"]
 [dependencies]
 log = "0.4"
 prototty = { version = "0.29", features = ["serialize"] }
-prototty_storage = { version = "0.29", features = ["bincode"] }
+prototty_storage = { version = "0.29", features = ["bincode", "json"] }
 prototty_audio = "0.29"
 game = { path = "../game" }
 serde = { version = "1.0", features = ["serde_derive"] }

@@ -1,11 +1,14 @@
-use hashbrown::HashMap;
+use maplit::hashmap;
 use prototty_audio::AudioPlayer;
+use std::collections::HashMap;
 
 const EXPLOSION: &[u8] = include_bytes!("./audio/explosion.ogg");
+const FIBERITRON: &[u8] = include_bytes!("./audio/fiberitron-loop.ogg");
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub enum Audio {
     Explosion,
+    Fiberitron,
 }
 
 pub struct AudioTable<A: AudioPlayer> {
@@ -14,8 +17,10 @@ pub struct AudioTable<A: AudioPlayer> {
 
 impl<A: AudioPlayer> AudioTable<A> {
     pub fn new(audio_player: &A) -> Self {
-        let mut map = HashMap::new();
-        map.insert(Audio::Explosion, audio_player.load_sound(EXPLOSION));
+        let map = hashmap![
+            Audio::Explosion => audio_player.load_sound(EXPLOSION),
+            Audio::Fiberitron => audio_player.load_sound(FIBERITRON),
+        ];
         Self { map }
     }
     pub fn get(&self, audio: Audio) -> &A::Sound {
