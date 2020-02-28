@@ -1,7 +1,7 @@
 use crate::{
     visibility::Light,
     world::{
-        data::{CollidesWith, Disposition, DoorState, HitPoints, Layer, Location, Npc, OnCollision, Tile},
+        data::{CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, Npc, OnCollision, Tile},
         explosion,
         realtime_periodic::{
             core::ScheduledRealtimePeriodicState,
@@ -18,38 +18,34 @@ use rgb24::Rgb24;
 use shadowcast::vision_distance::Circle;
 use std::time::Duration;
 
-impl World {
-    pub fn spawn_player(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.create();
-        self.spatial
-            .insert(
-                entity,
-                Location {
-                    coord,
-                    layer: Some(Layer::Character),
-                },
-            )
-            .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Player);
-        self.ecs.components.light.insert(
-            entity,
-            Light {
-                colour: Rgb24::new(187, 187, 187),
-                vision_distance: Circle::new_squared(70),
-                diminish: Rational {
-                    numerator: 1,
-                    denominator: 1,
-                },
+pub fn make_player() -> EntityData {
+    EntityData {
+        tile: Some(Tile::Player),
+        light: Some(Light {
+            colour: Rgb24::new(187, 187, 187),
+            vision_distance: Circle::new_squared(70),
+            diminish: Rational {
+                numerator: 1,
+                denominator: 1,
             },
-        );
-        self.ecs.components.character.insert(entity, ());
-        self.ecs.components.hit_points.insert(entity, HitPoints::new_full(100));
-        self.ecs.components.player.insert(entity, ());
+        }),
+        character: Some(()),
+        hit_points: Some(HitPoints::new_full(100)),
+        player: Some(()),
+        ..Default::default()
+    }
+}
+
+impl World {
+    pub fn insert_entity_data(&mut self, location: Location, entity_data: EntityData) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial.insert(entity, location).unwrap();
+        self.components.insert_entity_data(entity, entity_data);
         entity
     }
 
     pub fn spawn_wall(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -59,14 +55,14 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Wall);
-        self.ecs.components.solid.insert(entity, ());
-        self.ecs.components.opacity.insert(entity, 255);
+        self.components.tile.insert(entity, Tile::Wall);
+        self.components.solid.insert(entity, ());
+        self.components.opacity.insert(entity, 255);
         entity
     }
 
     pub fn spawn_former_human(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -76,20 +72,20 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::FormerHuman);
-        self.ecs.components.npc.insert(
+        self.components.tile.insert(entity, Tile::FormerHuman);
+        self.components.npc.insert(
             entity,
             Npc {
                 disposition: Disposition::Hostile,
             },
         );
-        self.ecs.components.character.insert(entity, ());
-        self.ecs.components.hit_points.insert(entity, HitPoints::new_full(2));
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(2));
         entity
     }
 
     pub fn spawn_human(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -99,20 +95,20 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Human);
-        self.ecs.components.npc.insert(
+        self.components.tile.insert(entity, Tile::Human);
+        self.components.npc.insert(
             entity,
             Npc {
                 disposition: Disposition::Afraid,
             },
         );
-        self.ecs.components.character.insert(entity, ());
-        self.ecs.components.hit_points.insert(entity, HitPoints::new_full(20));
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(20));
         entity
     }
 
     pub fn spawn_floor(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -122,12 +118,12 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Floor);
+        self.components.tile.insert(entity, Tile::Floor);
         entity
     }
 
     pub fn spawn_carpet(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -137,14 +133,14 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Carpet);
+        self.components.tile.insert(entity, Tile::Carpet);
         entity
     }
 
     pub fn spawn_light(&mut self, coord: Coord, colour: Rgb24) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
-        self.ecs.components.light.insert(
+        self.components.light.insert(
             entity,
             Light {
                 colour,
@@ -159,9 +155,9 @@ impl World {
     }
 
     pub fn spawn_flickering_light(&mut self, coord: Coord, colour: Rgb24) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
-        self.ecs.components.light.insert(
+        self.components.light.insert(
             entity,
             Light {
                 colour,
@@ -172,7 +168,7 @@ impl World {
                 },
             },
         );
-        self.ecs.components.realtime.insert(entity, ());
+        self.components.realtime.insert(entity, ());
         self.realtime_components.flicker.insert(
             entity,
             ScheduledRealtimePeriodicState {
@@ -198,9 +194,9 @@ impl World {
     }
 
     pub fn spawn_flash(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
-        self.ecs.components.light.insert(
+        self.components.light.insert(
             entity,
             Light {
                 colour: Rgb24::new(127, 127, 127),
@@ -211,7 +207,7 @@ impl World {
                 },
             },
         );
-        self.ecs.components.realtime.insert(entity, ());
+        self.components.realtime.insert(entity, ());
         self.realtime_components.fade.insert(
             entity,
             ScheduledRealtimePeriodicState {
@@ -223,7 +219,7 @@ impl World {
     }
 
     pub fn spawn_bullet(&mut self, start: Coord, target: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -233,10 +229,10 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Bullet);
-        self.ecs.components.realtime.insert(entity, ());
-        self.ecs.components.blocks_gameplay.insert(entity, ());
-        self.ecs.components.on_collision.insert(entity, OnCollision::Remove);
+        self.components.tile.insert(entity, Tile::Bullet);
+        self.components.realtime.insert(entity, ());
+        self.components.blocks_gameplay.insert(entity, ());
+        self.components.on_collision.insert(entity, OnCollision::Remove);
         self.realtime_components.movement.insert(
             entity,
             ScheduledRealtimePeriodicState {
@@ -275,7 +271,7 @@ impl World {
                 until_next_event: Duration::from_millis(0),
             },
         );
-        self.ecs.components.collides_with.insert(
+        self.components.collides_with.insert(
             entity,
             CollidesWith {
                 solid: true,
@@ -286,7 +282,7 @@ impl World {
     }
 
     pub fn spawn_rocket(&mut self, start: Coord, target: Coord) -> Entity {
-        let entity = self.ecs.create();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -296,8 +292,8 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.realtime.insert(entity, ());
-        self.ecs.components.blocks_gameplay.insert(entity, ());
+        self.components.realtime.insert(entity, ());
+        self.components.blocks_gameplay.insert(entity, ());
         self.realtime_components.movement.insert(
             entity,
             ScheduledRealtimePeriodicState {
@@ -336,8 +332,8 @@ impl World {
                 until_next_event: Duration::from_millis(0),
             },
         );
-        self.ecs.components.tile.insert(entity, Tile::Bullet);
-        self.ecs.components.on_collision.insert(
+        self.components.tile.insert(entity, Tile::Bullet);
+        self.components.on_collision.insert(
             entity,
             OnCollision::Explode({
                 use explosion::spec::*;
@@ -353,7 +349,7 @@ impl World {
                 }
             }),
         );
-        self.ecs.components.light.insert(
+        self.components.light.insert(
             entity,
             Light {
                 colour: Rgb24::new(255, 187, 63),
@@ -364,7 +360,7 @@ impl World {
                 },
             },
         );
-        self.ecs.components.collides_with.insert(
+        self.components.collides_with.insert(
             entity,
             CollidesWith {
                 solid: true,
@@ -375,7 +371,7 @@ impl World {
     }
 
     pub fn spawn_explosion_emitter(&mut self, coord: Coord, spec: &explosion::spec::ParticleEmitter) {
-        let emitter_entity = self.ecs.entity_allocator.alloc();
+        let emitter_entity = self.entity_allocator.alloc();
         self.spatial
             .insert(emitter_entity, Location { coord, layer: None })
             .unwrap();
@@ -386,7 +382,7 @@ impl World {
                 until_next_event: Duration::from_millis(0),
             },
         );
-        self.ecs.components.realtime.insert(emitter_entity, ());
+        self.components.realtime.insert(emitter_entity, ());
         self.realtime_components.particle_emitter.insert(
             emitter_entity,
             ScheduledRealtimePeriodicState {
@@ -439,7 +435,7 @@ impl World {
                 until_next_event: Duration::from_millis(0),
             },
         );
-        self.ecs.components.light.insert(
+        self.components.light.insert(
             emitter_entity,
             Light {
                 colour: Rgb24::new(255, 187, 63),
@@ -464,11 +460,11 @@ impl World {
     }
 
     pub fn spawn_star(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.entity_allocator.alloc();
+        let entity = self.entity_allocator.alloc();
         self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Star);
-        self.ecs.components.ignore_lighting.insert(entity, ());
-        self.ecs.components.realtime.insert(entity, ());
+        self.components.tile.insert(entity, Tile::Star);
+        self.components.ignore_lighting.insert(entity, ());
+        self.components.realtime.insert(entity, ());
         self.realtime_components.flicker.insert(
             entity,
             ScheduledRealtimePeriodicState {
@@ -494,15 +490,15 @@ impl World {
     }
 
     pub fn spawn_space(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.entity_allocator.alloc();
+        let entity = self.entity_allocator.alloc();
         self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Space);
-        self.ecs.components.ignore_lighting.insert(entity, ());
+        self.components.tile.insert(entity, Tile::Space);
+        self.components.ignore_lighting.insert(entity, ());
         entity
     }
 
     pub fn spawn_window(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.entity_allocator.alloc();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -512,13 +508,13 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::Window);
-        self.ecs.components.solid.insert(entity, ());
+        self.components.tile.insert(entity, Tile::Window);
+        self.components.solid.insert(entity, ());
         entity
     }
 
     pub fn spawn_door(&mut self, coord: Coord) -> Entity {
-        let entity = self.ecs.entity_allocator.alloc();
+        let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
                 entity,
@@ -528,10 +524,26 @@ impl World {
                 },
             )
             .unwrap();
-        self.ecs.components.tile.insert(entity, Tile::DoorClosed);
-        self.ecs.components.opacity.insert(entity, 255);
-        self.ecs.components.solid.insert(entity, ());
-        self.ecs.components.door_state.insert(entity, DoorState::Closed);
+        self.components.tile.insert(entity, Tile::DoorClosed);
+        self.components.opacity.insert(entity, 255);
+        self.components.solid.insert(entity, ());
+        self.components.door_state.insert(entity, DoorState::Closed);
+        entity
+    }
+
+    pub fn spawn_stairs(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Feature),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::Stairs);
+        self.components.stairs.insert(entity, ());
         entity
     }
 }

@@ -66,14 +66,6 @@ pub struct EntityAllocator {
 }
 
 impl EntityAllocator {
-    pub fn new() -> Self {
-        Self {
-            next_id: 0,
-            next_index: 0,
-            index_to_id: Default::default(),
-            free_indices: Vec::new(),
-        }
-    }
     pub fn alloc(&mut self) -> Entity {
         let id = self.next_id;
         self.next_id += 1;
@@ -292,48 +284,6 @@ impl<'a, T> Iterator for ComponentTableIterMut<'a, T> {
     }
 }
 
-pub trait ComponentsTrait: Default {
-    type EntityData;
-    fn remove_entity(&mut self, entity: Entity);
-    fn clone_entity_data(&self, entity: Entity) -> Self::EntityData;
-    fn remove_entity_data(&mut self, entity: Entity) -> Self::EntityData;
-    fn insert_entity_data(&mut self, entity: Entity, entity_data: Self::EntityData);
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Ecs<C: ComponentsTrait> {
-    pub entity_allocator: EntityAllocator,
-    pub components: C,
-}
-
-impl<C: ComponentsTrait> Ecs<C> {
-    pub fn new() -> Self {
-        Self {
-            entity_allocator: EntityAllocator::new(),
-            components: Default::default(),
-        }
-    }
-    pub fn create(&mut self) -> Entity {
-        self.entity_allocator.alloc()
-    }
-    pub fn exists(&self, entity: Entity) -> bool {
-        self.entity_allocator.exists(entity)
-    }
-    pub fn remove(&mut self, entity: Entity) {
-        self.entity_allocator.free(entity);
-        self.components.remove_entity(entity);
-    }
-    pub fn remove_entity_data(&mut self, entity: Entity) -> C::EntityData {
-        self.entity_allocator.free(entity);
-        self.components.remove_entity_data(entity)
-    }
-    pub fn create_with_entity_data(&mut self, entity_data: C::EntityData) -> Entity {
-        let entity = self.entity_allocator.alloc();
-        self.components.insert_entity_data(entity, entity_data);
-        entity
-    }
-}
-
 #[macro_export]
 macro_rules! ecs_components {
     { $module_name:ident { $($component_name:ident: $component_type:ty,)* } } => {
@@ -359,22 +309,33 @@ macro_rules! ecs_components {
                 $(pub $component_name: Option<$component_type>,)*
             }
 
-            impl $crate::ComponentsTrait for Components {
-                type EntityData = EntityData;
-                fn remove_entity(&mut self, entity: $crate::Entity) {
+            impl Default for EntityData {
+                fn default() -> Self {
+                    Self {
+                        $($component_name: None,)*
+                    }
+                }
+            }
+
+            impl Components {
+                #[allow(unused)]
+                pub fn remove_entity(&mut self, entity: $crate::Entity) {
                     $(self.$component_name.remove(entity);)*
                 }
-                fn clone_entity_data(&self, entity: $crate::Entity) -> EntityData {
+                #[allow(unused)]
+                pub fn clone_entity_data(&self, entity: $crate::Entity) -> EntityData {
                     EntityData {
                         $($component_name: self.$component_name.get(entity).cloned(),)*
                     }
                 }
-                fn remove_entity_data(&mut self, entity: $crate::Entity) -> EntityData {
+                #[allow(unused)]
+                pub fn remove_entity_data(&mut self, entity: $crate::Entity) -> EntityData {
                     EntityData {
                         $($component_name: self.$component_name.remove(entity),)*
                     }
                 }
-                fn insert_entity_data(&mut self, entity: $crate::Entity, entity_data: EntityData) {
+                #[allow(unused)]
+                pub fn insert_entity_data(&mut self, entity: $crate::Entity, entity_data: EntityData) {
                     $(if let Some(field) = entity_data.$component_name {
                         self.$component_name.insert(entity, field);
                     })*
@@ -390,7 +351,7 @@ mod test {
 
     #[test]
     fn entity_alloc_remove() {
-        let mut a = EntityAllocator::new();
+        let mut a = EntityAllocator::default();
         let e0 = a.alloc();
         let e1 = a.alloc();
         let e2 = a.alloc();
@@ -404,7 +365,7 @@ mod test {
 
     #[test]
     fn component_table_insert_remove() {
-        let mut a = EntityAllocator::new();
+        let mut a = EntityAllocator::default();
         let e0 = a.alloc();
         let e1 = a.alloc();
         let e2 = a.alloc();
@@ -452,18 +413,21 @@ mod test {
             }
         }
         use components::Components;
-        let mut ecs = Ecs::<Components>::new();
-        let e0 = ecs.entity_allocator.alloc();
-        let e1 = ecs.entity_allocator.alloc();
-        ecs.components.coord.insert(e0, (12, 19));
-        ecs.components.name.insert(e0, "Foo".to_string());
-        ecs.components.health.insert(e0, 42);
-        ecs.components.coord.insert(e1, (0, 0));
-        ecs.remove(e1);
-        assert!(!ecs.components.coord.contains(e1));
-        let e0_data = ecs.remove_entity_data(e0);
-        let e2 = ecs.create_with_entity_data(e0_data);
-        assert_eq!(ecs.components.name.get(e2).unwrap(), "Foo");
+        let mut entity_allocator = EntityAllocator::default();
+        let mut components = Components::default();
+        let e0 = entity_allocator.alloc();
+        let e1 = entity_allocator.alloc();
+        components.coord.insert(e0, (12, 19));
+        components.name.insert(e0, "Foo".to_string());
+        components.health.insert(e0, 42);
+        components.coord.insert(e1, (0, 0));
+        components.remove_entity(e1);
+        entity_allocator.free(e1);
+        assert!(!components.coord.contains(e1));
+        let e0_data = components.remove_entity_data(e0);
+        let e2 = entity_allocator.alloc();
+        components.insert_entity_data(e2, e0_data);
+        assert_eq!(components.name.get(e2).unwrap(), "Foo");
     }
 
     #[test]
@@ -474,45 +438,52 @@ mod test {
                 name: String,
             }
         }
-        use components::{Components, EntityData as ED};
-        let mut ecs = Ecs::<Components>::new();
-        let e0 = ecs.create_with_entity_data(ED {
-            coord: Some((21, 42)),
-            name: Some("foo".to_string()),
-        });
-        let e1 = ecs.create_with_entity_data(ED {
-            coord: None,
-            name: Some("bar".to_string()),
-        });
-        let e2 = ecs.create_with_entity_data(ED {
-            coord: Some((2, 3)),
-            name: Some("baz".to_string()),
-        });
-        ecs.remove(e1);
-        let e3 = ecs.create_with_entity_data(ED {
-            coord: Some((11, 12)),
-            name: Some("qux".to_string()),
-        });
-        ecs.remove(e0);
-        let json = serde_json::to_string(&ecs).unwrap();
-        let ecs_deserialized: Ecs<Components> = serde_json::from_str(&json).unwrap();
-        assert_eq!(
-            ecs.components.coord.get(e2).unwrap(),
-            ecs_deserialized.components.coord.get(e2).unwrap()
+        use components::{Components, EntityData};
+        let mut entity_allocator = EntityAllocator::default();
+        let mut components = Components::default();
+        let e0 = entity_allocator.alloc();
+        components.insert_entity_data(
+            e0,
+            EntityData {
+                coord: Some((21, 42)),
+                name: Some("foo".to_string()),
+            },
         );
-        assert_eq!(
-            ecs.components.coord.get(e3).unwrap(),
-            ecs_deserialized.components.coord.get(e3).unwrap()
+        let e1 = entity_allocator.alloc();
+        components.insert_entity_data(
+            e1,
+            EntityData {
+                coord: None,
+                name: Some("bar".to_string()),
+            },
         );
-        assert_eq!(
-            ecs.components.name.get(e2).unwrap(),
-            ecs_deserialized.components.name.get(e2).unwrap()
+        let e2 = entity_allocator.alloc();
+        components.insert_entity_data(
+            e2,
+            EntityData {
+                coord: Some((2, 3)),
+                name: Some("baz".to_string()),
+            },
         );
-        assert_eq!(
-            ecs.components.name.get(e3).unwrap(),
-            ecs_deserialized.components.name.get(e3).unwrap()
+        entity_allocator.free(e1);
+        components.remove_entity(e1);
+        let e3 = entity_allocator.alloc();
+        components.insert_entity_data(
+            e3,
+            EntityData {
+                coord: Some((11, 12)),
+                name: Some("qux".to_string()),
+            },
         );
-        assert!(!ecs_deserialized.exists(e0));
-        assert!(!ecs_deserialized.exists(e1));
+        entity_allocator.free(e0);
+        components.remove_entity(e0);
+        let json = serde_json::to_string(&components).unwrap();
+        let deserialized: Components = serde_json::from_str(&json).unwrap();
+        assert_eq!(components.coord.get(e2).unwrap(), deserialized.coord.get(e2).unwrap());
+        assert_eq!(components.coord.get(e3).unwrap(), deserialized.coord.get(e3).unwrap());
+        assert_eq!(components.name.get(e2).unwrap(), deserialized.name.get(e2).unwrap());
+        assert_eq!(components.name.get(e3).unwrap(), deserialized.name.get(e3).unwrap());
+        assert!(!entity_allocator.exists(e0));
+        assert!(!entity_allocator.exists(e1));
     }
 }
