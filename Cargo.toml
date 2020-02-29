@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "image-to-text",
     "ecs",
     "vector",
     "procgen",

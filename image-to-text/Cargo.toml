@@ -1,15 +1,9 @@
 [package]
-name = "procgen"
+name = "image-to-text"
 version = "0.1.0"
 authors = ["Stephen Sherratt <stephen@sherra.tt>"]
 edition = "2018"
 
 [dependencies]
-wfc = "0.9"
-grid_2d = "0.14"
-rand = "0.7"
-direction = "0.17"
-
-[dev-dependencies]
+image = "0.23"
 simon = "0.3"
-rand_isaac = "0.2"
