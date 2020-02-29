@@ -21,17 +21,17 @@ use std::time::Duration;
 pub fn make_player() -> EntityData {
     EntityData {
         tile: Some(Tile::Player),
-        light: Some(Light {
-            colour: Rgb24::new(187, 187, 187),
-            vision_distance: Circle::new_squared(70),
-            diminish: Rational {
-                numerator: 1,
-                denominator: 1,
-            },
-        }),
         character: Some(()),
         hit_points: Some(HitPoints::new_full(100)),
         player: Some(()),
+        light: Some(Light {
+            colour: Rgb24::new_grey(127),
+            vision_distance: Circle::new_squared(60),
+            diminish: Rational {
+                numerator: 1,
+                denominator: 30,
+            },
+        }),
         ..Default::default()
     }
 }
@@ -180,6 +180,7 @@ impl World {
                             low: Rgb24::new(0, 0, 0),
                             high: colour,
                         }),
+                        tile: None,
                         until_next_event: UniformInclusiveRange {
                             low: Duration::from_millis(127),
                             high: Duration::from_millis(512),
@@ -476,6 +477,7 @@ impl World {
                             high: Rgb24::new_grey(255),
                         }),
                         light_colour: None,
+                        tile: None,
                         until_next_event: UniformInclusiveRange {
                             low: Duration::from_millis(64),
                             high: Duration::from_millis(512),
@@ -544,6 +546,100 @@ impl World {
             .unwrap();
         self.components.tile.insert(entity, Tile::Stairs);
         self.components.stairs.insert(entity, ());
+        entity
+    }
+
+    pub fn spawn_sludge_light(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
+        self.components.light.insert(
+            entity,
+            Light {
+                colour: Rgb24::new(0, 255, 0),
+                vision_distance: Circle::new_squared(20),
+                diminish: Rational {
+                    numerator: 1,
+                    denominator: 2,
+                },
+            },
+        );
+        self.components.realtime.insert(entity, ());
+        self.realtime_components.flicker.insert(
+            entity,
+            ScheduledRealtimePeriodicState {
+                state: {
+                    use flicker::spec::*;
+                    Flicker {
+                        colour_hint: None,
+                        light_colour: Some(UniformInclusiveRange {
+                            low: Rgb24::new(31, 127, 31),
+                            high: Rgb24::new(63, 255, 63),
+                        }),
+                        tile: None,
+                        until_next_event: UniformInclusiveRange {
+                            low: Duration::from_millis(255),
+                            high: Duration::from_millis(1023),
+                        },
+                    }
+                }
+                .build(),
+                until_next_event: Duration::from_millis(0),
+            },
+        );
+        entity
+    }
+
+    pub fn spawn_sludge(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Feature),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::Sludge0);
+        self.components.realtime.insert(entity, ());
+        self.realtime_components.flicker.insert(
+            entity,
+            ScheduledRealtimePeriodicState {
+                state: {
+                    use flicker::spec::*;
+                    Flicker {
+                        colour_hint: Some(UniformInclusiveRange {
+                            low: Rgb24::new(0, 187, 0),
+                            high: Rgb24::new(0, 225, 0),
+                        }),
+                        light_colour: None,
+                        tile: Some(vec![Tile::Sludge0, Tile::Sludge1]),
+                        until_next_event: UniformInclusiveRange {
+                            low: Duration::from_millis(255),
+                            high: Duration::from_millis(1023),
+                        },
+                    }
+                }
+                .build(),
+                until_next_event: Duration::from_millis(0),
+            },
+        );
+        self.components.solid.insert(entity, ());
+        entity
+    }
+
+    pub fn spawn_bridge(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Floor),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::Bridge);
         entity
     }
 }

@@ -5,8 +5,9 @@ use rgb24::Rgb24;
 use serde::{Deserialize, Serialize};
 use shadowcast::{vision_distance, Context as ShadowcastContext, DirectionBitmap, InputGrid};
 
-const VISION_DISTANCE_SQUARED: u32 = 400;
-const VISION_DISTANCE: vision_distance::Circle = vision_distance::Circle::new_squared(VISION_DISTANCE_SQUARED);
+const AMBIENT_COL: Rgb24 = Rgb24::new_grey(31);
+const VISION_DISTANCE_SQUARED: u32 = 600;
+pub const VISION_DISTANCE: vision_distance::Circle = vision_distance::Circle::new_squared(VISION_DISTANCE_SQUARED);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Light {
@@ -105,6 +106,8 @@ impl VisibilityGrid {
                 cell.last_seen_next = count;
                 cell.last_seen = count;
                 cell.visible_directions = DirectionBitmap::all();
+                cell.last_lit = count;
+                cell.light_colour = AMBIENT_COL;
             }
         } else {
             shadowcast_context.for_each_visible(
@@ -117,6 +120,8 @@ impl VisibilityGrid {
                     let cell = grid.get_checked_mut(coord);
                     cell.last_seen_next = count;
                     cell.visible_directions = visible_directions;
+                    cell.last_lit = count;
+                    cell.light_colour = AMBIENT_COL;
                 },
             );
         }
@@ -130,10 +135,6 @@ impl VisibilityGrid {
                 |cell_coord, visible_directions, visibility| {
                     let cell = grid.get_checked_mut(cell_coord);
                     if cell.last_seen_next == count && !(visible_directions & cell.visible_directions).is_empty() {
-                        if cell.last_lit != count {
-                            cell.last_lit = count;
-                            cell.light_colour = Rgb24::new(0, 0, 0);
-                        }
                         let distance_squared = (light_coord - cell_coord).magnitude2();
                         let inverse_light_intensity =
                             (distance_squared * light.diminish.numerator) / light.diminish.denominator;

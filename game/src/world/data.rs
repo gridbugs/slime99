@@ -49,6 +49,9 @@ pub enum Tile {
     DoorClosed,
     DoorOpen,
     Stairs,
+    Sludge0,
+    Sludge1,
+    Bridge,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

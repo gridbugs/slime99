@@ -31,7 +31,7 @@ const AIM_UI_DEPTH: i8 = depth::GAME_MAX;
 const PLAYER_OFFSET: Coord = Coord::new(30, 18);
 const GAME_WINDOW_SIZE: Size = Size::new_u16((PLAYER_OFFSET.x as u16 * 2) + 1, (PLAYER_OFFSET.y as u16 * 2) + 1);
 const STORAGE_FORMAT: format::Bincode = format::Bincode;
-const CAMERA_MODE: CameraMode = CameraMode::FollowPlayer;
+const CAMERA_MODE: CameraMode = CameraMode::Fixed;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Config {
@@ -216,6 +216,7 @@ impl GameView {
         context: ViewContext<C>,
         frame: &mut F,
     ) {
+        let context = context.add_offset(Coord::new(1, 1));
         let game = &game_to_render.game;
         if game.is_generating() {
             StringViewSingleLine::new(Style::default().with_foreground(Rgb24::new_grey(255))).view(
@@ -335,13 +336,56 @@ fn map_render_entity<F: Frame, C: ColModify>(
         Tile::Window => ViewCell::new().with_character('=').with_bold(false),
         Tile::DoorClosed | Tile::DoorOpen => ViewCell::new().with_character('+').with_bold(false),
         Tile::Floor => ViewCell::new().with_character('.').with_bold(false),
-        Tile::Stairs => ViewCell::new().with_character('>').with_bold(false),
+        Tile::Stairs => ViewCell::new().with_character('>').with_bold(true),
         _ => return,
     };
     let depth = layer_depth(to_render_entity.layer);
     view_cell.style.background = Some(Rgb24::new(0, 0, 0));
     view_cell.style.foreground = Some(foreground_colour);
     frame.set_cell_relative(coord, depth, view_cell, context);
+}
+
+fn render_entity_previously_visible<F: Frame, C: ColModify>(
+    camera_mode: CameraMode,
+    to_render_entity: &ToRenderEntity,
+    game: &Game,
+    player_coord: GameCoord,
+    offset: Coord,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
+    let entity_coord = GameCoord(to_render_entity.coord);
+    let screen_coord = match camera_mode {
+        CameraMode::Fixed => ScreenCoord(to_render_entity.coord),
+        CameraMode::FollowPlayer => GameCoordToScreenCoord {
+            game_coord: entity_coord,
+            player_coord: GameCoord(player_coord.0 + offset),
+        }
+        .compute(),
+    };
+    if !screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
+        return;
+    }
+    let depth = layer_depth(to_render_entity.layer);
+    let mut view_cell = match to_render_entity.tile {
+        Tile::Player => ViewCell::new().with_character('@').with_bold(true),
+        Tile::Floor => ViewCell::new().with_character('.'),
+        Tile::Sludge0 | Tile::Sludge1 => ViewCell::new().with_character('~'),
+        Tile::Bridge => ViewCell::new().with_character('='),
+        Tile::DoorClosed | Tile::DoorOpen => ViewCell::new().with_character('+'),
+        Tile::Stairs => ViewCell::new().with_character('>').with_bold(true),
+        Tile::Wall => {
+            if game.contains_wall(entity_coord.0 + Coord::new(0, 1)) {
+                ViewCell::new().with_character('█')
+            } else {
+                ViewCell::new().with_character('▀')
+            }
+        }
+        _ => return,
+    };
+    view_cell.style.background = Some(Rgb24::new_grey(15));
+    view_cell.style.foreground = Some(Rgb24::new_grey(63));
+    frame.set_cell_relative(screen_coord.0, depth, view_cell, context);
 }
 
 fn render_entity<F: Frame, C: ColModify>(
@@ -374,7 +418,18 @@ fn render_entity<F: Frame, C: ColModify>(
                     return;
                 }
             }
-            CellVisibility::PreviouslyVisible | CellVisibility::NeverVisible => return,
+            CellVisibility::PreviouslyVisible => {
+                return render_entity_previously_visible(
+                    camera_mode,
+                    to_render_entity,
+                    game,
+                    player_coord,
+                    offset,
+                    context,
+                    frame,
+                )
+            }
+            CellVisibility::NeverVisible => return,
         }
     };
     if game_status == GameStatus::Playing && light_colour == Rgb24::new(0, 0, 0) {
@@ -405,12 +460,30 @@ fn render_entity<F: Frame, C: ColModify>(
             .with_foreground(Rgb24::new(0, 255, 255)),
         Tile::Floor => ViewCell::new()
             .with_character('.')
-            .with_background(Rgb24::new(63, 63, 63))
-            .with_foreground(Rgb24::new(127, 127, 127)),
+            .with_background(Rgb24::new(0, 127, 127))
+            .with_foreground(Rgb24::new(0, 187, 187)),
         Tile::Carpet => ViewCell::new()
             .with_character('.')
             .with_background(Rgb24::new(127, 0, 0))
             .with_foreground(Rgb24::new(127, 127, 127)),
+        Tile::Sludge0 => {
+            let background = to_render_entity.colour_hint.unwrap_or_else(|| Rgb24::new(0, 255, 0));
+            ViewCell::new()
+                .with_character('~')
+                .with_background(background)
+                .with_foreground(background.scalar_div(2))
+        }
+        Tile::Sludge1 => {
+            let background = to_render_entity.colour_hint.unwrap_or_else(|| Rgb24::new(0, 255, 0));
+            ViewCell::new()
+                .with_character('≈')
+                .with_background(background)
+                .with_foreground(background.scalar_div(2))
+        }
+        Tile::Bridge => ViewCell::new()
+            .with_character('=')
+            .with_background(Rgb24::new(200, 127, 0))
+            .with_foreground(Rgb24::new(127, 127, 0)),
         Tile::Star => {
             let foreground_colour = to_render_entity.colour_hint.unwrap_or_else(|| Rgb24::new_grey(255));
             ViewCell::new()
@@ -425,22 +498,23 @@ fn render_entity<F: Frame, C: ColModify>(
             .with_background(Rgb24::new(127, 127, 127)),
         Tile::DoorClosed => ViewCell::new()
             .with_character('+')
-            .with_foreground(Rgb24::new(255, 255, 255))
-            .with_background(Rgb24::new(127, 127, 127)),
+            .with_background(Rgb24::new(127, 0, 127))
+            .with_foreground(Rgb24::new(255, 127, 255)),
         Tile::DoorOpen => ViewCell::new()
             .with_character('-')
-            .with_foreground(Rgb24::new(255, 255, 255))
-            .with_background(Rgb24::new(127, 127, 127)),
+            .with_background(Rgb24::new(0, 127, 127))
+            .with_foreground(Rgb24::new(255, 127, 255)),
         Tile::Stairs => ViewCell::new()
             .with_character('>')
-            .with_foreground(Rgb24::new(255, 255, 255)),
+            .with_foreground(Rgb24::new(255, 255, 255))
+            .with_bold(true),
         Tile::Wall => if game.contains_wall(entity_coord.0 + Coord::new(0, 1)) {
             ViewCell::new().with_character('█')
         } else {
             ViewCell::new().with_character('▀')
         }
-        .with_foreground(Rgb24::new(255, 255, 255))
-        .with_background(Rgb24::new(127, 127, 127)),
+        .with_foreground(Rgb24::new(255, 0, 255))
+        .with_background(Rgb24::new(127, 0, 127)),
         Tile::Bullet => ViewCell::new().with_character('*'),
         Tile::Smoke => {
             if let Some(fade) = to_render_entity.fade {

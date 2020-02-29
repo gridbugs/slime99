@@ -4,15 +4,16 @@ use crate::{
             core::{RealtimePeriodicState, TimeConsumingEvent},
             data::RealtimeComponents,
         },
-        World,
+        Tile, World,
     },
     ExternalEvent,
 };
 use ecs::Entity;
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
 pub mod spec {
+    pub use crate::world::Tile;
     pub use rand_range::UniformInclusiveRange;
     pub use rgb24::Rgb24;
     use serde::{Deserialize, Serialize};
@@ -22,6 +23,7 @@ pub mod spec {
     pub struct Flicker {
         pub colour_hint: Option<UniformInclusiveRange<Rgb24>>,
         pub light_colour: Option<UniformInclusiveRange<Rgb24>>,
+        pub tile: Option<Vec<Tile>>,
         pub until_next_event: UniformInclusiveRange<Duration>,
     }
 }
@@ -40,6 +42,7 @@ pub struct FlickerState(spec::Flicker);
 pub struct FlickerEvent {
     colour_hint: Option<Rgb24>,
     light_colour: Option<Rgb24>,
+    tile: Option<Tile>,
 }
 
 impl RealtimePeriodicState for FlickerState {
@@ -48,10 +51,12 @@ impl RealtimePeriodicState for FlickerState {
     fn tick<R: Rng>(&mut self, rng: &mut R) -> TimeConsumingEvent<Self::Event> {
         let colour_hint = self.0.colour_hint.map(|r| r.choose(rng));
         let light_colour = self.0.light_colour.map(|r| r.choose(rng));
+        let tile = self.0.tile.as_ref().and_then(|t| t.choose(rng)).cloned();
         let until_next_event = self.0.until_next_event.choose(rng);
         let event = FlickerEvent {
             colour_hint,
             light_colour,
+            tile,
         };
         TimeConsumingEvent {
             event,
@@ -66,6 +71,9 @@ impl RealtimePeriodicState for FlickerState {
             if let Some(light) = world.components.light.get_mut(entity) {
                 light.colour = light_colour;
             }
+        }
+        if let Some(tile) = event.tile {
+            world.components.tile.insert(entity, tile);
         }
     }
 }

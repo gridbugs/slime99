@@ -643,15 +643,40 @@ fn all_floor_adjacent_floor_coords(grid: &Grid<SewerCell>) -> Vec<Coord> {
         .collect()
 }
 
+fn pool_light_coords(grid: &Grid<SewerCell>) -> Vec<Coord> {
+    let mut coords = Vec::new();
+    for (coord, cell) in grid.enumerate() {
+        if let SewerCell::Pool = cell {
+            if CardinalDirection::all()
+                .map(|d| grid.get(coord + d.coord()).cloned())
+                .any(|maybe_cell| maybe_cell == Some(SewerCell::Floor))
+            {
+                coords.push(coord)
+            }
+        }
+    }
+    coords
+}
+
 #[derive(Clone, Copy)]
 pub struct SewerSpec {
     pub size: Size,
+}
+
+pub enum SewerLightType {
+    Pool,
+}
+
+pub struct SewerLight {
+    pub typ: SewerLightType,
+    pub coord: Coord,
 }
 
 pub struct Sewer {
     pub start: Coord,
     pub goal: Coord,
     pub map: Grid<SewerCell>,
+    pub lights: Vec<SewerLight>,
 }
 
 impl Sewer {
@@ -700,17 +725,26 @@ impl Sewer {
         ensure_single_connected_area(&mut map);
         let mut player_and_goal_candidates = all_floor_adjacent_floor_coords(&map);
         player_and_goal_candidates.shuffle(rng);
-        let start = player_and_goal_candidates.pop().unwrap();
+        let start = player_and_goal_candidates.pop()?;
         player_and_goal_candidates.sort_by_key(|coord| coord.distance2(start));
         let goal_start_offset = 9 * (player_and_goal_candidates.len() / 10);
-        let goal = player_and_goal_candidates[goal_start_offset..]
-            .choose(rng)
-            .unwrap()
-            .clone();
+        let goal = player_and_goal_candidates[goal_start_offset..].choose(rng)?.clone();
         if !map.iter().any(|&cell| cell == SewerCell::Pool) {
             return None;
         }
-        let sewer = Sewer { start, goal, map };
+        let lights = pool_light_coords(&map)
+            .into_iter()
+            .map(|coord| SewerLight {
+                coord,
+                typ: SewerLightType::Pool,
+            })
+            .collect::<Vec<_>>();
+        let sewer = Sewer {
+            start,
+            goal,
+            map,
+            lights,
+        };
         Some(sewer)
     }
 }

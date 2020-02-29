@@ -14,11 +14,13 @@ mod world;
 use behaviour::{Agent, BehaviourContext};
 use ecs::ComponentTable;
 pub use ecs::Entity;
-use procgen::SpaceshipSpec;
+use procgen::SewerSpec;
 use terrain::Terrain;
 pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
 pub use world::{CharacterInfo, HitPoints, Layer, Tile, ToRenderEntity};
+
+const MAP_SIZE: Size = Size::new_u16(24, 24);
 
 pub struct Config {
     pub omniscient: Option<Omniscient>,
@@ -70,14 +72,7 @@ impl Game {
     pub fn new<R: Rng>(config: &Config, rng: &mut R) -> Self {
         let mut rng = Isaac64Rng::seed_from_u64(rng.gen());
         //let Terrain { world, agents, player } = terrain::from_str(include_str!("terrain.txt"), make_player());
-        let Terrain { world, agents, player } = terrain::spaceship(
-            SpaceshipSpec {
-                size: Size::new(80, 64),
-                surrounding_space_min_width: 16,
-            },
-            make_player(),
-            &mut rng,
-        );
+        let Terrain { world, agents, player } = terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(), &mut rng);
         let last_player_info = world.character_info(player).expect("couldn't get info for player");
         let events = vec![ExternalEvent::LoopMusic(Music::Fiberitron)];
         let mut game = Self {
@@ -175,14 +170,8 @@ impl Game {
     }
     fn generate_level(&mut self, config: &Config) {
         let player_data = self.world.clone_entity_data(self.player);
-        let Terrain { world, agents, player } = terrain::spaceship(
-            SpaceshipSpec {
-                size: Size::new(80, 64),
-                surrounding_space_min_width: 16,
-            },
-            player_data,
-            &mut self.rng,
-        );
+        let Terrain { world, agents, player } =
+            terrain::sewer(SewerSpec { size: MAP_SIZE }, player_data, &mut self.rng);
         self.visibility_grid = VisibilityGrid::new(world.size());
         self.world = world;
         self.agents = agents;
