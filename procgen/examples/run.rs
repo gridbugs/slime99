@@ -587,6 +587,7 @@ struct RoomNode {
 
 type DoorCandidateGraph = HashMap<usize, RoomNode>;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum CellD {
     Floor,
     Wall,
@@ -607,6 +608,67 @@ fn add_bridge_candidate(grid: &mut Grid<CellD>, candidate: &BridgeCandidate) {
     for &coord in candidate.coords.iter() {
         *grid.get_checked_mut(coord) = CellD::Bridge;
     }
+}
+
+fn ensure_single_connected_area(grid: &mut Grid<CellD>) {
+    let mut areas = Vec::new();
+    let mut seen = HashSet::new();
+    let mut flood_fill_buffer = VecDeque::new();
+    for (coord, &cell) in grid.enumerate() {
+        if cell != CellD::Wall {
+            if seen.insert(coord) {
+                flood_fill_buffer.push_back(coord);
+                let mut area = Vec::new();
+                while let Some(coord) = flood_fill_buffer.pop_front() {
+                    area.push(coord);
+                    for direction in CardinalDirection::all() {
+                        let neighbour_coord = coord + direction.coord();
+                        if let Some(&cell) = grid.get(neighbour_coord) {
+                            if cell != CellD::Wall {
+                                if seen.insert(neighbour_coord) {
+                                    flood_fill_buffer.push_back(neighbour_coord);
+                                }
+                            }
+                        }
+                    }
+                }
+                areas.push(area);
+            }
+        }
+    }
+    let index_of_largest_area = areas
+        .iter()
+        .map(|a| a.len())
+        .enumerate()
+        .max_by_key(|&(_index, len)| len)
+        .unwrap()
+        .0;
+    for (index, area) in areas.iter_mut().enumerate() {
+        if index != index_of_largest_area {
+            for &coord in area.iter() {
+                *grid.get_checked_mut(coord) = CellD::Wall;
+            }
+        }
+    }
+}
+
+fn all_floor_adjacent_floor_coords(grid: &Grid<CellD>) -> Vec<Coord> {
+    grid.enumerate()
+        .filter_map(|(coord, &cell)| {
+            if cell == CellD::Floor {
+                if Direction::all()
+                    .map(|d| grid.get(coord + d.coord()).cloned())
+                    .all(|maybe_cell| maybe_cell == Some(CellD::Floor))
+                {
+                    Some(coord)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn main() {
@@ -648,16 +710,33 @@ fn main() {
     for coord in door_coords {
         *map.get_checked_mut(coord) = CellD::Door;
     }
+    ensure_single_connected_area(&mut map);
+    let mut player_and_goal_candidates = all_floor_adjacent_floor_coords(&map);
+    player_and_goal_candidates.shuffle(&mut rng);
+    let player_start = player_and_goal_candidates.pop().unwrap();
+    player_and_goal_candidates.sort_by_key(|coord| coord.distance2(player_start));
+    let goal_start_offset = 9 * (player_and_goal_candidates.len() / 10);
+    let goal = player_and_goal_candidates[goal_start_offset..]
+        .choose(&mut rng)
+        .unwrap()
+        .clone();
     println!("    abcdefghijklmnopqrstuvwxyz");
-    for (i, rows) in map.rows().enumerate() {
+    for (i, row) in map.rows().enumerate() {
         print!("{:2}: ", i);
-        for cell in rows {
-            let ch = match cell {
-                CellD::Floor => '.',
-                CellD::Wall => '█',
-                CellD::Pool => '~',
-                CellD::Bridge => '=',
-                CellD::Door => '+',
+        for (j, cell) in row.into_iter().enumerate() {
+            let coord = Coord::new(j as i32, i as i32);
+            let ch = if coord == player_start {
+                '@'
+            } else if coord == goal {
+                '>'
+            } else {
+                match cell {
+                    CellD::Floor => '.',
+                    CellD::Wall => '█',
+                    CellD::Pool => '~',
+                    CellD::Bridge => '=',
+                    CellD::Door => '+',
+                }
             };
             print!("{}", ch);
         }
