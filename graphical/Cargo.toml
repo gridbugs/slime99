@@ -1,5 +1,5 @@
 [package]
-name = "rip_graphical"
+name = "slime99_graphical"
 version = "0.1.0"
 authors = ["Stephen Sherratt <stephen@sherra.tt>"]
 edition = "2018"
@@ -7,11 +7,11 @@ edition = "2018"
 [features]
 default = ["prototty_graphical"]
 force_vulkan = ["prototty_graphical/force_vulkan"]
-force_dedicated_audio_thread = ["rip_native/force_dedicated_audio_thread"]
+force_dedicated_audio_thread = ["slime99_native/force_dedicated_audio_thread"]
 
 [dependencies]
 env_logger = "0.7"
 prototty_graphical = { version = "0.29", optional = true }
 prototty_graphical_gfx = { version = "0.29", optional = true }
-rip_prototty = { path = "../prototty" }
-rip_native = { path = "../native" }
+slime99_prototty = { path = "../prototty" }
+slime99_native = { path = "../native" }

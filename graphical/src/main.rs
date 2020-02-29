@@ -3,8 +3,8 @@
 use prototty_graphical as graphical;
 #[cfg(feature = "prototty_graphical_gfx")]
 use prototty_graphical_gfx as graphical;
-use rip_native::{simon::*, NativeCommon};
-use rip_prototty::{app, AutoPlay, Frontend, Fullscreen};
+use slime99_native::{simon::*, NativeCommon};
+use slime99_prototty::{app, AutoPlay, Frontend, Fullscreen};
 
 #[cfg(feature = "prototty_graphical")]
 const FULLSCREEN_SUPPORTED: bool = true;
@@ -16,8 +16,8 @@ const CELL_SIZE: f64 = 16.;
 
 #[cfg(target_os = "windows")]
 mod graphical_env {
-    use rip_prototty::Env;
     use super::graphical::WindowHandle;
+    use slime99_prototty::Env;
     use std::cell::RefCell;
     pub struct GraphicalEnv {
         window_handle: WindowHandle,
@@ -53,8 +53,8 @@ mod graphical_env {
 
 #[cfg(not(target_os = "windows"))]
 mod graphical_env {
-    use rip_prototty::Env;
     use super::graphical::WindowHandle;
+    use slime99_prototty::Env;
     pub struct GraphicalEnv {
         window_handle: WindowHandle,
     }
@@ -82,8 +82,8 @@ mod graphical_env {
     }
 }
 
-use graphical_env::*;
 use graphical::*;
+use graphical_env::*;
 
 struct Args {
     native_common: NativeCommon,
@@ -122,7 +122,7 @@ fn main() {
             normal: include_bytes!("./fonts/PxPlus_IBM_CGAthin-with-quadrant-blocks.ttf").to_vec(),
             bold: include_bytes!("./fonts/PxPlus_IBM_CGA-with-quadrant-blocks.ttf").to_vec(),
         },
-        title: "RIP".to_string(),
+        title: "Slime99".to_string(),
         window_dimensions: Dimensions {
             width: 960.,
             height: 640.,

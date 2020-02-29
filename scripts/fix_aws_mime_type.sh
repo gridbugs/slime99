@@ -3,8 +3,8 @@ set -euxo pipefail
 BRANCH=$1
 REVISION=$2
 BUCKET=games.gridbugs.org
-EXISTING_OBJECT=rip/$BRANCH/app.$REVISION.wrong-mime.wasm
-NEW_OBJECT=rip/$BRANCH/app.$REVISION.wasm
+EXISTING_OBJECT=slime99/$BRANCH/app.$REVISION.wrong-mime.wasm
+NEW_OBJECT=slime99/$BRANCH/app.$REVISION.wasm
 
 # The goal of this script is to update the mime type of the wasm file stored in s3.
 # Experimentation suggests that this requires downloading and re-uploading the file

@@ -1,1 +1,1 @@
-import('./pkg/rip_web').catch(console.error)
+import('./pkg/slime99_web').catch(console.error)

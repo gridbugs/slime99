@@ -1,5 +1,5 @@
 use prototty_web::{Context, LocalStorage, Size, WebAudioPlayer};
-use rip_prototty::{app, AutoPlay, Controls, EnvNull, Frontend, GameConfig, RngSeed};
+use slime99_prototty::{app, AutoPlay, Controls, EnvNull, Frontend, GameConfig, RngSeed};
 use wasm_bindgen::prelude::*;
 
 const SAVE_KEY: &str = "save";

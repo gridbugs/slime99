@@ -270,7 +270,7 @@ where
 {
     fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData<S, A>, context: ViewContext<C>, frame: &mut F) {
         text::StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true)).view(
-            "RIP",
+            "Slime99",
             context.add_offset(Coord::new(1, 1)),
             frame,
         );
@@ -571,7 +571,12 @@ fn options_menu<S: Storage, A: AudioPlayer>() -> impl EventRoutine<
                         ToggleSfx => write!(buf, "(s) Sfx enabled [{}]", if config.sfx { '*' } else { ' ' }).unwrap(),
                         ToggleFullscreen => {
                             if fullscreen_requires_restart {
-                                write!(buf, "(f) Fullscreen (requires restart) [{}]", if fullscreen { '*' } else { ' ' }).unwrap()
+                                write!(
+                                    buf,
+                                    "(f) Fullscreen (requires restart) [{}]",
+                                    if fullscreen { '*' } else { ' ' }
+                                )
+                                .unwrap()
                             } else {
                                 write!(buf, "(f) Fullscreen [{}]", if fullscreen { '*' } else { ' ' }).unwrap()
                             }

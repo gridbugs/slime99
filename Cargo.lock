@@ -1788,70 +1788,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rip_ansi_terminal"
-version = "0.1.0"
-dependencies = [
- "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "prototty_ansi_terminal 0.29.0 (git+https://github.com/stevebob/prototty)",
- "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "rip_native 0.1.0",
- "rip_prototty 0.1.0",
-]
-
-[[package]]
-name = "rip_graphical"
-version = "0.1.0"
-dependencies = [
- "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "prototty_graphical 0.29.0 (git+https://github.com/stevebob/prototty)",
- "prototty_graphical_gfx 0.29.0 (git+https://github.com/stevebob/prototty)",
- "rip_native 0.1.0",
- "rip_prototty 0.1.0",
-]
-
-[[package]]
-name = "rip_native"
-version = "0.1.0"
-dependencies = [
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "prototty_file_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
- "prototty_native_audio 0.29.0 (git+https://github.com/stevebob/prototty)",
- "rip_prototty 0.1.0",
- "serde_json 1.0.48 (registry+https://github.com/rust-lang/crates.io-index)",
- "simon 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rip_prototty"
-version = "0.1.0"
-dependencies = [
- "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "game 0.1.0",
- "line_2d 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "maplit 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "prototty 0.29.0 (git+https://github.com/stevebob/prototty)",
- "prototty_audio 0.29.0 (git+https://github.com/stevebob/prototty)",
- "prototty_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
- "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand_isaac 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rip_web"
-version = "0.1.0"
-dependencies = [
- "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "prototty_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
- "prototty_web 0.29.0 (git+https://github.com/stevebob/prototty)",
- "rip_prototty 0.1.0",
- "wasm-bindgen 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
- "wasm-logger 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "rodio"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2022,6 +1958,70 @@ dependencies = [
  "libc 0.2.67 (registry+https://github.com/rust-lang/crates.io-index)",
  "mach 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "slime99_ansi_terminal"
+version = "0.1.0"
+dependencies = [
+ "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prototty_ansi_terminal 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slime99_native 0.1.0",
+ "slime99_prototty 0.1.0",
+]
+
+[[package]]
+name = "slime99_graphical"
+version = "0.1.0"
+dependencies = [
+ "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prototty_graphical 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "prototty_graphical_gfx 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "slime99_native 0.1.0",
+ "slime99_prototty 0.1.0",
+]
+
+[[package]]
+name = "slime99_native"
+version = "0.1.0"
+dependencies = [
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prototty_file_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "prototty_native_audio 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "serde_json 1.0.48 (registry+https://github.com/rust-lang/crates.io-index)",
+ "simon 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slime99_prototty 0.1.0",
+]
+
+[[package]]
+name = "slime99_prototty"
+version = "0.1.0"
+dependencies = [
+ "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "game 0.1.0",
+ "line_2d 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "maplit 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prototty 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "prototty_audio 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "prototty_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand_isaac 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "slime99_web"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "prototty_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "prototty_web 0.29.0 (git+https://github.com/stevebob/prototty)",
+ "slime99_prototty 0.1.0",
+ "wasm-bindgen 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wasm-logger 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
