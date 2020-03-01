@@ -107,7 +107,7 @@ impl VisibilityGrid {
                 cell.last_seen = count;
                 cell.visible_directions = DirectionBitmap::all();
                 cell.last_lit = count;
-                cell.light_colour = AMBIENT_COL;
+                cell.light_colour = Rgb24::new_grey(187);
             }
         } else {
             shadowcast_context.for_each_visible(
