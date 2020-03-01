@@ -167,8 +167,6 @@ for:
 
           npm run build -- --mode $BUILD_MODE
 
-          for f in dist/*.wasm; do mv -v $f ${f%.wasm}.wrong-mime.wasm; done
-
           mkdir slime99
 
           mv dist slime99/$APPVEYOR_REPO_BRANCH
