@@ -46,7 +46,6 @@ pub enum Tile {
     Sludge1,
     Bridge,
     SlimeDivider,
-    SlimePrecise,
     SlimeTeleport,
     SlimeSwap,
     SlimeGoo,

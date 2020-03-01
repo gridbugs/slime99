@@ -49,11 +49,6 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                     let entity = world.spawn_slime_teleport(coord);
                     agents.insert(entity, Agent::new(size));
                 }
-                'p' => {
-                    world.spawn_floor(coord);
-                    let entity = world.spawn_slime_precise(coord);
-                    agents.insert(entity, Agent::new(size));
-                }
                 'g' => {
                     world.spawn_floor(coord);
                     let entity = world.spawn_slime_goo(coord);
@@ -107,7 +102,6 @@ enum NpcType {
     Divider,
     Swap,
     Teleport,
-    Precise,
     Goo,
     Upgrade,
 }
@@ -117,7 +111,6 @@ fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord) -> Entity {
         NpcType::Divider => world.spawn_slime_divider(coord),
         NpcType::Swap => world.spawn_slime_swap(coord),
         NpcType::Teleport => world.spawn_slime_teleport(coord),
-        NpcType::Precise => world.spawn_slime_precise(coord),
         NpcType::Goo => world.spawn_slime_goo(coord),
         NpcType::Upgrade => world.spawn_slime_upgrade(coord),
     }
@@ -127,7 +120,6 @@ const NPC_TYPES: &[NpcType] = &[
     NpcType::Divider,
     NpcType::Swap,
     NpcType::Teleport,
-    NpcType::Precise,
     NpcType::Goo,
     NpcType::Upgrade,
 ];

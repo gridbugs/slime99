@@ -1,16 +1,24 @@
 use crate::ui;
 use crate::{depth, game::GameStatus};
 use direction::CardinalDirection;
-use game::{CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity};
-use prototty::render::{ColModify, Coord, Frame, Rgb24, ViewCell, ViewContext};
+use game::{CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
+use prototty::render::{ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
+use prototty::text::{wrap, StringView, StringViewSingleLine};
 
 pub struct GameToRender<'a> {
     pub game: &'a Game,
     pub status: GameStatus,
+    pub mouse_coord: Option<Coord>,
 }
 
 pub struct GameView {
     last_offset: Coord,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum MessageVerb {
+    See,
+    Remember,
 }
 
 impl GameView {
@@ -32,14 +40,57 @@ impl GameView {
     ) {
         match game_to_render.status {
             GameStatus::Playing => {
+                let mut entity_under_cursor = None;
                 for entity in game_to_render.game.to_render_entities() {
                     render_entity(&entity, game_to_render.game, context, frame);
+                    if let Some(mouse_coord) = game_to_render.mouse_coord {
+                        let game_coord = mouse_coord / 2;
+                        if entity.coord == game_coord {
+                            let verb = match game_to_render.game.visibility_grid().cell_visibility(entity.coord) {
+                                CellVisibility::CurrentlyVisibleWithLightColour(Some(_)) => Some(MessageVerb::See),
+                                CellVisibility::PreviouslyVisible => Some(MessageVerb::Remember),
+                                CellVisibility::NeverVisible
+                                | CellVisibility::CurrentlyVisibleWithLightColour(None) => None,
+                            };
+                            if let Some(verb) = verb {
+                                if let Some((max_depth, _tile, _verb)) = entity_under_cursor {
+                                    let depth = layer_depth(entity.layer);
+                                    if depth > max_depth {
+                                        entity_under_cursor = Some((depth, entity.tile, verb));
+                                    }
+                                } else {
+                                    entity_under_cursor = Some((layer_depth(entity.layer), entity.tile, verb));
+                                }
+                            }
+                        }
+                    }
+                }
+                if let Some((_depth, tile, verb)) = entity_under_cursor {
+                    if let Some(description) = tile_str(tile) {
+                        let verb_str = match verb {
+                            MessageVerb::Remember => "remember seeing",
+                            MessageVerb::See => "see",
+                        };
+                        let mut buf = String::new();
+                        use std::fmt::Write;
+                        write!(&mut buf, "You {} {} here.", verb_str, description).unwrap();
+                        StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view(
+                            &buf,
+                            context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
+                            frame,
+                        );
+                    }
                 }
             }
             GameStatus::Over => {
                 for entity in game_to_render.game.to_render_entities() {
                     render_entity_game_over(&entity, game_to_render.game, context, frame);
                 }
+                StringView::new(Style::new().with_foreground(Rgb24::new(255, 0, 0)), wrap::Word::new()).view(
+                    "You failed. The slimes overrun the city and CONSUME WHAT REMAINS OF HUMANITY. Press a key to continue...",
+                    context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
+                    frame,
+                );
             }
         }
         ui::UiView.view(ui::Ui::example(), context.add_offset(Coord::new(39, 0)), frame);
@@ -248,13 +299,6 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
             entity.hit_points.map(|hp| hp.current).unwrap_or(0),
             entity.next_action.unwrap_or(NpcAction::Wait),
         ),
-        Tile::SlimePrecise => Quad::new_slime(
-            'p',
-            Rgb24::new(255, 255, 63),
-            Rgb24::new(63, 63, 15),
-            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
-            entity.next_action.unwrap_or(NpcAction::Wait),
-        ),
         Tile::SlimeGoo => Quad::new_slime(
             'g',
             Rgb24::new(0, 255, 0),
@@ -360,4 +404,21 @@ fn render_entity_game_over<F: Frame, C: ColModify>(
     let depth = layer_depth(entity.layer);
     quad.apply_lighting(Rgb24::new(255, 87, 31));
     render_quad(entity.coord, depth, &quad, context, frame);
+}
+
+fn tile_str(tile: Tile) -> Option<&'static str> {
+    match tile {
+        Tile::Player => Some("yourself"),
+        Tile::Sludge0 | Tile::Sludge1 => Some("some toxic sludge"),
+        Tile::Bridge => Some("a bridge over toxic sludge"),
+        Tile::DoorClosed | Tile::DoorOpen => Some("a door"),
+        Tile::Wall => Some("a wall"),
+        Tile::Floor => Some("the floor"),
+        Tile::Stairs => Some("a staircase leading further down"),
+        Tile::SlimeDivider => Some("a Divide Slime"),
+        Tile::SlimeSwap => Some("a Swap Slime"),
+        Tile::SlimeTeleport => Some("a Teleport Slime"),
+        Tile::SlimeGoo => Some("a Goo Slime"),
+        Tile::SlimeUpgrade => Some("an Upgrade Slime"),
+    }
 }

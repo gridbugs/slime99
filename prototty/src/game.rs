@@ -200,10 +200,18 @@ impl GameInstance {
             current_music: None,
         }
     }
+    pub fn to_render_with_mouse_coord(&self, status: GameStatus, mouse_coord: Coord) -> GameToRender {
+        GameToRender {
+            game: &self.game,
+            status,
+            mouse_coord: Some(mouse_coord),
+        }
+    }
     pub fn to_render(&self, status: GameStatus) -> GameToRender {
         GameToRender {
             game: &self.game,
             status,
+            mouse_coord: None,
         }
     }
 }
@@ -583,6 +591,7 @@ pub struct GameEventRoutine<S: Storage, A: AudioPlayer> {
     s: PhantomData<S>,
     a: PhantomData<A>,
     injected_inputs: Vec<InjectedInput>,
+    mouse_coord: Coord,
 }
 
 impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
@@ -594,6 +603,7 @@ impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
             s: PhantomData,
             a: PhantomData,
             injected_inputs,
+            mouse_coord: Coord::new(-1, -1),
         }
     }
 }
@@ -641,7 +651,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                 }
             }
             let controls = &data.controls;
-            event_or_peek_with_handled(event_or_peek, self, |s, event| match event {
+            event_or_peek_with_handled(event_or_peek, self, |mut s, event| match event {
                 CommonEvent::Input(input) => {
                     match input {
                         Input::Keyboard(keyboard_input) => {
@@ -666,7 +676,12 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                                 }
                             }
                         }
-                        Input::Mouse(_) => (),
+                        Input::Mouse(mouse_input) => match mouse_input {
+                            MouseInput::MouseMove { coord, .. } => {
+                                s.mouse_coord = coord;
+                            }
+                            _ => (),
+                        },
                     }
                     Handled::Continue(s)
                 }
@@ -706,7 +721,11 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
         C: ColModify,
     {
         if let Some(instance) = data.instance.as_ref() {
-            view.view(instance.to_render(GameStatus::Playing), context, frame);
+            view.view(
+                instance.to_render_with_mouse_coord(GameStatus::Playing, self.mouse_coord),
+                context,
+                frame,
+            );
         }
     }
 }
