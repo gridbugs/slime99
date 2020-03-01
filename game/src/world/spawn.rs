@@ -72,7 +72,6 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::FormerHuman);
         self.components.npc.insert(
             entity,
             Npc {
@@ -81,7 +80,7 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.hit_points.insert(entity, HitPoints::new_full(2));
-        entity
+        panic!("missing tile")
     }
 
     pub fn spawn_human(&mut self, coord: Coord) -> Entity {
@@ -95,7 +94,6 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::Human);
         self.components.npc.insert(
             entity,
             Npc {
@@ -104,7 +102,7 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.hit_points.insert(entity, HitPoints::new_full(20));
-        entity
+        panic!("missing tile")
     }
 
     pub fn spawn_floor(&mut self, coord: Coord) -> Entity {
@@ -119,21 +117,6 @@ impl World {
             )
             .unwrap();
         self.components.tile.insert(entity, Tile::Floor);
-        entity
-    }
-
-    pub fn spawn_carpet(&mut self, coord: Coord) -> Entity {
-        let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
-                entity,
-                Location {
-                    coord,
-                    layer: Some(Layer::Floor),
-                },
-            )
-            .unwrap();
-        self.components.tile.insert(entity, Tile::Carpet);
         entity
     }
 
@@ -230,7 +213,6 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::Bullet);
         self.components.realtime.insert(entity, ());
         self.components.blocks_gameplay.insert(entity, ());
         self.components.on_collision.insert(entity, OnCollision::Remove);
@@ -255,7 +237,7 @@ impl World {
                         emit_particle_every_period: Duration::from_micros(2000),
                         fade_out_duration: None,
                         particle: Particle {
-                            tile: Some(Tile::Smoke),
+                            tile: None,
                             movement: Some(Movement {
                                 angle_range: Radians::uniform_range_all(),
                                 cardinal_period_range: UniformInclusiveRange {
@@ -279,7 +261,7 @@ impl World {
                 character: true,
             },
         );
-        entity
+        panic!("missing tiles")
     }
 
     pub fn spawn_rocket(&mut self, start: Coord, target: Coord) -> Entity {
@@ -316,7 +298,7 @@ impl World {
                         emit_particle_every_period: Duration::from_micros(500),
                         fade_out_duration: None,
                         particle: Particle {
-                            tile: Some(Tile::Smoke),
+                            tile: None,
                             movement: Some(Movement {
                                 angle_range: Radians::uniform_range_all(),
                                 cardinal_period_range: UniformInclusiveRange {
@@ -333,7 +315,6 @@ impl World {
                 until_next_event: Duration::from_millis(0),
             },
         );
-        self.components.tile.insert(entity, Tile::Bullet);
         self.components.on_collision.insert(
             entity,
             OnCollision::Explode({
@@ -368,10 +349,10 @@ impl World {
                 character: true,
             },
         );
-        entity
+        panic!("missing tiles")
     }
 
-    pub fn spawn_explosion_emitter(&mut self, coord: Coord, spec: &explosion::spec::ParticleEmitter) {
+    pub fn spawn_explosion_emitter(&mut self, coord: Coord, spec: &explosion::spec::ParticleEmitter) -> Entity {
         let emitter_entity = self.entity_allocator.alloc();
         self.spatial
             .insert(emitter_entity, Location { coord, layer: None })
@@ -393,7 +374,7 @@ impl World {
                         emit_particle_every_period: period_per_frame(spec.num_particles_per_frame),
                         fade_out_duration: Some(spec.duration),
                         particle: Particle {
-                            tile: Some(Tile::ExplosionFlame),
+                            tile: None,
                             movement: Some(Movement {
                                 angle_range: Radians::uniform_range_all(),
                                 cardinal_period_range: UniformInclusiveRange {
@@ -415,7 +396,7 @@ impl World {
                                     emit_particle_every_period: spec.min_step,
                                     fade_out_duration: None,
                                     particle: Particle {
-                                        tile: Some(Tile::Smoke),
+                                        tile: None,
                                         movement: Some(Movement {
                                             angle_range: Radians::uniform_range_all(),
                                             cardinal_period_range: UniformInclusiveRange {
@@ -458,61 +439,7 @@ impl World {
                 until_next_event: Duration::from_millis(0),
             },
         );
-    }
-
-    pub fn spawn_star(&mut self, coord: Coord) -> Entity {
-        let entity = self.entity_allocator.alloc();
-        self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
-        self.components.tile.insert(entity, Tile::Star);
-        self.components.ignore_lighting.insert(entity, ());
-        self.components.realtime.insert(entity, ());
-        self.realtime_components.flicker.insert(
-            entity,
-            ScheduledRealtimePeriodicState {
-                state: {
-                    use flicker::spec::*;
-                    Flicker {
-                        colour_hint: Some(UniformInclusiveRange {
-                            low: Rgb24::new_grey(127),
-                            high: Rgb24::new_grey(255),
-                        }),
-                        light_colour: None,
-                        tile: None,
-                        until_next_event: UniformInclusiveRange {
-                            low: Duration::from_millis(64),
-                            high: Duration::from_millis(512),
-                        },
-                    }
-                }
-                .build(),
-                until_next_event: Duration::from_millis(0),
-            },
-        );
-        entity
-    }
-
-    pub fn spawn_space(&mut self, coord: Coord) -> Entity {
-        let entity = self.entity_allocator.alloc();
-        self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
-        self.components.tile.insert(entity, Tile::Space);
-        self.components.ignore_lighting.insert(entity, ());
-        entity
-    }
-
-    pub fn spawn_window(&mut self, coord: Coord) -> Entity {
-        let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
-                entity,
-                Location {
-                    coord,
-                    layer: Some(Layer::Feature),
-                },
-            )
-            .unwrap();
-        self.components.tile.insert(entity, Tile::Window);
-        self.components.solid.insert(entity, ());
-        entity
+        panic!("missing tiles")
     }
 
     pub fn spawn_door(&mut self, coord: Coord) -> Entity {

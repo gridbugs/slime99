@@ -53,7 +53,7 @@ struct ScreenShake {
 }
 
 impl ScreenShake {
-    fn coord(&self) -> Coord {
+    fn _coord(&self) -> Coord {
         self.direction.coord()
     }
     fn next(self) -> Option<Self> {

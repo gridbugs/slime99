@@ -38,27 +38,13 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                     world.spawn_floor(coord);
                     world.spawn_light(coord, Rgb24::new(187, 187, 187));
                 }
-                ',' => {
-                    world.spawn_carpet(coord);
-                }
                 '#' => {
                     world.spawn_floor(coord);
                     world.spawn_wall(coord);
                 }
-                '=' => {
-                    world.spawn_floor(coord);
-                    world.spawn_window(coord);
-                }
                 '+' => {
                     world.spawn_floor(coord);
                     world.spawn_door(coord);
-                }
-                '%' => {
-                    world.spawn_star(coord);
-                    world.spawn_space(coord);
-                }
-                ' ' => {
-                    world.spawn_space(coord);
                 }
                 '@' => {
                     world.spawn_floor(coord);
