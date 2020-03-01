@@ -20,7 +20,7 @@ pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
 pub use world::{CharacterInfo, HitPoints, Layer, NpcAction, Tile, ToRenderEntity};
 
-const MAP_SIZE: Size = Size::new_u16(20, 20);
+const MAP_SIZE: Size = Size::new_u16(19, 19);
 
 pub struct Config {
     pub omniscient: Option<Omniscient>,

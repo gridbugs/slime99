@@ -1,3 +1,4 @@
+use crate::ui;
 use crate::{depth, game::GameStatus};
 use direction::CardinalDirection;
 use game::{CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity};
@@ -41,6 +42,7 @@ impl GameView {
                 }
             }
         }
+        ui::UiView.view(ui::Ui::example(), context.add_offset(Coord::new(39, 0)), frame);
     }
 }
 
