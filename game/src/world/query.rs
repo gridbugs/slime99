@@ -34,6 +34,18 @@ impl World {
         }
     }
 
+    pub fn is_bridge_at_coord(&self, coord: Coord) -> bool {
+        if let Some(spatial_cell) = self.spatial.get_cell(coord) {
+            if let Some(entity) = spatial_cell.floor {
+                self.components.tile.get(entity) == Some(&Tile::Bridge)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
     pub fn can_npc_traverse_feature_at_coord(&self, coord: Coord) -> bool {
         if let Some(spatial_cell) = self.spatial.get_cell(coord) {
             if let Some(feature) = spatial_cell.feature {

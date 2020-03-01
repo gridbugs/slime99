@@ -2,18 +2,15 @@ use crate::audio::{Audio, AudioTable};
 use crate::controls::{AppInput, Controls};
 use crate::depth;
 use crate::frontend::Frontend;
+use crate::render::{GameToRender, GameView};
 use direction::{CardinalDirection, Direction};
-use game::{
-    CellVisibility, CharacterInfo, ExternalEvent, Game, GameControlFlow, Layer, Music, Tile, ToRenderEntity,
-    VisibilityGrid,
-};
+use game::{CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
 pub use game::{Config as GameConfig, Input as GameInput, Omniscient};
 use line_2d::{Config as LineConfig, LineSegment};
 use prototty::event_routine::common_event::*;
 use prototty::event_routine::*;
 use prototty::input::*;
 use prototty::render::*;
-use prototty::text::*;
 use prototty_audio::{AudioHandle, AudioPlayer};
 use prototty_storage::{format, Storage};
 use rand::{Rng, SeedableRng};
@@ -31,7 +28,6 @@ const AIM_UI_DEPTH: i8 = depth::GAME_MAX;
 const PLAYER_OFFSET: Coord = Coord::new(30, 18);
 const GAME_WINDOW_SIZE: Size = Size::new_u16((PLAYER_OFFSET.x as u16 * 2) + 1, (PLAYER_OFFSET.y as u16 * 2) + 1);
 const STORAGE_FORMAT: format::Bincode = format::Bincode;
-const CAMERA_MODE: CameraMode = CameraMode::Fixed;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Config {
@@ -48,13 +44,6 @@ impl Default for Config {
             fullscreen: false,
         }
     }
-}
-
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-enum CameraMode {
-    Fixed,
-    FollowPlayer,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -145,140 +134,8 @@ pub enum InjectedInput {
     Fire(ScreenCoord),
 }
 
-mod status_line_parts {
-    pub const HP_TITLE: usize = 0;
-    pub const HP_CURRENT: usize = 1;
-    pub const HP_MAX: usize = 2;
-    pub const N: usize = 3;
-}
-
-struct StatusLineView {
-    buffer: Vec<RichTextPartOwned>,
-}
-
-impl StatusLineView {
-    fn new() -> Self {
-        let mut buffer = Vec::new();
-        for _ in 0..status_line_parts::N {
-            buffer.push(RichTextPartOwned {
-                text: String::new(),
-                style: Style::new(),
-            });
-        }
-        Self { buffer }
-    }
-    fn update(&mut self, player_info: &CharacterInfo) {
-        use std::fmt::Write;
-        {
-            let hp_title = &mut self.buffer[status_line_parts::HP_TITLE];
-            hp_title.style = Style::new().with_foreground(Rgb24::new(255, 255, 255));
-            hp_title.text.clear();
-            write!(&mut hp_title.text, "HP: ").unwrap();
-        }
-        {
-            let hp_current_colour = if player_info.hit_points.current < player_info.hit_points.max / 4 {
-                Rgb24::new(255, 0, 0)
-            } else {
-                Rgb24::new(255, 255, 255)
-            };
-            let hp_current = &mut self.buffer[status_line_parts::HP_CURRENT];
-            hp_current.style = Style::new().with_foreground(hp_current_colour);
-            hp_current.text.clear();
-            write!(&mut hp_current.text, "{}", player_info.hit_points.current).unwrap();
-        }
-        {
-            let hp_max = &mut self.buffer[status_line_parts::HP_MAX];
-            hp_max.style = Style::new().with_foreground(Rgb24::new(255, 255, 255));
-            hp_max.text.clear();
-            write!(&mut hp_max.text, "/{}", player_info.hit_points.max).unwrap();
-        }
-    }
-}
-
-pub struct GameView {
-    last_offset: Coord,
-    status_line_view: StatusLineView,
-}
-
-impl GameView {
-    pub fn new() -> Self {
-        Self {
-            last_offset: Coord::new(0, 0),
-            status_line_view: StatusLineView::new(),
-        }
-    }
-    pub fn absolute_coord_to_game_relative_screen_coord(&self, coord: Coord) -> ScreenCoord {
-        ScreenCoord(coord - self.last_offset)
-    }
-    pub fn view<F: Frame, C: ColModify>(
-        &mut self,
-        game_to_render: GameToRender,
-        context: ViewContext<C>,
-        frame: &mut F,
-    ) {
-        let context = context.add_offset(Coord::new(1, 1));
-        let game = &game_to_render.game;
-        if game.is_generating() {
-            StringViewSingleLine::new(Style::default().with_foreground(Rgb24::new_grey(255))).view(
-                "Generating level...",
-                context,
-                frame,
-            );
-            return;
-        }
-        let player_info = game.player_info();
-        let player_coord = GameCoord::of_player(player_info);
-        let visibility_grid = game.visibility_grid();
-        let offset = game_to_render
-            .screen_shake
-            .as_ref()
-            .map(|d| d.coord())
-            .unwrap_or_else(|| Coord::new(0, 0));
-        for to_render_entity in game.to_render_entities() {
-            render_entity(
-                game_to_render.status,
-                game_to_render.camera_mode,
-                &to_render_entity,
-                game,
-                visibility_grid,
-                player_coord,
-                offset,
-                context,
-                frame,
-            );
-        }
-        self.last_offset = context.offset;
-        self.status_line_view.update(player_info);
-        RichTextViewSingleLine.view(
-            self.status_line_view.buffer.iter().map(|s| s.as_rich_text_part()),
-            context.add_offset(Coord::new(1, 1 + GAME_WINDOW_SIZE.height() as i32)),
-            frame,
-        );
-    }
-    fn view_map<F: Frame, C: ColModify>(&mut self, map_to_render: MapToRender, context: ViewContext<C>, frame: &mut F) {
-        let game = &map_to_render.game;
-        let offset = map_to_render.offset;
-        let visibility_grid = game.visibility_grid();
-        for to_render_entity in game.to_render_entities() {
-            map_render_entity(&to_render_entity, offset, visibility_grid, context, frame);
-        }
-    }
-}
-
-fn layer_depth(layer: Option<Layer>) -> i8 {
-    if let Some(layer) = layer {
-        match layer {
-            Layer::Floor => 0,
-            Layer::Feature => 1,
-            Layer::Character => 2,
-        }
-    } else {
-        depth::GAME_MAX - 1
-    }
-}
-
 #[derive(Clone, Copy)]
-pub struct ScreenCoord(Coord);
+pub struct ScreenCoord(pub Coord);
 
 #[derive(Clone, Copy)]
 struct GameCoord(Coord);
@@ -314,254 +171,6 @@ impl ScreenCoordToGameCoord {
     }
 }
 
-fn map_render_entity<F: Frame, C: ColModify>(
-    to_render_entity: &ToRenderEntity,
-    offset: Coord,
-    visibility_grid: &VisibilityGrid,
-    context: ViewContext<C>,
-    frame: &mut F,
-) {
-    let coord = to_render_entity.coord - offset;
-    if !coord.is_valid(GAME_WINDOW_SIZE) {
-        return;
-    }
-    let foreground_colour = match visibility_grid.cell_visibility(to_render_entity.coord) {
-        CellVisibility::NeverVisible => return,
-        CellVisibility::PreviouslyVisible => Rgb24::new(127, 127, 127),
-        CellVisibility::CurrentlyVisibleWithLightColour(_) => Rgb24::new(255, 255, 255),
-    };
-    let mut view_cell = match to_render_entity.tile {
-        Tile::Player => ViewCell::new().with_character('@').with_bold(true),
-        Tile::Wall => ViewCell::new().with_character('#').with_bold(true),
-        Tile::Window => ViewCell::new().with_character('=').with_bold(false),
-        Tile::DoorClosed | Tile::DoorOpen => ViewCell::new().with_character('+').with_bold(false),
-        Tile::Floor => ViewCell::new().with_character('.').with_bold(false),
-        Tile::Stairs => ViewCell::new().with_character('>').with_bold(true),
-        _ => return,
-    };
-    let depth = layer_depth(to_render_entity.layer);
-    view_cell.style.background = Some(Rgb24::new(0, 0, 0));
-    view_cell.style.foreground = Some(foreground_colour);
-    frame.set_cell_relative(coord, depth, view_cell, context);
-}
-
-fn render_entity_previously_visible<F: Frame, C: ColModify>(
-    camera_mode: CameraMode,
-    to_render_entity: &ToRenderEntity,
-    game: &Game,
-    player_coord: GameCoord,
-    offset: Coord,
-    context: ViewContext<C>,
-    frame: &mut F,
-) {
-    let entity_coord = GameCoord(to_render_entity.coord);
-    let screen_coord = match camera_mode {
-        CameraMode::Fixed => ScreenCoord(to_render_entity.coord),
-        CameraMode::FollowPlayer => GameCoordToScreenCoord {
-            game_coord: entity_coord,
-            player_coord: GameCoord(player_coord.0 + offset),
-        }
-        .compute(),
-    };
-    if !screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
-        return;
-    }
-    let depth = layer_depth(to_render_entity.layer);
-    let mut view_cell = match to_render_entity.tile {
-        Tile::Player => ViewCell::new().with_character('@').with_bold(true),
-        Tile::Floor => ViewCell::new().with_character('.'),
-        Tile::Sludge0 | Tile::Sludge1 => ViewCell::new().with_character('~'),
-        Tile::Bridge => ViewCell::new().with_character('='),
-        Tile::DoorClosed | Tile::DoorOpen => ViewCell::new().with_character('+'),
-        Tile::Stairs => ViewCell::new().with_character('>').with_bold(true),
-        Tile::Wall => {
-            if game.contains_wall(entity_coord.0 + Coord::new(0, 1)) {
-                ViewCell::new().with_character('█')
-            } else {
-                ViewCell::new().with_character('▀')
-            }
-        }
-        _ => return,
-    };
-    view_cell.style.background = Some(Rgb24::new_grey(15));
-    view_cell.style.foreground = Some(Rgb24::new_grey(63));
-    frame.set_cell_relative(screen_coord.0, depth, view_cell, context);
-}
-
-fn render_entity<F: Frame, C: ColModify>(
-    game_status: GameStatus,
-    camera_mode: CameraMode,
-    to_render_entity: &ToRenderEntity,
-    game: &Game,
-    visibility_grid: &VisibilityGrid,
-    player_coord: GameCoord,
-    offset: Coord,
-    context: ViewContext<C>,
-    frame: &mut F,
-) {
-    let entity_coord = GameCoord(to_render_entity.coord);
-    let light_colour = if let GameStatus::Over = game_status {
-        Rgb24::new(255, 0, 0)
-    } else {
-        match visibility_grid.cell_visibility(entity_coord.0) {
-            CellVisibility::CurrentlyVisibleWithLightColour(Some(light_colour)) => {
-                if to_render_entity.ignore_lighting {
-                    Rgb24::new(255, 255, 255)
-                } else {
-                    light_colour
-                }
-            }
-            CellVisibility::CurrentlyVisibleWithLightColour(None) => {
-                if to_render_entity.ignore_lighting {
-                    Rgb24::new(255, 255, 255)
-                } else {
-                    return;
-                }
-            }
-            CellVisibility::PreviouslyVisible => {
-                return render_entity_previously_visible(
-                    camera_mode,
-                    to_render_entity,
-                    game,
-                    player_coord,
-                    offset,
-                    context,
-                    frame,
-                )
-            }
-            CellVisibility::NeverVisible => return,
-        }
-    };
-    if game_status == GameStatus::Playing && light_colour == Rgb24::new(0, 0, 0) {
-        return;
-    }
-    let screen_coord = match camera_mode {
-        CameraMode::Fixed => ScreenCoord(to_render_entity.coord),
-        CameraMode::FollowPlayer => GameCoordToScreenCoord {
-            game_coord: entity_coord,
-            player_coord: GameCoord(player_coord.0 + offset),
-        }
-        .compute(),
-    };
-    if !screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
-        return;
-    }
-    let depth = layer_depth(to_render_entity.layer);
-    let mut view_cell = match to_render_entity.tile {
-        Tile::Player => ViewCell::new()
-            .with_character('@')
-            .with_bold(true)
-            .with_foreground(Rgb24::new(255, 255, 255)),
-        Tile::FormerHuman => ViewCell::new()
-            .with_character('f')
-            .with_foreground(Rgb24::new(255, 0, 0)),
-        Tile::Human => ViewCell::new()
-            .with_character('h')
-            .with_foreground(Rgb24::new(0, 255, 255)),
-        Tile::Floor => ViewCell::new()
-            .with_character('.')
-            .with_background(Rgb24::new(0, 127, 127))
-            .with_foreground(Rgb24::new(0, 187, 187)),
-        Tile::Carpet => ViewCell::new()
-            .with_character('.')
-            .with_background(Rgb24::new(127, 0, 0))
-            .with_foreground(Rgb24::new(127, 127, 127)),
-        Tile::Sludge0 => {
-            let background = to_render_entity.colour_hint.unwrap_or_else(|| Rgb24::new(0, 255, 0));
-            ViewCell::new()
-                .with_character('~')
-                .with_background(background)
-                .with_foreground(background.scalar_div(2))
-        }
-        Tile::Sludge1 => {
-            let background = to_render_entity.colour_hint.unwrap_or_else(|| Rgb24::new(0, 255, 0));
-            ViewCell::new()
-                .with_character('≈')
-                .with_background(background)
-                .with_foreground(background.scalar_div(2))
-        }
-        Tile::Bridge => ViewCell::new()
-            .with_character('=')
-            .with_background(Rgb24::new(200, 127, 0))
-            .with_foreground(Rgb24::new(127, 127, 0)),
-        Tile::Star => {
-            let foreground_colour = to_render_entity.colour_hint.unwrap_or_else(|| Rgb24::new_grey(255));
-            ViewCell::new()
-                .with_character('.')
-                .with_bold(true)
-                .with_foreground(foreground_colour)
-        }
-        Tile::Space => ViewCell::new().with_background(Rgb24::new(0, 0, 31)),
-        Tile::Window => ViewCell::new()
-            .with_character('=')
-            .with_foreground(Rgb24::new(255, 255, 255))
-            .with_background(Rgb24::new(127, 127, 127)),
-        Tile::DoorClosed => ViewCell::new()
-            .with_character('+')
-            .with_background(Rgb24::new(127, 0, 127))
-            .with_foreground(Rgb24::new(255, 127, 255)),
-        Tile::DoorOpen => ViewCell::new()
-            .with_character('-')
-            .with_background(Rgb24::new(0, 127, 127))
-            .with_foreground(Rgb24::new(255, 127, 255)),
-        Tile::Stairs => ViewCell::new()
-            .with_character('>')
-            .with_foreground(Rgb24::new(255, 255, 255))
-            .with_bold(true),
-        Tile::Wall => if game.contains_wall(entity_coord.0 + Coord::new(0, 1)) {
-            ViewCell::new().with_character('█')
-        } else {
-            ViewCell::new().with_character('▀')
-        }
-        .with_foreground(Rgb24::new(255, 0, 255))
-        .with_background(Rgb24::new(127, 0, 127)),
-        Tile::Bullet => ViewCell::new().with_character('*'),
-        Tile::Smoke => {
-            if let Some(fade) = to_render_entity.fade {
-                frame.blend_cell_background_relative(
-                    screen_coord.0,
-                    depth,
-                    Rgb24::new_grey(187).normalised_mul(light_colour),
-                    (255 - fade) / 10,
-                    blend_mode::LinearInterpolate,
-                    context,
-                )
-            }
-            return;
-        }
-        Tile::ExplosionFlame => {
-            if let Some(fade) = to_render_entity.fade {
-                if let Some(colour_hint) = to_render_entity.colour_hint {
-                    let quad_fade = (((fade as u16) * (fade as u16)) / 256) as u8;
-                    let start_colour = colour_hint;
-                    let end_colour = Rgb24::new(255, 0, 0);
-                    let interpolated_colour = start_colour.linear_interpolate(end_colour, quad_fade);
-                    let lit_colour = interpolated_colour.normalised_mul(light_colour);
-                    frame.blend_cell_background_relative(
-                        screen_coord.0,
-                        depth,
-                        lit_colour,
-                        (255 - fade) / 1,
-                        blend_mode::LinearInterpolate,
-                        context,
-                    )
-                }
-            }
-            return;
-        }
-    };
-    if to_render_entity.blood {
-        view_cell.style.foreground = Some(Rgb24::new(255, 0, 0));
-    }
-    if let Some(foreground) = view_cell.style.foreground.as_mut() {
-        *foreground = foreground.normalised_mul(light_colour);
-    }
-    if let Some(background) = view_cell.style.background.as_mut() {
-        *background = background.normalised_mul(light_colour);
-    }
-    frame.set_cell_relative(screen_coord.0, depth, view_cell, context);
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct GameInstance {
     rng: Isaac64Rng,
@@ -571,21 +180,9 @@ pub struct GameInstance {
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
-enum GameStatus {
+pub enum GameStatus {
     Playing,
     Over,
-}
-
-pub struct GameToRender<'a> {
-    game: &'a Game,
-    screen_shake: Option<ScreenShake>,
-    status: GameStatus,
-    camera_mode: CameraMode,
-}
-
-struct MapToRender<'a> {
-    game: &'a Game,
-    offset: Coord,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -603,20 +200,10 @@ impl GameInstance {
             current_music: None,
         }
     }
-    pub fn to_render(&self) -> GameToRender {
+    pub fn to_render(&self, status: GameStatus) -> GameToRender {
         GameToRender {
             game: &self.game,
-            screen_shake: self.screen_shake,
-            status: GameStatus::Playing,
-            camera_mode: CAMERA_MODE,
-        }
-    }
-    fn to_render_game_over(&self) -> GameToRender {
-        GameToRender {
-            game: &self.game,
-            screen_shake: self.screen_shake,
-            status: GameStatus::Over,
-            camera_mode: CAMERA_MODE,
+            status,
         }
     }
 }
@@ -878,7 +465,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                                 match app_input {
                                     AppInput::Aim => Aim::KeyboardFinalise,
                                     AppInput::Move(direction) => Aim::KeyboardDirection(direction),
-                                    AppInput::Wait | AppInput::Map => Aim::Ignore,
+                                    AppInput::Wait => Aim::Ignore,
                                 }
                             } else {
                                 match keyboard_input {
@@ -903,7 +490,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                         Handled::Continue(s)
                     }
                     Aim::Mouse { coord, press } => {
-                        s.screen_coord = view.absolute_coord_to_game_relative_screen_coord(coord);
+                        s.screen_coord = ScreenCoord(view.absolute_coord_to_game_relative_screen_coord(coord));
                         if press {
                             *last_aim_with_mouse = true;
                             Handled::Return(Some(s.screen_coord))
@@ -946,7 +533,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
         C: ColModify,
     {
         if let Some(instance) = data.instance.as_ref() {
-            view.view(instance.to_render(), context, frame);
+            view.view(instance.to_render(GameStatus::Playing), context, frame);
             let player_coord = GameCoord::of_player(instance.game.player_info());
             let screen_coord = self.screen_coord;
             let game_coord = ScreenCoordToGameCoord {
@@ -1014,7 +601,6 @@ impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
 pub enum GameReturn {
     Pause,
     Aim,
-    Map,
     GameOver,
 }
 
@@ -1071,7 +657,6 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
 
                                         AppInput::Aim => return Handled::Return(GameReturn::Aim),
                                         AppInput::Wait => instance.game.handle_input(GameInput::Wait, game_config),
-                                        AppInput::Map => return Handled::Return(GameReturn::Map),
                                     };
                                     if let Some(game_control_flow) = game_control_flow {
                                         match game_control_flow {
@@ -1121,7 +706,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
         C: ColModify,
     {
         if let Some(instance) = data.instance.as_ref() {
-            view.view(instance.to_render(), context, frame);
+            view.view(instance.to_render(GameStatus::Playing), context, frame);
         }
     }
 }
@@ -1198,85 +783,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameOverEventRoutine<S, A> {
         C: ColModify,
     {
         if let Some(instance) = data.instance.as_ref() {
-            view.view(instance.to_render_game_over(), context, frame);
-        }
-    }
-}
-
-pub struct MapEventRoutine<S: Storage, A: AudioPlayer> {
-    s: PhantomData<S>,
-    a: PhantomData<A>,
-    offset: Coord,
-}
-
-impl<S: Storage, A: AudioPlayer> MapEventRoutine<S, A> {
-    pub fn new_centred_on_player(instance: &GameInstance) -> Self {
-        let player_coord = GameCoord::of_player(instance.game.player_info());
-        let offset = ScreenCoordToGameCoord {
-            screen_coord: ScreenCoord(Coord::new(0, 0)),
-            player_coord,
-        }
-        .compute()
-        .0;
-        Self {
-            s: PhantomData,
-            a: PhantomData,
-            offset,
-        }
-    }
-}
-
-impl<S: Storage, A: AudioPlayer> EventRoutine for MapEventRoutine<S, A> {
-    type Return = ();
-    type Data = GameData<S, A>;
-    type View = GameView;
-    type Event = CommonEvent;
-
-    fn handle<EP>(self, data: &mut Self::Data, _view: &Self::View, event_or_peek: EP) -> Handled<Self::Return, Self>
-    where
-        EP: EventOrPeek<Event = Self::Event>,
-    {
-        let controls = &data.controls;
-        if let Some(_instance) = data.instance.as_mut() {
-            event_or_peek_with_handled(event_or_peek, self, |mut s, event| match event {
-                CommonEvent::Input(input) => match input {
-                    Input::Keyboard(keyboard_input) => {
-                        if let Some(app_input) = controls.get(keyboard_input) {
-                            match app_input {
-                                AppInput::Move(direction) => {
-                                    let new_offset = s.offset + direction.coord();
-                                    s.offset = new_offset;
-                                    Handled::Continue(s)
-                                }
-                                AppInput::Map => Handled::Return(()),
-                                _ => Handled::Continue(s),
-                            }
-                        } else {
-                            match keyboard_input {
-                                keys::ESCAPE => Handled::Return(()),
-                                _ => Handled::Continue(s),
-                            }
-                        }
-                    }
-                    Input::Mouse(_) => Handled::Continue(s),
-                },
-                CommonEvent::Frame(_) => Handled::Continue(s),
-            })
-        } else {
-            Handled::Return(())
-        }
-    }
-    fn view<F, C>(&self, data: &Self::Data, view: &mut Self::View, context: ViewContext<C>, frame: &mut F)
-    where
-        F: Frame,
-        C: ColModify,
-    {
-        if let Some(instance) = data.instance.as_ref() {
-            let map_to_render = MapToRender {
-                game: &instance.game,
-                offset: self.offset,
-            };
-            view.view_map(map_to_render, context, frame);
+            view.view(instance.to_render(GameStatus::Over), context, frame);
         }
     }
 }

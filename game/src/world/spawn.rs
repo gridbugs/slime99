@@ -25,11 +25,11 @@ pub fn make_player() -> EntityData {
         hit_points: Some(HitPoints::new_full(100)),
         player: Some(()),
         light: Some(Light {
-            colour: Rgb24::new_grey(127),
+            colour: Rgb24::new_grey(200),
             vision_distance: Circle::new_squared(60),
             diminish: Rational {
                 numerator: 1,
-                denominator: 30,
+                denominator: 15,
             },
         }),
         ..Default::default()
@@ -572,8 +572,8 @@ impl World {
                     Flicker {
                         colour_hint: None,
                         light_colour: Some(UniformInclusiveRange {
-                            low: Rgb24::new(31, 127, 31),
-                            high: Rgb24::new(63, 255, 63),
+                            low: Rgb24::new(31, 127, 63),
+                            high: Rgb24::new(63, 255, 127),
                         }),
                         tile: None,
                         until_next_event: UniformInclusiveRange {

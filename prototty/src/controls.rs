@@ -9,7 +9,6 @@ pub enum AppInput {
     Move(CardinalDirection),
     Aim,
     Wait,
-    Map,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -26,7 +25,6 @@ impl Controls {
             KeyboardInput::Down => AppInput::Move(CardinalDirection::South),
             KeyboardInput::Char('f') => AppInput::Aim,
             KeyboardInput::Char(' ') => AppInput::Wait,
-            KeyboardInput::Char('m') => AppInput::Map,
         ];
         Self { keys }
     }

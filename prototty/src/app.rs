@@ -2,10 +2,11 @@ use crate::controls::Controls;
 use crate::depth;
 use crate::frontend::Frontend;
 use crate::game::{
-    AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameView, InjectedInput,
-    MapEventRoutine, ScreenCoord,
+    AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameStatus, InjectedInput,
+    ScreenCoord,
 };
 pub use crate::game::{GameConfig, Omniscient, RngSeed};
+use crate::render::GameView;
 use common_event::*;
 use decorator::*;
 use event_routine::*;
@@ -304,7 +305,7 @@ impl<S: Storage, A: AudioPlayer> Decorate for DecorateMainMenu<S, A> {
             }
             .view(data, context.add_depth(depth::GAME_MAX + 1), frame);
             event_routine_view.view.game.view(
-                instance.to_render(),
+                instance.to_render(GameStatus::Playing),
                 context.compose_col_modify(
                     ColModifyDefaultForeground(Rgb24::new_grey(255))
                         .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
@@ -530,7 +531,7 @@ impl<S: Storage, A: AudioPlayer> Decorate for DecorateOptionsMenu<S, A> {
             }
             .view(data, context.add_depth(depth::GAME_MAX + 1), frame);
             event_routine_view.view.game.view(
-                instance.to_render(),
+                instance.to_render(GameStatus::Playing),
                 context.compose_col_modify(
                     ColModifyDefaultForeground(Rgb24::new_grey(255))
                         .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
@@ -698,9 +699,10 @@ fn aim<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = Option<ScreenCoord>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     make_either!(Ei = A | B);
     SideEffectThen::new_with_view(|data: &mut AppData<S, A>, view: &AppView| {
-        let game_relative_mouse_coord = view
-            .game
-            .absolute_coord_to_game_relative_screen_coord(data.last_mouse_coord);
+        let game_relative_mouse_coord = ScreenCoord(
+            view.game
+                .absolute_coord_to_game_relative_screen_coord(data.last_mouse_coord),
+        );
         if let Ok(initial_aim_coord) = data.game.initial_aim_coord(game_relative_mouse_coord) {
             Ei::A(
                 AimEventRoutine::new(initial_aim_coord)
@@ -713,22 +715,6 @@ fn aim<S: Storage, A: AudioPlayer>(
     })
 }
 
-fn map<S: Storage, A: AudioPlayer>(
-) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
-    make_either!(Ei = A | B);
-    SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
-        if let Some(instance) = data.game.instance() {
-            Ei::A(
-                MapEventRoutine::new_centred_on_player(instance)
-                    .select(SelectGame::new())
-                    .decorated(DecorateGame::new()),
-            )
-        } else {
-            Ei::B(Value::new(()))
-        }
-    })
-}
-
 enum GameLoopBreak {
     GameOver,
     Pause,
@@ -736,14 +722,13 @@ enum GameLoopBreak {
 
 fn game_loop<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
-    make_either!(Ei = A | B | C);
+    make_either!(Ei = A | B);
     SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| data.game.pre_game_loop())
         .then(|| {
             Ei::A(game())
                 .repeat(|game_return| match game_return {
                     GameReturn::Pause => Handled::Return(GameLoopBreak::Pause),
                     GameReturn::GameOver => Handled::Return(GameLoopBreak::GameOver),
-                    GameReturn::Map => Handled::Continue(Ei::C(map().then(|| game()))),
                     GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_screen_coord| {
                         make_either!(Ei = A | B);
                         if let Some(screen_coord) = maybe_screen_coord {

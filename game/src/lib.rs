@@ -20,7 +20,7 @@ pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
 pub use world::{CharacterInfo, HitPoints, Layer, Tile, ToRenderEntity};
 
-const MAP_SIZE: Size = Size::new_u16(24, 24);
+const MAP_SIZE: Size = Size::new_u16(20, 20);
 
 pub struct Config {
     pub omniscient: Option<Omniscient>,
@@ -248,6 +248,9 @@ impl Game {
     }
     pub fn contains_wall(&self, coord: Coord) -> bool {
         self.world.is_wall_at_coord(coord)
+    }
+    pub fn contains_bridge(&self, coord: Coord) -> bool {
+        self.world.is_bridge_at_coord(coord)
     }
     fn update_last_player_info(&mut self) {
         if let Some(character_info) = self.world.character_info(self.player) {

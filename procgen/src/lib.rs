@@ -649,7 +649,7 @@ fn pool_light_coords(grid: &Grid<SewerCell>) -> Vec<Coord> {
         if let SewerCell::Pool = cell {
             if CardinalDirection::all()
                 .map(|d| grid.get(coord + d.coord()).cloned())
-                .any(|maybe_cell| maybe_cell == Some(SewerCell::Floor))
+                .any(|maybe_cell| maybe_cell == Some(SewerCell::Floor) || maybe_cell.is_none())
             {
                 coords.push(coord)
             }
@@ -708,11 +708,6 @@ impl Sewer {
         let mut map = make_cell_d_grid(&classified_map);
         for candidate in bridge_candidates.choose(rng) {
             add_bridge_candidate(&mut map, &candidate);
-        }
-        for candidate in bridge_candidates.choose(rng) {
-            if rng.gen_range(0, 2) == 0 {
-                add_bridge_candidate(&mut map, &candidate);
-            }
         }
         let door_coords = door_candidates
             .choose(rng)
