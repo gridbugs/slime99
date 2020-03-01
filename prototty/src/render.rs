@@ -1,5 +1,6 @@
 use crate::{depth, game::GameStatus};
-use game::{CellVisibility, Game, Layer, Tile, ToRenderEntity};
+use direction::CardinalDirection;
+use game::{CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity};
 use prototty::render::{ColModify, Coord, Frame, Rgb24, ViewCell, ViewContext};
 
 pub struct GameToRender<'a> {
@@ -28,8 +29,17 @@ impl GameView {
         context: ViewContext<C>,
         frame: &mut F,
     ) {
-        for entity in game_to_render.game.to_render_entities() {
-            render_entity(&entity, game_to_render.game, context, frame);
+        match game_to_render.status {
+            GameStatus::Playing => {
+                for entity in game_to_render.game.to_render_entities() {
+                    render_entity(&entity, game_to_render.game, context, frame);
+                }
+            }
+            GameStatus::Over => {
+                for entity in game_to_render.game.to_render_entities() {
+                    render_entity_game_over(&entity, game_to_render.game, context, frame);
+                }
+            }
         }
     }
 }
@@ -126,6 +136,34 @@ impl Quad {
             ],
         }
     }
+    fn new_slime(
+        character: char,
+        foreground: Rgb24,
+        background: Rgb24,
+        hit_points: u32,
+        next_action: NpcAction,
+    ) -> Self {
+        let base = ViewCell::new().with_background(background).with_foreground(foreground);
+        let action_character = match next_action {
+            NpcAction::Wait => ' ',
+            NpcAction::Walk(direction) => match direction {
+                CardinalDirection::North => '↑',
+                CardinalDirection::East => '→',
+                CardinalDirection::South => '↓',
+                CardinalDirection::West => '←',
+            },
+        };
+        Self {
+            cells: [
+                base.with_character(character)
+                    .with_bold(true)
+                    .with_foreground(foreground),
+                base.with_character(action_character),
+                base.with_character(std::char::from_digit((hit_points / 10) % 10, 10).unwrap()),
+                base.with_character(std::char::from_digit(hit_points % 10, 10).unwrap()),
+            ],
+        }
+    }
     fn apply_lighting(&mut self, light_colour: Rgb24) {
         for view_cell in self.cells.iter_mut() {
             if let Some(foreground) = view_cell.style.foreground.as_mut() {
@@ -153,7 +191,7 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
         Tile::DoorOpen => Quad::new_door_open(Rgb24::new(255, 127, 255), Rgb24::new(0, 127, 127)),
         Tile::Stairs => Quad::new_stairs(Rgb24::new(255, 255, 255), Rgb24::new(0, 127, 127)),
         Tile::Sludge0 => {
-            let background = entity.colour_hint.unwrap_or_else(|| Rgb24::new(0, 255, 0));
+            let background = entity.colour_hint.unwrap_or_else(|| Rgb24::new(255, 0, 0));
             let foreground = background.scalar_div(2);
             Quad::new_repeating(
                 ViewCell::new()
@@ -163,7 +201,7 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
             )
         }
         Tile::Sludge1 => {
-            let background = entity.colour_hint.unwrap_or_else(|| Rgb24::new(0, 255, 0));
+            let background = entity.colour_hint.unwrap_or_else(|| Rgb24::new(255, 0, 0));
             let foreground = background.scalar_div(2);
             Quad::new_repeating(
                 ViewCell::new()
@@ -187,6 +225,48 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
                     .with_background(Rgb24::new(200, 127, 0)),
             )
         }
+        Tile::SlimeDivider => Quad::new_slime(
+            'd',
+            Rgb24::new(255, 63, 63),
+            Rgb24::new(31, 15, 15),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+        Tile::SlimeSwap => Quad::new_slime(
+            's',
+            Rgb24::new(127, 127, 255),
+            Rgb24::new(15, 15, 31),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+        Tile::SlimeTeleport => Quad::new_slime(
+            't',
+            Rgb24::new(187, 63, 255),
+            Rgb24::new(15, 0, 31),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+        Tile::SlimePrecise => Quad::new_slime(
+            'p',
+            Rgb24::new(255, 255, 63),
+            Rgb24::new(63, 63, 15),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+        Tile::SlimeGoo => Quad::new_slime(
+            'g',
+            Rgb24::new(0, 255, 0),
+            Rgb24::new(0, 63, 0),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+        Tile::SlimeUpgrade => Quad::new_slime(
+            'u',
+            Rgb24::new(255, 127, 0),
+            Rgb24::new(63, 31, 0),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
     }
 }
 
@@ -266,4 +346,16 @@ fn render_entity<F: Frame, C: ColModify>(entity: &ToRenderEntity, game: &Game, c
         }
         CellVisibility::NeverVisible | CellVisibility::CurrentlyVisibleWithLightColour(None) => (),
     }
+}
+
+fn render_entity_game_over<F: Frame, C: ColModify>(
+    entity: &ToRenderEntity,
+    game: &Game,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
+    let mut quad = entity_to_quad_visible(entity, game);
+    let depth = layer_depth(entity.layer);
+    quad.apply_lighting(Rgb24::new(255, 87, 31));
+    render_quad(entity.coord, depth, &quad, context, frame);
 }

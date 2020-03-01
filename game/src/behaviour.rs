@@ -1,7 +1,5 @@
 use crate::visibility::Visibility;
-use crate::world::Disposition;
-use crate::world::World;
-use crate::Input;
+use crate::world::{Disposition, NpcAction, World};
 use ecs::Entity;
 use grid_2d::{Coord, Grid, Size};
 use grid_search_cardinal::{
@@ -232,8 +230,12 @@ impl Agent {
         behaviour_context: &mut BehaviourContext,
         shadowcast_context: &mut ShadowcastContext<u8>,
         rng: &mut R,
-    ) -> Option<Input> {
-        let coord = world.entity_coord(entity)?;
+    ) -> NpcAction {
+        let coord = if let Some(coord) = world.entity_coord(entity) {
+            coord
+        } else {
+            return NpcAction::Wait;
+        };
         let npc = world.entity_npc(entity);
         self.behaviour = if let Some(player_coord) = world.entity_coord(player) {
             let can_see_player = if has_line_of_sight(coord, player_coord, world, self.vision_distance) {
@@ -322,9 +324,9 @@ impl Agent {
                     path_node = behaviour_context.wander_path.pop();
                 }
                 if let Some(path_node) = path_node {
-                    Some(Input::Walk(path_node.in_direction))
+                    NpcAction::Walk(path_node.in_direction)
                 } else {
-                    None
+                    NpcAction::Wait
                 }
             }
             Behaviour::Flee => {
@@ -337,9 +339,9 @@ impl Agent {
                 match maybe_cardinal_direction {
                     None => {
                         self.behaviour = Behaviour::Wander { avoid: true };
-                        None
+                        NpcAction::Wait
                     }
-                    Some(cardinal_direction) => Some(Input::Walk(cardinal_direction)),
+                    Some(cardinal_direction) => NpcAction::Walk(cardinal_direction),
                 }
             }
             Behaviour::Chase {
@@ -356,9 +358,9 @@ impl Agent {
                     match maybe_cardinal_direction {
                         None => {
                             self.behaviour = Behaviour::Wander { avoid: true };
-                            None
+                            NpcAction::Wait
                         }
-                        Some(cardinal_direction) => Some(Input::Walk(cardinal_direction)),
+                        Some(cardinal_direction) => NpcAction::Walk(cardinal_direction),
                     }
                 } else {
                     let result = behaviour_context
@@ -372,9 +374,9 @@ impl Agent {
                     match result {
                         Err(NoPath) | Ok(None) => {
                             self.behaviour = Behaviour::Wander { avoid: true };
-                            None
+                            NpcAction::Wait
                         }
-                        Ok(Some(cardinal_direction)) => Some(Input::Walk(cardinal_direction)),
+                        Ok(Some(cardinal_direction)) => NpcAction::Walk(cardinal_direction),
                     }
                 }
             }

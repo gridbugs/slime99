@@ -3,6 +3,7 @@ pub use crate::world::{
     explosion_spec,
     spatial::{Layer, Location},
 };
+use direction::CardinalDirection;
 use ecs::ecs_components;
 use rgb24::Rgb24;
 use serde::{Deserialize, Serialize};
@@ -27,6 +28,7 @@ ecs_components! {
         ignore_lighting: (),
         door_state: DoorState,
         stairs: (),
+        next_action: NpcAction,
     }
 }
 pub use components::Components;
@@ -43,6 +45,12 @@ pub enum Tile {
     Sludge0,
     Sludge1,
     Bridge,
+    SlimeDivider,
+    SlimePrecise,
+    SlimeTeleport,
+    SlimeSwap,
+    SlimeGoo,
+    SlimeUpgrade,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -99,4 +107,10 @@ impl HitPoints {
 pub enum DoorState {
     Open,
     Closed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum NpcAction {
+    Walk(CardinalDirection),
+    Wait,
 }

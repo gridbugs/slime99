@@ -11,7 +11,11 @@ use rand::Rng;
 
 impl World {
     pub fn character_walk_in_direction(&mut self, character: Entity, direction: CardinalDirection) {
-        let &current_coord = self.spatial.coord(character).unwrap();
+        let &current_coord = if let Some(coord) = self.spatial.coord(character) {
+            coord
+        } else {
+            panic!("failed to find coord for {:?}", character);
+        };
         let target_coord = current_coord + direction.coord();
         if let Some(feature_entity) = self.spatial.get_cell(target_coord).and_then(|cell| cell.feature) {
             if self.components.solid.contains(feature_entity) {
@@ -27,8 +31,8 @@ impl World {
     }
 
     pub fn melee_attack(&mut self, attacker: Entity, victim: Entity) {
-        if self.components.tile.get(attacker) != self.components.tile.get(victim) {
-            self.damage_character(victim, 10);
+        if self.components.player.get(attacker) != self.components.player.get(victim) {
+            self.damage_character(victim, 1);
         }
     }
 
@@ -165,6 +169,8 @@ impl World {
 
     fn character_die(&mut self, character: Entity) {
         self.spatial.remove(character);
+        self.components.remove_entity(character);
+        self.entity_allocator.free(character);
     }
 
     fn add_blood_stain_to_floor(&mut self, coord: Coord) {

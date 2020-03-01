@@ -165,8 +165,8 @@ impl World {
                         }),
                         tile: None,
                         until_next_event: UniformInclusiveRange {
-                            low: Duration::from_millis(127),
-                            high: Duration::from_millis(512),
+                            low: Duration::from_millis(17),
+                            high: Duration::from_millis(51),
                         },
                     }
                 }
@@ -183,7 +183,7 @@ impl World {
         self.components.light.insert(
             entity,
             Light {
-                colour: Rgb24::new(127, 127, 127),
+                colour: Rgb24::new(17, 17, 17),
                 vision_distance: Circle::new_squared(90),
                 diminish: Rational {
                     numerator: 1,
@@ -221,7 +221,7 @@ impl World {
             ScheduledRealtimePeriodicState {
                 state: movement::spec::Movement {
                     path: target - start,
-                    cardinal_step_duration: Duration::from_millis(12),
+                    cardinal_step_duration: Duration::from_millis(1),
                     repeat: movement::spec::Repeat::Once,
                 }
                 .build(),
@@ -384,7 +384,7 @@ impl World {
                             }),
                             fade_duration: Some(spec.fade_duration),
                             colour_hint: Some(UniformInclusiveRange {
-                                low: Rgb24::new(255, 127, 0),
+                                low: Rgb24::new(255, 17, 0),
                                 high: Rgb24::new(255, 255, 63),
                             }),
                             possible_particle_emitter: Some(Possible {
@@ -499,8 +499,8 @@ impl World {
                     Flicker {
                         colour_hint: None,
                         light_colour: Some(UniformInclusiveRange {
-                            low: Rgb24::new(31, 127, 63),
-                            high: Rgb24::new(63, 255, 127),
+                            low: Rgb24::new(31, 17, 63),
+                            high: Rgb24::new(63, 255, 17),
                         }),
                         tile: None,
                         until_next_event: UniformInclusiveRange {
@@ -536,7 +536,7 @@ impl World {
                     use flicker::spec::*;
                     Flicker {
                         colour_hint: Some(UniformInclusiveRange {
-                            low: Rgb24::new(0, 187, 0),
+                            low: Rgb24::new(0, 150, 0),
                             high: Rgb24::new(0, 225, 0),
                         }),
                         light_colour: None,
@@ -567,6 +567,144 @@ impl World {
             )
             .unwrap();
         self.components.tile.insert(entity, Tile::Bridge);
+        entity
+    }
+
+    pub fn spawn_slime_divider(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeDivider);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Hostile,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        entity
+    }
+
+    pub fn spawn_slime_swap(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeSwap);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Hostile,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        entity
+    }
+
+    pub fn spawn_slime_precise(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimePrecise);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Hostile,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        entity
+    }
+
+    pub fn spawn_slime_teleport(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeTeleport);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Hostile,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        entity
+    }
+
+    pub fn spawn_slime_goo(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeGoo);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Hostile,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        entity
+    }
+
+    pub fn spawn_slime_upgrade(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeUpgrade);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Afraid,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(1));
         entity
     }
 }

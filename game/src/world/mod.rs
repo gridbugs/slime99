@@ -10,7 +10,7 @@ use spatial::Spatial;
 
 mod data;
 use data::{Components, Npc};
-pub use data::{Disposition, EntityData, HitPoints, Layer, Location, Tile};
+pub use data::{Disposition, EntityData, HitPoints, Layer, Location, NpcAction, Tile};
 
 mod realtime_periodic;
 pub use realtime_periodic::animation::{Context as AnimationContext, FRAME_DURATION as ANIMATION_FRAME_DURATION};
@@ -57,12 +57,16 @@ impl World {
         let colour_hint_component = &self.components.colour_hint;
         let blood_component = &self.components.blood;
         let ignore_lighting_component = &self.components.ignore_lighting;
+        let hit_points = &self.components.hit_points;
+        let next_action = &self.components.next_action;
         tile_component.iter().filter_map(move |(entity, &tile)| {
             if let Some(location) = spatial.location(entity) {
                 let fade = realtime_fade_component.get(entity).and_then(|f| f.state.fading());
                 let colour_hint = colour_hint_component.get(entity).cloned();
                 let blood = blood_component.contains(entity);
                 let ignore_lighting = ignore_lighting_component.contains(entity);
+                let hit_points = hit_points.get(entity).cloned();
+                let next_action = next_action.get(entity).cloned();
                 Some(ToRenderEntity {
                     coord: location.coord,
                     layer: location.layer,
@@ -71,6 +75,8 @@ impl World {
                     colour_hint,
                     blood,
                     ignore_lighting,
+                    hit_points,
+                    next_action,
                 })
             } else {
                 None
@@ -116,6 +122,12 @@ impl World {
     ) {
         animation_context.tick(self, external_events, rng)
     }
+    pub fn commit_to_next_action(&mut self, entity: Entity, next_action: NpcAction) {
+        self.components.next_action.insert(entity, next_action);
+    }
+    pub fn next_npc_action(&self, entity: Entity) -> Option<NpcAction> {
+        self.components.next_action.get(entity).cloned()
+    }
     pub fn clone_entity_data(&self, entity: Entity) -> EntityData {
         self.components.clone_entity_data(entity)
     }
@@ -129,6 +141,8 @@ pub struct ToRenderEntity {
     pub colour_hint: Option<Rgb24>,
     pub blood: bool,
     pub ignore_lighting: bool,
+    pub hit_points: Option<HitPoints>,
+    pub next_action: Option<NpcAction>,
 }
 
 #[derive(Serialize, Deserialize)]

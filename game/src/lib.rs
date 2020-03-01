@@ -18,7 +18,7 @@ use procgen::SewerSpec;
 use terrain::Terrain;
 pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
-pub use world::{CharacterInfo, HitPoints, Layer, Tile, ToRenderEntity};
+pub use world::{CharacterInfo, HitPoints, Layer, NpcAction, Tile, ToRenderEntity};
 
 const MAP_SIZE: Size = Size::new_u16(20, 20);
 
@@ -93,6 +93,7 @@ impl Game {
         };
         game.update_behaviour();
         game.update_visibility(config);
+        game.prime_npcs();
         game
     }
     pub fn size(&self) -> Size {
@@ -142,26 +143,39 @@ impl Game {
             self.npc_turn();
         }
     }
-    fn npc_turn(&mut self) {
+    fn prime_npcs(&mut self) {
         for (entity, agent) in self.agents.iter_mut() {
-            if !self.world.entity_exists(entity) {
-                self.agents_to_remove.push(entity);
-                continue;
-            }
-            if let Some(input) = agent.act(
+            let next_action = agent.act(
                 entity,
                 &self.world,
                 self.player,
                 &mut self.behaviour_context,
                 &mut self.shadowcast_context,
                 &mut self.rng,
-            ) {
-                match input {
-                    Input::Walk(direction) => self.world.character_walk_in_direction(entity, direction),
-                    Input::Fire(coord) => self.world.character_fire_bullet(entity, coord),
-                    Input::Wait => (),
-                }
+            );
+            self.world.commit_to_next_action(entity, next_action);
+        }
+    }
+    fn npc_turn(&mut self) {
+        for (entity, agent) in self.agents.iter_mut() {
+            if !self.world.entity_exists(entity) {
+                self.agents_to_remove.push(entity);
+                continue;
             }
+            let current_action = self.world.next_npc_action(entity).unwrap_or(NpcAction::Wait);
+            match current_action {
+                NpcAction::Wait => (),
+                NpcAction::Walk(direction) => self.world.character_walk_in_direction(entity, direction),
+            }
+            let next_action = agent.act(
+                entity,
+                &self.world,
+                self.player,
+                &mut self.behaviour_context,
+                &mut self.shadowcast_context,
+                &mut self.rng,
+            );
+            self.world.commit_to_next_action(entity, next_action);
         }
         for entity in self.agents_to_remove.drain(..) {
             self.agents.remove(entity);
@@ -179,6 +193,7 @@ impl Game {
         self.update_last_player_info();
         self.update_behaviour();
         self.update_visibility(config);
+        self.prime_npcs();
         self.events.push(ExternalEvent::LoopMusic(Music::Fiberitron));
     }
     fn after_turn(&mut self) {

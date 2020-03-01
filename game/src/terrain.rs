@@ -7,7 +7,7 @@ use crate::{
 use ecs::{ComponentTable, Entity};
 use grid_2d::{Coord, Size};
 use procgen::{Sewer, SewerCell, SewerSpec};
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 use rgb24::Rgb24;
 
 pub struct Terrain {
@@ -33,6 +33,36 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
             match ch {
                 '.' => {
                     world.spawn_floor(coord);
+                }
+                'd' => {
+                    world.spawn_floor(coord);
+                    let entity = world.spawn_slime_divider(coord);
+                    agents.insert(entity, Agent::new(size));
+                }
+                's' => {
+                    world.spawn_floor(coord);
+                    let entity = world.spawn_slime_swap(coord);
+                    agents.insert(entity, Agent::new(size));
+                }
+                't' => {
+                    world.spawn_floor(coord);
+                    let entity = world.spawn_slime_teleport(coord);
+                    agents.insert(entity, Agent::new(size));
+                }
+                'p' => {
+                    world.spawn_floor(coord);
+                    let entity = world.spawn_slime_precise(coord);
+                    agents.insert(entity, Agent::new(size));
+                }
+                'g' => {
+                    world.spawn_floor(coord);
+                    let entity = world.spawn_slime_goo(coord);
+                    agents.insert(entity, Agent::new(size));
+                }
+                'u' => {
+                    world.spawn_floor(coord);
+                    let entity = world.spawn_slime_upgrade(coord);
+                    agents.insert(entity, Agent::new(size));
                 }
                 '*' => {
                     world.spawn_floor(coord);
@@ -72,9 +102,39 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
     Terrain { world, player, agents }
 }
 
+#[derive(Clone, Copy)]
+enum NpcType {
+    Divider,
+    Swap,
+    Teleport,
+    Precise,
+    Goo,
+    Upgrade,
+}
+
+fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord) -> Entity {
+    match npc_type {
+        NpcType::Divider => world.spawn_slime_divider(coord),
+        NpcType::Swap => world.spawn_slime_swap(coord),
+        NpcType::Teleport => world.spawn_slime_teleport(coord),
+        NpcType::Precise => world.spawn_slime_precise(coord),
+        NpcType::Goo => world.spawn_slime_goo(coord),
+        NpcType::Upgrade => world.spawn_slime_upgrade(coord),
+    }
+}
+
+const NPC_TYPES: &[NpcType] = &[
+    NpcType::Divider,
+    NpcType::Swap,
+    NpcType::Teleport,
+    NpcType::Precise,
+    NpcType::Goo,
+    NpcType::Upgrade,
+];
+
 pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
     let mut world = World::new(spec.size);
-    let agents = ComponentTable::default();
+    let mut agents = ComponentTable::default();
     let sewer = Sewer::generate(spec, rng);
     let mut npc_candidates = Vec::new();
     for (coord, cell) in sewer.map.enumerate() {
@@ -107,5 +167,22 @@ pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> T
         layer: Some(Layer::Character),
     };
     let player = world.insert_entity_data(player_location, player_data);
+    let mut empty_coords = sewer
+        .map
+        .enumerate()
+        .filter_map(|(coord, &cell)| {
+            if (cell == SewerCell::Bridge || cell == SewerCell::Floor) && coord != sewer.start && coord != sewer.goal {
+                Some(coord)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    empty_coords.shuffle(rng);
+    for &coord in empty_coords.iter().take(20) {
+        let npc_type = NPC_TYPES.choose(rng).unwrap().clone();
+        let entity = spawn_npc(&mut world, npc_type, coord);
+        agents.insert(entity, Agent::new(spec.size));
+    }
     Terrain { world, player, agents }
 }
