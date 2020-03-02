@@ -131,8 +131,11 @@ impl Game {
         if !self.is_gameplay_blocked() {
             match input {
                 Input::Walk(direction) => self.world.character_walk_in_direction(self.player, direction),
-                Input::Tech => self.world.apply_tech(None),
-                Input::TechWithCoord(coord) => self.world.apply_tech(Some(coord)),
+                Input::Tech => self.world.apply_tech(self.player),
+                Input::TechWithCoord(coord) => {
+                    self.world
+                        .apply_tech_with_coord(self.player, coord, &self.visibility_grid)
+                }
                 Input::Wait => (),
             }
         }

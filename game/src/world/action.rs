@@ -1,8 +1,11 @@
-use crate::world::{
-    data::{DoorState, OnCollision, ProjectileDamage, Tile},
-    explosion, player,
-    spatial::OccupiedBy,
-    ExternalEvent, World,
+use crate::{
+    world::{
+        data::{DoorState, OnCollision, ProjectileDamage, Tile},
+        explosion, player,
+        spatial::OccupiedBy,
+        ExternalEvent, World,
+    },
+    VisibilityGrid,
 };
 use direction::{CardinalDirection, Direction};
 use ecs::Entity;
@@ -85,8 +88,55 @@ impl World {
         self.spawn_flash(character_coord);
     }
 
-    pub fn apply_tech(&mut self, coord: Option<Coord>) {
-        println!("apply tech");
+    fn blink(&mut self, entity: Entity, coord: Coord) {
+        self.spatial.update_coord(entity, coord).unwrap();
+    }
+
+    pub fn apply_tech_with_coord(&mut self, entity: Entity, coord: Coord, visibility_grid: &VisibilityGrid) {
+        use player::Tech::*;
+        let player = self.components.player.get_mut(entity).unwrap();
+        if let Some(tech) = player.tech.peek() {
+            match tech {
+                Blink => {
+                    if let Some(spatial_cell) = self.spatial.get_cell(coord) {
+                        if spatial_cell.character.is_none() && visibility_grid.is_coord_visible(coord) {
+                            let can_blink = if let Some(feature) = spatial_cell.feature {
+                                !self.components.solid.contains(feature)
+                            } else {
+                                true
+                            };
+                            if can_blink {
+                                player.tech.pop();
+                                self.blink(entity, coord);
+                            }
+                        }
+                    }
+                }
+                _ => self.apply_tech(entity),
+            }
+        }
+    }
+
+    pub fn apply_tech(&mut self, entity: Entity) {
+        use player::Tech::*;
+        let player = self.components.player.get(entity).unwrap();
+        let mut success = true;
+        if let Some(tech) = player.tech.peek() {
+            match tech {
+                Blink => {
+                    log::warn!("attempted to blink without destination coord");
+                    success = false;
+                }
+                CritNext => (),
+                Attract => (),
+                Repel => (),
+                MissNext => (),
+                TeleportNext => (),
+            }
+        }
+        if success {
+            self.components.player.get_mut(entity).unwrap().tech.pop();
+        }
     }
 
     pub fn character_fire_shotgun<R: Rng>(&mut self, character: Entity, target: Coord, rng: &mut R) {

@@ -132,19 +132,19 @@ impl GameView {
                             );
                         }
                     }
-                    if aim_coord.is_valid(game::MAP_SIZE) {
-                        for &offset in &quad::OFFSETS {
-                            let alpha = self.blink.alpha(blink_duration);
-                            let output_coord = aim_coord * 2 + offset;
-                            frame.blend_cell_background_relative(
-                                output_coord,
-                                depth::GAME_MAX,
-                                Rgb24::new(255, 0, 0),
-                                alpha,
-                                blend_mode::LinearInterpolate,
-                                context,
-                            );
-                        }
+                }
+                if aim_coord.is_valid(game::MAP_SIZE) {
+                    for &offset in &quad::OFFSETS {
+                        let alpha = self.blink.alpha(blink_duration);
+                        let output_coord = aim_coord * 2 + offset;
+                        frame.blend_cell_background_relative(
+                            output_coord,
+                            depth::GAME_MAX,
+                            Rgb24::new(255, 0, 0),
+                            alpha,
+                            blend_mode::LinearInterpolate,
+                            context,
+                        );
                     }
                 }
             }

@@ -90,6 +90,12 @@ impl VisibilityGrid {
             CellVisibility::NeverVisible
         }
     }
+    pub fn is_coord_visible(&self, coord: Coord) -> bool {
+        match self.cell_visibility(coord) {
+            CellVisibility::CurrentlyVisibleWithLightColour(Some(_)) => true,
+            _ => false,
+        }
+    }
     pub fn update(
         &mut self,
         player_coord: Coord,

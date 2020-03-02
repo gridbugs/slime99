@@ -706,7 +706,7 @@ fn game_over<S: Storage, A: AudioPlayer>(
 }
 
 fn aim<S: Storage, A: AudioPlayer>(
-) -> impl EventRoutine<Return = Option<ScreenCoord>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
+) -> impl EventRoutine<Return = Option<Coord>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     make_either!(Ei = A | B);
     SideEffectThen::new_with_view(|data: &mut AppData<S, A>, view: &AppView| {
         let game_relative_mouse_coord = ScreenCoord(
@@ -739,10 +739,10 @@ fn game_loop<S: Storage, A: AudioPlayer>(
                 .repeat(|game_return| match game_return {
                     GameReturn::Pause => Handled::Return(GameLoopBreak::Pause),
                     GameReturn::GameOver => Handled::Return(GameLoopBreak::GameOver),
-                    GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_screen_coord| {
+                    GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_coord| {
                         make_either!(Ei = A | B);
-                        if let Some(screen_coord) = maybe_screen_coord {
-                            Ei::A(game_injecting_inputs(vec![InjectedInput::Fire(screen_coord)]))
+                        if let Some(coord) = maybe_coord {
+                            Ei::A(game_injecting_inputs(vec![InjectedInput::Tech(coord)]))
                         } else {
                             Ei::B(game())
                         }

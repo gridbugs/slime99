@@ -126,7 +126,7 @@ fn loop_music<A: AudioPlayer>(
 }
 
 pub enum InjectedInput {
-    Fire(ScreenCoord),
+    Tech(Coord),
 }
 
 #[derive(Clone, Copy)]
@@ -152,17 +152,6 @@ struct GameCoordToScreenCoord {
 impl GameCoordToScreenCoord {
     fn compute(self) -> ScreenCoord {
         ScreenCoord(self.game_coord.0 - self.player_coord.0 + PLAYER_OFFSET)
-    }
-}
-
-struct ScreenCoordToGameCoord {
-    screen_coord: ScreenCoord,
-    player_coord: GameCoord,
-}
-
-impl ScreenCoordToGameCoord {
-    fn compute(self) -> GameCoord {
-        GameCoord(self.screen_coord.0 + self.player_coord.0 - PLAYER_OFFSET)
     }
 }
 
@@ -391,7 +380,7 @@ impl<S: Storage, A: AudioPlayer> AimEventRoutine<S, A> {
 }
 
 impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
-    type Return = Option<ScreenCoord>;
+    type Return = Option<Coord>;
     type Data = GameData<S, A>;
     type View = GameView;
     type Event = CommonEvent;
@@ -436,14 +425,21 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                         }
                         Input::Mouse(mouse_input) => match mouse_input {
                             MouseInput::MouseMove { coord, .. } => Aim::Mouse { coord, press: false },
-                            MouseInput::MousePress { coord, .. } => Aim::Mouse { coord, press: true },
+                            MouseInput::MousePress {
+                                coord,
+                                button: MouseButton::Left,
+                            } => Aim::Mouse { coord, press: true },
+                            MouseInput::MousePress {
+                                button: MouseButton::Right,
+                                ..
+                            } => Aim::Cancel,
                             _ => Aim::Ignore,
                         },
                     },
                     CommonEvent::Frame(since_last) => Aim::Frame(since_last),
                 };
                 match aim {
-                    Aim::KeyboardFinalise => Handled::Return(Some(s.screen_coord)),
+                    Aim::KeyboardFinalise => Handled::Return(Some(s.screen_coord.0 / 2)),
                     Aim::KeyboardDirection(direction) => {
                         s.screen_coord.0 += direction.coord() * 2;
                         Handled::Continue(s)
@@ -452,7 +448,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                         s.screen_coord = ScreenCoord(view.absolute_coord_to_game_relative_screen_coord(coord));
                         if press {
                             *last_aim_with_mouse = true;
-                            Handled::Return(Some(s.screen_coord))
+                            Handled::Return(Some(s.screen_coord.0 / 2))
                         } else {
                             Handled::Continue(s)
                         }
@@ -505,49 +501,6 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                 context,
                 frame,
             );
-            /*
-            let player_coord = GameCoord::of_player(instance.game.player_info());
-            let screen_coord = self.screen_coord;
-            let game_coord = ScreenCoordToGameCoord {
-                screen_coord,
-                player_coord,
-            }
-            .compute();
-            if game_coord.0 != player_coord.0 {
-                for node in LineSegment::new(player_coord.0, game_coord.0).config_node_iter(LineConfig {
-                    exclude_start: true,
-                    exclude_end: true,
-                }) {
-                    let screen_coord = GameCoordToScreenCoord {
-                        player_coord,
-                        game_coord: GameCoord(node.coord),
-                    }
-                    .compute();
-                    if !screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
-                        break;
-                    }
-                    frame.blend_cell_background_relative(
-                        screen_coord.0,
-                        AIM_UI_DEPTH,
-                        Rgb24::new(255, 0, 0),
-                        127,
-                        blend_mode::LinearInterpolate,
-                        context,
-                    );
-                }
-            }
-            if screen_coord.0.is_valid(GAME_WINDOW_SIZE) {
-                let alpha = self.blink.alpha(self.duration);
-                frame.blend_cell_background_relative(
-                    screen_coord.0,
-                    AIM_UI_DEPTH,
-                    Rgb24::new(255, 0, 0),
-                    alpha,
-                    blend_mode::LinearInterpolate,
-                    context,
-                );
-            }
-            */
         }
     }
 }
@@ -599,15 +552,9 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
             let player_coord = GameCoord::of_player(instance.game.player_info());
             for injected_input in self.injected_inputs.drain(..) {
                 match injected_input {
-                    InjectedInput::Fire(screen_coord) => {
-                        let GameCoord(raw_game_coord) = ScreenCoordToGameCoord {
-                            screen_coord,
-                            player_coord,
-                        }
-                        .compute();
-                        if let Some(game_control_flow) = instance
-                            .game
-                            .handle_input(GameInput::TechWithCoord(raw_game_coord), game_config)
+                    InjectedInput::Tech(coord) => {
+                        if let Some(game_control_flow) =
+                            instance.game.handle_input(GameInput::TechWithCoord(coord), game_config)
                         {
                             match game_control_flow {
                                 GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
