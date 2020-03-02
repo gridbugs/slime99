@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 mod spatial;
 use spatial::Spatial;
 
+pub mod player;
+
 mod data;
 use data::{Components, Npc};
 pub use data::{Disposition, EntityData, HitPoints, Layer, Location, NpcAction, Tile};
@@ -93,14 +95,33 @@ impl World {
 
     pub fn character_info(&self, entity: Entity) -> Option<CharacterInfo> {
         let &coord = self.spatial.coord(entity)?;
-        let &hit_points = self.components.hit_points.get(entity)?;
-        Some(CharacterInfo { coord, hit_points })
+        Some(CharacterInfo { coord })
+    }
+
+    pub fn cleanup(&mut self) -> Option<PlayerDied> {
+        let mut ret = None;
+        for entity in self.components.to_remove.entities().collect::<Vec<_>>() {
+            if self.components.player.contains(entity) {
+                let player_data = self.components.remove_entity_data(entity);
+                ret = Some(PlayerDied(player_data));
+            } else {
+                self.components.remove_entity(entity);
+            }
+            self.spatial.remove(entity);
+            self.entity_allocator.free(entity);
+        }
+        ret
     }
 }
+
+pub struct PlayerDied(pub EntityData);
 
 impl World {
     pub fn entity_coord(&self, entity: Entity) -> Option<Coord> {
         self.spatial.coord(entity).cloned()
+    }
+    pub fn entity_player(&self, entity: Entity) -> Option<&player::Player> {
+        self.components.player.get(entity)
     }
     pub fn entity_npc(&self, entity: Entity) -> &Npc {
         self.components.npc.get(entity).unwrap()
@@ -148,5 +169,4 @@ pub struct ToRenderEntity {
 #[derive(Serialize, Deserialize)]
 pub struct CharacterInfo {
     pub coord: Coord,
-    pub hit_points: HitPoints,
 }

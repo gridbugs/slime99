@@ -1,6 +1,7 @@
 use crate::visibility::Light;
 pub use crate::world::{
     explosion_spec,
+    player::Player,
     spatial::{Layer, Location},
 };
 use direction::CardinalDirection;
@@ -24,11 +25,12 @@ ecs_components! {
         projectile_damage: ProjectileDamage,
         hit_points: HitPoints,
         blood: (),
-        player: (),
+        player: Player,
         ignore_lighting: (),
         door_state: DoorState,
         stairs: (),
         next_action: NpcAction,
+        to_remove: (),
     }
 }
 pub use components::Components;

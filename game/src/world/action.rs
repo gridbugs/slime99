@@ -1,6 +1,6 @@
 use crate::world::{
     data::{DoorState, OnCollision, ProjectileDamage, Tile},
-    explosion,
+    explosion, player,
     spatial::OccupiedBy,
     ExternalEvent, World,
 };
@@ -30,9 +30,43 @@ impl World {
         }
     }
 
+    pub fn player_melee_attack(&mut self, attacker: Entity, victim: Entity) {
+        let player = self.components.player.get_mut(attacker).unwrap();
+        if let Some(attack) = player.attack.pop() {
+            self.apply_attack(attack, victim);
+        }
+    }
+
+    pub fn npc_melee_attack(&mut self, attacker: Entity, victim: Entity) {
+        let player = self.components.player.get_mut(victim).unwrap();
+        if let Some(defend) = player.defend.pop() {
+            self.apply_defend(defend, attacker);
+        } else {
+            self.character_die(victim);
+        }
+    }
+
+    pub fn apply_attack(&mut self, attack: player::Attack, victim: Entity) {
+        use player::Attack::*;
+        match attack {
+            Hit(n) => self.damage_character(victim, n),
+            _ => (),
+        }
+    }
+
+    pub fn apply_defend(&mut self, defend: player::Defend, _attacker: Entity) {
+        use player::Defend::*;
+        match defend {
+            Dodge => (),
+            _ => (),
+        }
+    }
+
     pub fn melee_attack(&mut self, attacker: Entity, victim: Entity) {
-        if self.components.player.get(attacker) != self.components.player.get(victim) {
-            self.damage_character(victim, 1);
+        if self.components.player.get(attacker).is_some() {
+            self.player_melee_attack(attacker, victim);
+        } else if self.components.player.get(victim).is_some() {
+            self.npc_melee_attack(attacker, victim);
         }
     }
 
@@ -168,9 +202,7 @@ impl World {
     }
 
     fn character_die(&mut self, character: Entity) {
-        self.spatial.remove(character);
-        self.components.remove_entity(character);
-        self.entity_allocator.free(character);
+        self.components.to_remove.insert(character, ());
     }
 
     fn add_blood_stain_to_floor(&mut self, coord: Coord) {

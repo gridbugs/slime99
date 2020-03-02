@@ -2,7 +2,7 @@ use crate::{
     visibility::Light,
     world::{
         data::{CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, Npc, OnCollision, Tile},
-        explosion,
+        explosion, player,
         realtime_periodic::{
             core::ScheduledRealtimePeriodicState,
             data::{period_per_frame, FadeState, LightColourFadeState},
@@ -22,8 +22,7 @@ pub fn make_player() -> EntityData {
     EntityData {
         tile: Some(Tile::Player),
         character: Some(()),
-        hit_points: Some(HitPoints::new_full(1)),
-        player: Some(()),
+        player: Some(player::Player::new()),
         light: Some(Light {
             colour: Rgb24::new_grey(200),
             vision_distance: Circle::new_squared(60),
@@ -589,7 +588,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }
 
@@ -612,7 +611,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }
 
@@ -635,7 +634,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }
 
@@ -658,7 +657,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }
 
@@ -681,7 +680,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }
 }

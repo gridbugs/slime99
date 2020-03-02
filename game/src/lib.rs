@@ -18,7 +18,7 @@ use procgen::SewerSpec;
 use terrain::Terrain;
 pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
-pub use world::{CharacterInfo, HitPoints, Layer, NpcAction, Tile, ToRenderEntity};
+pub use world::{player, CharacterInfo, EntityData, HitPoints, Layer, NpcAction, PlayerDied, Tile, ToRenderEntity};
 
 pub const MAP_SIZE: Size = Size::new_u16(19, 19);
 
@@ -66,6 +66,7 @@ pub struct Game {
     agents_to_remove: Vec<Entity>,
     since_last_frame: Duration,
     generate_frame_countdown: Option<Duration>,
+    dead_player: Option<EntityData>,
 }
 
 impl Game {
@@ -90,6 +91,7 @@ impl Game {
             world,
             since_last_frame: Duration::from_millis(0),
             generate_frame_countdown: None,
+            dead_player: None,
         };
         game.update_behaviour();
         game.update_visibility(config);
@@ -98,6 +100,11 @@ impl Game {
     }
     pub fn size(&self) -> Size {
         self.world.size()
+    }
+    fn cleanup(&mut self) {
+        if let Some(PlayerDied(player_data)) = self.world.cleanup() {
+            self.dead_player = Some(player_data);
+        }
     }
     pub fn is_gameplay_blocked(&self) -> bool {
         self.world.is_gameplay_blocked()
@@ -127,6 +134,7 @@ impl Game {
                 Input::Wait => (),
             }
         }
+        self.cleanup();
         self.update_visibility(config);
         self.update_behaviour();
         self.npc_turn();
@@ -180,6 +188,7 @@ impl Game {
         for entity in self.agents_to_remove.drain(..) {
             self.agents.remove(entity);
         }
+        self.cleanup();
         self.after_turn();
     }
     fn generate_level(&mut self, config: &Config) {
@@ -270,11 +279,16 @@ impl Game {
     fn update_last_player_info(&mut self) {
         if let Some(character_info) = self.world.character_info(self.player) {
             self.last_player_info = character_info;
-        } else {
-            self.last_player_info.hit_points.current = 0;
         }
     }
     fn is_game_over(&self) -> bool {
-        self.last_player_info.hit_points.current == 0
+        self.dead_player.is_some()
+    }
+    pub fn player(&self) -> &player::Player {
+        if let Some(player) = self.world.entity_player(self.player) {
+            player
+        } else {
+            self.dead_player.as_ref().unwrap().player.as_ref().unwrap()
+        }
     }
 }

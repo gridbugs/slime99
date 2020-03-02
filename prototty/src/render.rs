@@ -93,7 +93,10 @@ impl GameView {
                 );
             }
         }
-        ui::UiView.view(ui::Ui::example(), context.add_offset(Coord::new(39, 0)), frame);
+        let ui = ui::Ui {
+            player: game_to_render.game.player(),
+        };
+        ui::UiView.view(ui, context.add_offset(Coord::new(39, 0)), frame);
     }
 }
 
