@@ -336,7 +336,7 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
                     .with_background(Rgb24::new(200, 127, 0)),
             )
         }
-        Tile::SlimeDivider => Quad::new_slime(
+        Tile::SlimeDivide => Quad::new_slime(
             'd',
             Rgb24::new(255, 63, 63),
             Rgb24::new(31, 15, 15),
@@ -368,6 +368,13 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
             'u',
             Rgb24::new(255, 127, 0),
             Rgb24::new(63, 31, 0),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+        Tile::SlimeCurse => Quad::new_slime(
+            'c',
+            Rgb24::new(187, 187, 187),
+            Rgb24::new(31, 31, 31),
             entity.hit_points.map(|hp| hp.current).unwrap_or(0),
             entity.next_action.unwrap_or(NpcAction::Wait),
         ),
@@ -473,10 +480,11 @@ fn tile_str(tile: Tile) -> Option<&'static str> {
         Tile::Wall => Some("a wall"),
         Tile::Floor => Some("the floor"),
         Tile::Stairs => Some("a staircase leading further down"),
-        Tile::SlimeDivider => Some("a Divide Slime"),
+        Tile::SlimeDivide => Some("a Divide Slime"),
         Tile::SlimeSwap => Some("a Swap Slime"),
         Tile::SlimeTeleport => Some("a Teleport Slime"),
         Tile::SlimeGoo => Some("a Goo Slime"),
         Tile::SlimeUpgrade => Some("an Upgrade Slime"),
+        Tile::SlimeCurse => Some("an Curse Slime"),
     }
 }

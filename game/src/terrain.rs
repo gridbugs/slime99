@@ -36,7 +36,7 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                 }
                 'd' => {
                     world.spawn_floor(coord);
-                    let entity = world.spawn_slime_divider(coord);
+                    let entity = world.spawn_slime_divide(coord);
                     agents.insert(entity, Agent::new(size));
                 }
                 's' => {
@@ -99,29 +99,32 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
 
 #[derive(Clone, Copy)]
 enum NpcType {
-    Divider,
+    Divide,
     Swap,
     Teleport,
     Goo,
     Upgrade,
+    Curse,
 }
 
 fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord) -> Entity {
     match npc_type {
-        NpcType::Divider => world.spawn_slime_divider(coord),
+        NpcType::Divide => world.spawn_slime_divide(coord),
         NpcType::Swap => world.spawn_slime_swap(coord),
         NpcType::Teleport => world.spawn_slime_teleport(coord),
         NpcType::Goo => world.spawn_slime_goo(coord),
         NpcType::Upgrade => world.spawn_slime_upgrade(coord),
+        NpcType::Curse => world.spawn_slime_curse(coord),
     }
 }
 
 const NPC_TYPES: &[NpcType] = &[
-    NpcType::Divider,
+    NpcType::Divide,
     NpcType::Swap,
     NpcType::Teleport,
     NpcType::Goo,
     NpcType::Upgrade,
+    NpcType::Curse,
 ];
 
 pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {

@@ -569,7 +569,7 @@ impl World {
         entity
     }
 
-    pub fn spawn_slime_divider(&mut self, coord: Coord) -> Entity {
+    pub fn spawn_slime_divide(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
@@ -580,7 +580,7 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::SlimeDivider);
+        self.components.tile.insert(entity, Tile::SlimeDivide);
         self.components.npc.insert(
             entity,
             Npc {
@@ -677,6 +677,29 @@ impl World {
             entity,
             Npc {
                 disposition: Disposition::Afraid,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        entity
+    }
+
+    pub fn spawn_slime_curse(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeCurse);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Hostile,
             },
         );
         self.components.character.insert(entity, ());

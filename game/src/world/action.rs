@@ -36,32 +36,41 @@ impl World {
     pub fn player_melee_attack(&mut self, attacker: Entity, victim: Entity) {
         let player = self.components.player.get_mut(attacker).unwrap();
         if let Some(attack) = player.attack.pop() {
-            self.apply_attack(attack, victim);
+            self.apply_attack(attack, attacker, victim);
         }
     }
 
     pub fn npc_melee_attack(&mut self, attacker: Entity, victim: Entity) {
         let player = self.components.player.get_mut(victim).unwrap();
         if let Some(defend) = player.defend.pop() {
-            self.apply_defend(defend, attacker);
+            self.apply_defend(defend, attacker, victim);
         } else {
             self.character_die(victim);
         }
     }
 
-    pub fn apply_attack(&mut self, attack: player::Attack, victim: Entity) {
+    fn cleave(&mut self, entity: Entity, damage: u32) {}
+    fn skewer(&mut self, entity: Entity, damage: u32) {}
+
+    pub fn apply_attack(&mut self, attack: player::Attack, attacker: Entity, victim: Entity) {
         use player::Attack::*;
         match attack {
+            Miss => (),
             Hit(n) => self.damage_character(victim, n),
-            _ => (),
+            Cleave(n) => self.cleave(attacker, n),
+            Skewer(n) => self.skewer(attacker, n),
         }
     }
 
-    pub fn apply_defend(&mut self, defend: player::Defend, _attacker: Entity) {
+    fn teleport(&mut self, entity: Entity) {}
+    fn panic(&mut self, entity: Entity) {}
+
+    pub fn apply_defend(&mut self, defend: player::Defend, _attacker: Entity, victim: Entity) {
         use player::Defend::*;
         match defend {
             Dodge => (),
-            _ => (),
+            Teleport => self.teleport(victim),
+            Panic => self.panic(victim),
         }
     }
 
@@ -117,9 +126,12 @@ impl World {
         }
     }
 
+    fn attract(&mut self, entity: Entity) {}
+    fn repel(&mut self, entity: Entity) {}
+
     pub fn apply_tech(&mut self, entity: Entity) {
         use player::Tech::*;
-        let player = self.components.player.get(entity).unwrap();
+        let player = self.components.player.get_mut(entity).unwrap();
         let mut success = true;
         if let Some(tech) = player.tech.peek() {
             match tech {
@@ -127,11 +139,23 @@ impl World {
                     log::warn!("attempted to blink without destination coord");
                     success = false;
                 }
-                CritNext => (),
-                Attract => (),
-                Repel => (),
-                MissNext => (),
-                TeleportNext => (),
+                CritNext => {
+                    if player.attack.push(player::Attack::Hit(99)).is_err() {
+                        success = false;
+                    }
+                }
+                MissNext => {
+                    if player.attack.push(player::Attack::Miss).is_err() {
+                        success = false;
+                    }
+                }
+                TeleportNext => {
+                    if player.defend.push(player::Defend::Teleport).is_err() {
+                        success = false;
+                    }
+                }
+                Attract => self.attract(entity),
+                Repel => self.repel(entity),
             }
         }
         if success {

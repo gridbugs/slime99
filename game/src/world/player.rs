@@ -58,6 +58,8 @@ pub struct Deck<T> {
     max_size: usize,
 }
 
+pub struct DeckIsFull;
+
 impl<T> Deck<T> {
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.items.iter().rev()
@@ -73,6 +75,14 @@ impl<T> Deck<T> {
     }
     pub fn peek(&self) -> Option<&T> {
         self.items.last()
+    }
+    pub fn push(&mut self, item: T) -> Result<(), DeckIsFull> {
+        if self.items.len() < self.max_size {
+            self.items.push(item);
+            Ok(())
+        } else {
+            Err(DeckIsFull)
+        }
     }
 }
 
@@ -122,7 +132,7 @@ impl Player {
                     Attack::Cleave(4),
                     Attack::Miss,
                     Attack::Cleave(4),
-                    Attack::Hit(100),
+                    Attack::Hit(99),
                     Attack::Skewer(4),
                 ]),
                 max_size: 16,

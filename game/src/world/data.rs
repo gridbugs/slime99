@@ -47,11 +47,12 @@ pub enum Tile {
     Sludge0,
     Sludge1,
     Bridge,
-    SlimeDivider,
+    SlimeDivide,
     SlimeTeleport,
     SlimeSwap,
     SlimeGoo,
     SlimeUpgrade,
+    SlimeCurse,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
