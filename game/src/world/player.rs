@@ -38,6 +38,20 @@ pub enum Ability {
     Skip(AbilityTarget),
 }
 
+impl Tech {
+    pub fn requires_aim(self) -> bool {
+        use Tech::*;
+        match self {
+            Blink => true,
+            CritNext => false,
+            Attract => false,
+            Repel => false,
+            MissNext => false,
+            TeleportNext => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Deck<T> {
     items: Vec<T>,
@@ -56,6 +70,9 @@ impl<T> Deck<T> {
     }
     pub fn pop(&mut self) -> Option<T> {
         self.items.pop()
+    }
+    pub fn peek(&self) -> Option<&T> {
+        self.items.last()
     }
 }
 

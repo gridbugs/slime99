@@ -1,5 +1,6 @@
 mod app;
 mod audio;
+mod blink;
 mod controls;
 mod depth;
 mod frontend;

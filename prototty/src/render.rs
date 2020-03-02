@@ -1,18 +1,27 @@
-use crate::ui;
-use crate::{depth, game::GameStatus};
+use crate::{blink::Blink, depth, game::GameStatus, ui};
 use direction::CardinalDirection;
 use game::{CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
-use prototty::render::{ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
+use line_2d::{Config as LineConfig, LineSegment};
+use prototty::render::{blend_mode, ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
 use prototty::text::{wrap, StringView, StringViewSingleLine};
+use std::time::Duration;
+
+#[derive(Clone, Copy)]
+pub enum Mode {
+    Normal,
+    Aim { blink_duration: Duration, target: Coord },
+}
 
 pub struct GameToRender<'a> {
     pub game: &'a Game,
     pub status: GameStatus,
     pub mouse_coord: Option<Coord>,
+    pub mode: Mode,
 }
 
 pub struct GameView {
     last_offset: Coord,
+    blink: Blink,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -25,6 +34,7 @@ impl GameView {
     pub fn new() -> Self {
         Self {
             last_offset: Coord::new(0, 0),
+            blink: Blink::new(),
         }
     }
 
@@ -97,6 +107,48 @@ impl GameView {
             player: game_to_render.game.player(),
         };
         ui::UiView.view(ui, context.add_offset(Coord::new(39, 0)), frame);
+        match game_to_render.mode {
+            Mode::Normal => (),
+            Mode::Aim { blink_duration, target } => {
+                let aim_coord = target / 2;
+                let player_coord = game_to_render.game.player_coord();
+                if aim_coord != player_coord {
+                    for node in LineSegment::new(player_coord, aim_coord).config_node_iter(LineConfig {
+                        exclude_start: true,
+                        exclude_end: true,
+                    }) {
+                        if !node.coord.is_valid(game::MAP_SIZE) {
+                            break;
+                        }
+                        for &offset in &quad::OFFSETS {
+                            let output_coord = node.coord * 2 + offset;
+                            frame.blend_cell_background_relative(
+                                output_coord,
+                                depth::GAME_MAX,
+                                Rgb24::new(255, 0, 0),
+                                127,
+                                blend_mode::LinearInterpolate,
+                                context,
+                            );
+                        }
+                    }
+                    if aim_coord.is_valid(game::MAP_SIZE) {
+                        for &offset in &quad::OFFSETS {
+                            let alpha = self.blink.alpha(blink_duration);
+                            let output_coord = aim_coord * 2 + offset;
+                            frame.blend_cell_background_relative(
+                                output_coord,
+                                depth::GAME_MAX,
+                                Rgb24::new(255, 0, 0),
+                                alpha,
+                                blend_mode::LinearInterpolate,
+                                context,
+                            );
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -121,6 +173,9 @@ impl Quad {
         Self {
             cells: [to_repeat, to_repeat, to_repeat, to_repeat],
         }
+    }
+    fn enumerate<'a>(&'a self) -> impl 'a + Iterator<Item = (Coord, ViewCell)> {
+        quad::OFFSETS.iter().cloned().zip(self.cells.iter().cloned())
     }
     fn new_wall_front(front: Rgb24, top: Rgb24) -> Self {
         let top = ViewCell::new().with_character(' ').with_background(top);
@@ -373,7 +428,7 @@ fn layer_depth(layer: Option<Layer>) -> i8 {
 }
 
 fn render_quad<F: Frame, C: ColModify>(coord: Coord, depth: i8, quad: &Quad, context: ViewContext<C>, frame: &mut F) {
-    for (&view_cell, offset) in quad.cells.iter().zip(quad::OFFSETS.iter()) {
+    for (offset, view_cell) in quad.enumerate() {
         let output_coord = coord * 2 + offset;
         frame.set_cell_relative(output_coord, depth, view_cell, context);
     }

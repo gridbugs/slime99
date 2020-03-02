@@ -127,7 +127,7 @@ impl World {
         self.components.npc.get(entity).unwrap()
     }
     pub fn entity_exists(&self, entity: Entity) -> bool {
-        self.entity_allocator.exists(entity)
+        self.entity_allocator.exists(entity) && !self.components.to_remove.contains(entity)
     }
     pub fn size(&self) -> Size {
         self.spatial.grid_size()

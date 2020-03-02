@@ -85,6 +85,10 @@ impl World {
         self.spawn_flash(character_coord);
     }
 
+    pub fn apply_tech(&mut self, coord: Option<Coord>) {
+        println!("apply tech");
+    }
+
     pub fn character_fire_shotgun<R: Rng>(&mut self, character: Entity, target: Coord, rng: &mut R) {
         const NUM_BULLETS: usize = 12;
         let &character_coord = self.spatial.coord(character).unwrap();

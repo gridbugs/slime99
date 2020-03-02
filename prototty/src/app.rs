@@ -6,7 +6,7 @@ use crate::game::{
     ScreenCoord,
 };
 pub use crate::game::{GameConfig, Omniscient, RngSeed};
-use crate::render::GameView;
+use crate::render::{GameToRender, GameView, Mode};
 use common_event::*;
 use decorator::*;
 use event_routine::*;
@@ -305,7 +305,12 @@ impl<S: Storage, A: AudioPlayer> Decorate for DecorateMainMenu<S, A> {
             }
             .view(data, context.add_depth(depth::GAME_MAX + 1), frame);
             event_routine_view.view.game.view(
-                instance.to_render(GameStatus::Playing),
+                GameToRender {
+                    game: instance.game(),
+                    status: GameStatus::Playing,
+                    mouse_coord: None,
+                    mode: Mode::Normal,
+                },
                 context.compose_col_modify(
                     ColModifyDefaultForeground(Rgb24::new_grey(255))
                         .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
@@ -531,7 +536,12 @@ impl<S: Storage, A: AudioPlayer> Decorate for DecorateOptionsMenu<S, A> {
             }
             .view(data, context.add_depth(depth::GAME_MAX + 1), frame);
             event_routine_view.view.game.view(
-                instance.to_render(GameStatus::Playing),
+                GameToRender {
+                    game: instance.game(),
+                    status: GameStatus::Playing,
+                    mouse_coord: None,
+                    mode: Mode::Normal,
+                },
                 context.compose_col_modify(
                     ColModifyDefaultForeground(Rgb24::new_grey(255))
                         .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),

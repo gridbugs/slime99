@@ -1,16 +1,13 @@
 use crate::audio::{Audio, AudioTable};
 use crate::controls::{AppInput, Controls};
-use crate::depth;
 use crate::frontend::Frontend;
-use crate::render::{GameToRender, GameView};
+use crate::render::{GameToRender, GameView, Mode};
 use direction::{CardinalDirection, Direction};
 use game::{CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
 pub use game::{Config as GameConfig, Input as GameInput, Omniscient};
-use line_2d::{Config as LineConfig, LineSegment};
 use prototty::event_routine::common_event::*;
 use prototty::event_routine::*;
 use prototty::input::*;
-use prototty::render::*;
 use prototty_audio::{AudioHandle, AudioPlayer};
 use prototty_storage::{format, Storage};
 use rand::{Rng, SeedableRng};
@@ -24,9 +21,7 @@ const CONFIG_KEY: &str = "config.json";
 const GAME_MUSIC_VOLUME: f32 = 0.05;
 const MENU_MUSIC_VOLUME: f32 = 0.02;
 
-const AIM_UI_DEPTH: i8 = depth::GAME_MAX;
 const PLAYER_OFFSET: Coord = Coord::new(30, 18);
-const GAME_WINDOW_SIZE: Size = Size::new_u16((PLAYER_OFFSET.x as u16 * 2) + 1, (PLAYER_OFFSET.y as u16 * 2) + 1);
 const STORAGE_FORMAT: format::Bincode = format::Bincode;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -200,19 +195,8 @@ impl GameInstance {
             current_music: None,
         }
     }
-    pub fn to_render_with_mouse_coord(&self, status: GameStatus, mouse_coord: Coord) -> GameToRender {
-        GameToRender {
-            game: &self.game,
-            status,
-            mouse_coord: Some(mouse_coord),
-        }
-    }
-    pub fn to_render(&self, status: GameStatus) -> GameToRender {
-        GameToRender {
-            game: &self.game,
-            status,
-            mouse_coord: None,
-        }
+    pub fn game(&self) -> &Game {
+        &self.game
     }
 }
 
@@ -393,33 +377,6 @@ pub struct AimEventRoutine<S: Storage, A: AudioPlayer> {
     a: PhantomData<A>,
     screen_coord: ScreenCoord,
     duration: Duration,
-    blink: Blink,
-}
-
-struct Blink {
-    cycle_length: Duration,
-    min_alpha: u8,
-    max_alpha: u8,
-}
-
-impl Blink {
-    fn intensity(&self, duration: Duration) -> u8 {
-        let cycle_length_micros = self.cycle_length.as_micros();
-        let duration_micros = duration.as_micros();
-        let progress_through_cycle_micros = duration_micros % cycle_length_micros;
-        let scaled_progress = (progress_through_cycle_micros * 512) / cycle_length_micros;
-        if scaled_progress < 256 {
-            scaled_progress as u8
-        } else {
-            (511 - scaled_progress) as u8
-        }
-    }
-    fn alpha(&self, duration: Duration) -> u8 {
-        let intensity = self.intensity(duration);
-        let delta = self.max_alpha - self.min_alpha;
-        let offset = ((delta as u16 * intensity as u16) / 255 as u16) as u8;
-        self.min_alpha + offset
-    }
 }
 
 impl<S: Storage, A: AudioPlayer> AimEventRoutine<S, A> {
@@ -429,11 +386,6 @@ impl<S: Storage, A: AudioPlayer> AimEventRoutine<S, A> {
             a: PhantomData,
             screen_coord,
             duration: Duration::from_millis(0),
-            blink: Blink {
-                cycle_length: Duration::from_millis(500),
-                min_alpha: 64,
-                max_alpha: 187,
-            },
         }
     }
 }
@@ -471,9 +423,8 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                         Input::Keyboard(keyboard_input) => {
                             if let Some(app_input) = controls.get(keyboard_input) {
                                 match app_input {
-                                    AppInput::Aim => Aim::KeyboardFinalise,
                                     AppInput::Move(direction) => Aim::KeyboardDirection(direction),
-                                    AppInput::Wait => Aim::Ignore,
+                                    AppInput::Wait | AppInput::Tech => Aim::Ignore,
                                 }
                             } else {
                                 match keyboard_input {
@@ -494,7 +445,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                 match aim {
                     Aim::KeyboardFinalise => Handled::Return(Some(s.screen_coord)),
                     Aim::KeyboardDirection(direction) => {
-                        s.screen_coord.0 += direction.coord();
+                        s.screen_coord.0 += direction.coord() * 2;
                         Handled::Continue(s)
                     }
                     Aim::Mouse { coord, press } => {
@@ -541,7 +492,20 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
         C: ColModify,
     {
         if let Some(instance) = data.instance.as_ref() {
-            view.view(instance.to_render(GameStatus::Playing), context, frame);
+            view.view(
+                GameToRender {
+                    game: &instance.game,
+                    status: GameStatus::Playing,
+                    mouse_coord: Some(self.screen_coord.0),
+                    mode: Mode::Aim {
+                        blink_duration: self.duration,
+                        target: self.screen_coord.0,
+                    },
+                },
+                context,
+                frame,
+            );
+            /*
             let player_coord = GameCoord::of_player(instance.game.player_info());
             let screen_coord = self.screen_coord;
             let game_coord = ScreenCoordToGameCoord {
@@ -583,6 +547,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                     context,
                 );
             }
+            */
         }
     }
 }
@@ -640,8 +605,9 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                             player_coord,
                         }
                         .compute();
-                        if let Some(game_control_flow) =
-                            instance.game.handle_input(GameInput::Fire(raw_game_coord), game_config)
+                        if let Some(game_control_flow) = instance
+                            .game
+                            .handle_input(GameInput::TechWithCoord(raw_game_coord), game_config)
                         {
                             match game_control_flow {
                                 GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
@@ -664,8 +630,17 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                                         AppInput::Move(direction) => {
                                             instance.game.handle_input(GameInput::Walk(direction), game_config)
                                         }
-
-                                        AppInput::Aim => return Handled::Return(GameReturn::Aim),
+                                        AppInput::Tech => {
+                                            if let Some(&next_tech) = instance.game.player().tech.peek() {
+                                                if next_tech.requires_aim() {
+                                                    return Handled::Return(GameReturn::Aim);
+                                                } else {
+                                                    instance.game.handle_input(GameInput::Tech, game_config)
+                                                }
+                                            } else {
+                                                return Handled::Continue(s);
+                                            }
+                                        }
                                         AppInput::Wait => instance.game.handle_input(GameInput::Wait, game_config),
                                     };
                                     if let Some(game_control_flow) = game_control_flow {
@@ -722,7 +697,12 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
     {
         if let Some(instance) = data.instance.as_ref() {
             view.view(
-                instance.to_render_with_mouse_coord(GameStatus::Playing, self.mouse_coord),
+                GameToRender {
+                    game: &instance.game,
+                    status: GameStatus::Playing,
+                    mouse_coord: Some(self.mouse_coord),
+                    mode: Mode::Normal,
+                },
                 context,
                 frame,
             );
@@ -802,7 +782,16 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameOverEventRoutine<S, A> {
         C: ColModify,
     {
         if let Some(instance) = data.instance.as_ref() {
-            view.view(instance.to_render(GameStatus::Over), context, frame);
+            view.view(
+                GameToRender {
+                    game: &instance.game,
+                    status: GameStatus::Over,
+                    mouse_coord: None,
+                    mode: Mode::Normal,
+                },
+                context,
+                frame,
+            );
         }
     }
 }

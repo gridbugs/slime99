@@ -46,7 +46,8 @@ pub enum GameControlFlow {
 #[derive(Clone, Copy, Debug)]
 pub enum Input {
     Walk(CardinalDirection),
-    Fire(Coord),
+    Tech,
+    TechWithCoord(Coord),
     Wait,
 }
 
@@ -130,7 +131,8 @@ impl Game {
         if !self.is_gameplay_blocked() {
             match input {
                 Input::Walk(direction) => self.world.character_walk_in_direction(self.player, direction),
-                Input::Fire(coord) => self.world.character_fire_rocket(self.player, coord),
+                Input::Tech => self.world.apply_tech(None),
+                Input::TechWithCoord(coord) => self.world.apply_tech(Some(coord)),
                 Input::Wait => (),
             }
         }
@@ -290,5 +292,8 @@ impl Game {
         } else {
             self.dead_player.as_ref().unwrap().player.as_ref().unwrap()
         }
+    }
+    pub fn player_coord(&self) -> Coord {
+        self.last_player_info.coord
     }
 }

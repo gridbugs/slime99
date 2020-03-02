@@ -7,7 +7,7 @@ use std::collections::HashMap;
 #[derive(Clone, Serialize, Deserialize)]
 pub enum AppInput {
     Move(CardinalDirection),
-    Aim,
+    Tech,
     Wait,
 }
 
@@ -23,7 +23,7 @@ impl Controls {
             KeyboardInput::Right => AppInput::Move(CardinalDirection::East),
             KeyboardInput::Up => AppInput::Move(CardinalDirection::North),
             KeyboardInput::Down => AppInput::Move(CardinalDirection::South),
-            KeyboardInput::Char('f') => AppInput::Aim,
+            KeyboardInput::Char('t') => AppInput::Tech,
             KeyboardInput::Char(' ') => AppInput::Wait,
         ];
         Self { keys }
