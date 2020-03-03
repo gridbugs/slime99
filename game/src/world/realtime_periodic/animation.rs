@@ -39,7 +39,7 @@ impl Context {
                     until_next_event,
                 } = realtime_entity_components.tick(frame_remaining, rng);
                 frame_remaining -= until_next_event;
-                event.animate(entity, world, external_events);
+                event.animate(entity, world, external_events, rng);
             }
         }
     }

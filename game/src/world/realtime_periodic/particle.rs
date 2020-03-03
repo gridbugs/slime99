@@ -206,7 +206,13 @@ impl RealtimePeriodicState for ParticleEmitterState {
             until_next_event,
         }
     }
-    fn animate_event(mut spawn_particle: Self::Event, entity: Entity, world: &mut World, _: &mut Vec<ExternalEvent>) {
+    fn animate_event<R: Rng>(
+        mut spawn_particle: Self::Event,
+        entity: Entity,
+        world: &mut World,
+        _: &mut Vec<ExternalEvent>,
+        _: &mut R,
+    ) {
         let coord = if let Some(&coord) = world.spatial.coord(entity) {
             coord
         } else {

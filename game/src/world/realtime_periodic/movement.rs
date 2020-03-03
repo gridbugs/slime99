@@ -111,11 +111,17 @@ impl RealtimePeriodicState for MovementState {
             until_next_event,
         }
     }
-    fn animate_event(event: Self::Event, entity: Entity, world: &mut World, external_events: &mut Vec<ExternalEvent>) {
+    fn animate_event<R: Rng>(
+        event: Self::Event,
+        entity: Entity,
+        world: &mut World,
+        external_events: &mut Vec<ExternalEvent>,
+        rng: &mut R,
+    ) {
         if let Some(movement_direction) = event {
-            world.projectile_move(entity, movement_direction, external_events);
+            world.projectile_move(entity, movement_direction, external_events, rng);
         } else {
-            world.projectile_stop(entity, external_events);
+            world.projectile_stop(entity, external_events, rng);
         }
     }
 }

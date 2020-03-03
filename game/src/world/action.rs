@@ -1,9 +1,9 @@
 use crate::{
     world::{
-        data::{DoorState, OnCollision, OnDeath, ProjectileDamage, Tile},
+        data::{DoorState, OnCollision, OnDamage, ProjectileDamage, Tile},
         explosion, player,
         realtime_periodic::{core::ScheduledRealtimePeriodicState, movement},
-        spatial::OccupiedBy,
+        spatial::{Layer, Location, OccupiedBy},
         ExternalEvent, World,
     },
     VisibilityGrid,
@@ -11,7 +11,8 @@ use crate::{
 use direction::{CardinalDirection, Direction};
 use ecs::Entity;
 use grid_2d::Coord;
-use rand::{seq::IteratorRandom, Rng};
+use rand::{seq::IteratorRandom, seq::SliceRandom, Rng};
+use std::collections::{HashSet, VecDeque};
 use std::time::Duration;
 
 impl World {
@@ -44,10 +45,16 @@ impl World {
         }
     }
 
-    fn player_melee_attack(&mut self, attacker: Entity, victim: Entity, direction: CardinalDirection) {
+    fn player_melee_attack<R: Rng>(
+        &mut self,
+        attacker: Entity,
+        victim: Entity,
+        direction: CardinalDirection,
+        rng: &mut R,
+    ) {
         let player = self.components.player.get_mut(attacker).unwrap();
         if let Some(attack) = player.attack.pop() {
-            self.apply_attack(attack, attacker, victim, direction);
+            self.apply_attack(attack, attacker, victim, direction, rng);
         }
     }
 
@@ -60,19 +67,19 @@ impl World {
         }
     }
 
-    fn cleave(&mut self, entity: Entity, damage: u32) {
+    fn cleave<R: Rng>(&mut self, entity: Entity, damage: u32, rng: &mut R) {
         let &this_coord = self.spatial.coord(entity).unwrap();
         for direction in Direction::all() {
             let coord = this_coord + direction.coord();
             if let Some(cell) = self.spatial.get_cell(coord) {
                 if let Some(entity) = cell.character {
-                    self.damage_character(entity, damage);
+                    self.damage_character(entity, damage, rng);
                 }
             }
         }
     }
 
-    fn skewer(&mut self, entity: Entity, damage: u32, direction: CardinalDirection) {
+    fn skewer<R: Rng>(&mut self, entity: Entity, damage: u32, direction: CardinalDirection, rng: &mut R) {
         const RANGE: u32 = 4;
         let &(mut coord) = self.spatial.coord(entity).unwrap();
         for _ in 0..RANGE {
@@ -82,19 +89,26 @@ impl World {
                     break;
                 }
                 if let Some(entity) = cell.character {
-                    self.damage_character(entity, damage);
+                    self.damage_character(entity, damage, rng);
                 }
             }
         }
     }
 
-    fn apply_attack(&mut self, attack: player::Attack, attacker: Entity, victim: Entity, direction: CardinalDirection) {
+    fn apply_attack<R: Rng>(
+        &mut self,
+        attack: player::Attack,
+        attacker: Entity,
+        victim: Entity,
+        direction: CardinalDirection,
+        rng: &mut R,
+    ) {
         use player::Attack::*;
         match attack {
             Miss => (),
-            Hit(n) => self.damage_character(victim, n),
-            Cleave(n) => self.cleave(attacker, n),
-            Skewer(n) => self.skewer(attacker, n, direction),
+            Hit(n) => self.damage_character(victim, n, rng),
+            Cleave(n) => self.cleave(attacker, n, rng),
+            Skewer(n) => self.skewer(attacker, n, direction, rng),
         }
     }
 
@@ -123,8 +137,8 @@ impl World {
         }
     }
 
-    fn revenge(&mut self, entity: Entity) {
-        self.cleave(entity, 100);
+    fn revenge<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
+        self.cleave(entity, 100, rng);
     }
 
     fn apply_defend<R: Rng>(&mut self, defend: player::Defend, victim: Entity, rng: &mut R) {
@@ -132,13 +146,13 @@ impl World {
         match defend {
             Dodge => (),
             Teleport => self.teleport(victim, rng),
-            Revenge => self.revenge(victim),
+            Revenge => self.revenge(victim, rng),
         }
     }
 
     fn melee_attack<R: Rng>(&mut self, attacker: Entity, victim: Entity, direction: CardinalDirection, rng: &mut R) {
         if self.components.player.get(attacker).is_some() {
-            self.player_melee_attack(attacker, victim, direction);
+            self.player_melee_attack(attacker, victim, direction, rng);
         } else if self.components.player.get(victim).is_some() {
             self.npc_melee_attack(attacker, victim, rng);
         }
@@ -328,12 +342,17 @@ impl World {
         self.spawn_rocket(character_coord, target);
     }
 
-    pub fn projectile_stop(&mut self, projectile_entity: Entity, external_events: &mut Vec<ExternalEvent>) {
+    pub fn projectile_stop<R: Rng>(
+        &mut self,
+        projectile_entity: Entity,
+        external_events: &mut Vec<ExternalEvent>,
+        rng: &mut R,
+    ) {
         if let Some(&current_coord) = self.spatial.coord(projectile_entity) {
             if let Some(on_collision) = self.components.on_collision.get(projectile_entity).cloned() {
                 match on_collision {
                     OnCollision::Explode(explosion_spec) => {
-                        explosion::explode(self, current_coord, explosion_spec, external_events);
+                        explosion::explode(self, current_coord, explosion_spec, external_events, rng);
                         self.spatial.remove(projectile_entity);
                         self.components.remove_entity(projectile_entity);
                         self.entity_allocator.free(projectile_entity);
@@ -356,11 +375,12 @@ impl World {
         self.realtime_components.movement.remove(projectile_entity);
     }
 
-    pub fn projectile_move(
+    pub fn projectile_move<R: Rng>(
         &mut self,
         projectile_entity: Entity,
         movement_direction: Direction,
         external_events: &mut Vec<ExternalEvent>,
+        rng: &mut R,
     ) {
         if let Some(&current_coord) = self.spatial.coord(projectile_entity) {
             let next_coord = current_coord + movement_direction.coord();
@@ -378,6 +398,7 @@ impl World {
                             projectile_damage,
                             movement_direction,
                             character_entity,
+                            rng,
                         );
                     }
                 }
@@ -385,13 +406,13 @@ impl World {
                     if (collides_with.solid && self.components.solid.contains(entity_in_cell))
                         || (collides_with.character && self.components.character.contains(entity_in_cell))
                     {
-                        self.projectile_stop(projectile_entity, external_events);
+                        self.projectile_stop(projectile_entity, external_events, rng);
                         return;
                     }
                 }
                 let _ignore_if_occupied = self.spatial.update_coord(projectile_entity, next_coord);
             } else {
-                self.projectile_stop(projectile_entity, external_events);
+                self.projectile_stop(projectile_entity, external_events, rng);
                 return;
             }
         } else {
@@ -401,7 +422,55 @@ impl World {
         }
     }
 
-    pub fn damage_character(&mut self, character: Entity, hit_points_to_lose: u32) {
+    fn divide<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
+        if let Some(&coord) = self.spatial.coord(entity) {
+            if let Some(hit_points) = self.components.hit_points.get_mut(entity) {
+                let new_hit_points = {
+                    let mut hit_points = *hit_points;
+                    hit_points.current /= 2;
+                    hit_points
+                };
+                if new_hit_points.current > 0 {
+                    *hit_points = new_hit_points;
+                    let mut spawn_coord = None;
+                    let mut queue = VecDeque::new();
+                    let mut seen = HashSet::new();
+                    let mut directions = CardinalDirection::all().collect::<Vec<_>>();
+                    queue.push_front(coord);
+                    seen.insert(coord);
+                    while let Some(coord) = queue.pop_back() {
+                        directions.shuffle(rng);
+                        for &direction in directions.iter() {
+                            let neighbour_coord = coord + direction.coord();
+                            if seen.insert(neighbour_coord) {
+                                if let Some(cell) = self.spatial.get_cell(neighbour_coord) {
+                                    if cell.feature.is_none() {
+                                        if cell.character.is_none() {
+                                            spawn_coord = Some(neighbour_coord);
+                                            break;
+                                        }
+                                        queue.push_front(neighbour_coord);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if let Some(spawn_coord) = spawn_coord {
+                        let new_entity_data = self.components.clone_entity_data(entity);
+                        self.insert_entity_data(
+                            Location {
+                                coord: spawn_coord,
+                                layer: Some(Layer::Character),
+                            },
+                            new_entity_data,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn damage_character<R: Rng>(&mut self, character: Entity, hit_points_to_lose: u32, rng: &mut R) {
         if let Some(hit_points) = self.components.hit_points.get_mut(character) {
             let &coord = self.spatial.coord(character).unwrap();
             match hit_points.current.checked_sub(hit_points_to_lose) {
@@ -411,6 +480,16 @@ impl World {
                 }
                 Some(non_zero_remaining_hit_points) => {
                     hit_points.current = non_zero_remaining_hit_points;
+                }
+            }
+            if let Some(on_damage) = self.components.on_damage.get(character) {
+                match on_damage {
+                    OnDamage::Sludge => {
+                        if let Some(&coord) = self.spatial.coord(character) {
+                            self.change_floor_to_sludge(coord);
+                        }
+                    }
+                    OnDamage::Divide => self.divide(character, rng),
                 }
             }
             self.add_blood_stain_to_floor(coord);
@@ -438,19 +517,11 @@ impl World {
             }
         }
         self.spawn_sludge(coord);
+        self.spawn_sludge_light(coord);
     }
 
     fn character_die(&mut self, character: Entity) {
         self.components.to_remove.insert(character, ());
-        if let Some(&on_death) = self.components.on_death.get(character) {
-            match on_death {
-                OnDeath::Sludge => {
-                    if let Some(&coord) = self.spatial.coord(character) {
-                        self.change_floor_to_sludge(coord);
-                    }
-                }
-            }
-        }
     }
 
     fn add_blood_stain_to_floor(&mut self, coord: Coord) {
@@ -459,14 +530,15 @@ impl World {
         }
     }
 
-    fn apply_projectile_damage(
+    fn apply_projectile_damage<R: Rng>(
         &mut self,
         projectile_entity: Entity,
         projectile_damage: ProjectileDamage,
         projectile_movement_direction: Direction,
         entity_to_damage: Entity,
+        rng: &mut R,
     ) {
-        self.damage_character(entity_to_damage, projectile_damage.hit_points);
+        self.damage_character(entity_to_damage, projectile_damage.hit_points, rng);
         if projectile_damage.push_back {
             self.character_push_in_direction(entity_to_damage, projectile_movement_direction);
         }
@@ -503,7 +575,7 @@ impl World {
                     self.character_die(entity);
                 }
             } else {
-                self.damage_character(entity, DAMAGE);
+                self.damage_character(entity, DAMAGE, rng);
             }
         }
     }

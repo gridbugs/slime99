@@ -75,8 +75,8 @@ impl Game {
     pub fn new<R: Rng>(config: &Config, rng: &mut R) -> Self {
         let mut rng = Isaac64Rng::seed_from_u64(rng.gen());
         let animation_rng = Isaac64Rng::seed_from_u64(rng.gen());
-        //let Terrain { world, agents, player } = terrain::from_str(include_str!("terrain.txt"), make_player());
-        let Terrain { world, agents, player } = terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(), &mut rng);
+        let Terrain { world, agents, player } = terrain::from_str(include_str!("terrain.txt"), make_player());
+        //let Terrain { world, agents, player } = terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(), &mut rng);
         let last_player_info = world.character_info(player).expect("couldn't get info for player");
         let events = vec![ExternalEvent::LoopMusic(Music::Fiberitron)];
         let mut game = Self {
@@ -150,6 +150,11 @@ impl Game {
             self.update_behaviour();
             self.npc_turn();
             self.cleanup();
+        }
+        for entity in self.world.components.npc.entities() {
+            if !self.agents.contains(entity) {
+                self.agents.insert(entity, Agent::new(self.world.size()));
+            }
         }
         self.update_last_player_info();
         if self.is_game_over() {

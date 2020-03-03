@@ -95,7 +95,13 @@ impl RealtimePeriodicState for FadeState {
             until_next_event: self.period,
         }
     }
-    fn animate_event(progress: Self::Event, entity: Entity, world: &mut World, _: &mut Vec<ExternalEvent>) {
+    fn animate_event<R: Rng>(
+        progress: Self::Event,
+        entity: Entity,
+        world: &mut World,
+        _: &mut Vec<ExternalEvent>,
+        _: &mut R,
+    ) {
         if progress.is_complete() {
             world.entity_allocator.free(entity);
             world.components.remove_entity(entity);
@@ -134,11 +140,12 @@ impl RealtimePeriodicState for LightColourFadeState {
             until_next_event,
         }
     }
-    fn animate_event(
+    fn animate_event<R: Rng>(
         progress: Self::Event,
         entity: Entity,
         world: &mut World,
         _external_events: &mut Vec<ExternalEvent>,
+        _rng: &mut R,
     ) {
         match progress {
             LightColourFadeProgress::Colour(colour) => {

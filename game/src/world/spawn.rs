@@ -2,7 +2,7 @@ use crate::{
     visibility::Light,
     world::{
         data::{
-            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, Npc, OnCollision, OnDeath,
+            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, Npc, OnCollision, OnDamage,
             Tile,
         },
         explosion, player,
@@ -591,7 +591,8 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components.on_damage.insert(entity, OnDamage::Divide);
+        self.components.hit_points.insert(entity, HitPoints::new_full(32));
         entity
     }
 
@@ -661,7 +662,7 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.safe_on_sludge.insert(entity, ());
-        self.components.on_death.insert(entity, OnDeath::Sludge);
+        self.components.on_damage.insert(entity, OnDamage::Sludge);
         self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }

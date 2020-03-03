@@ -122,13 +122,13 @@ impl Player {
         Self {
             attack: Deck {
                 items: rev(vec![
-                    Attack::Skewer(12),
-                    Attack::Skewer(12),
                     Attack::Hit(4),
+                    Attack::Hit(4),
+                    Attack::Hit(4),
+                    Attack::Hit(4),
+                    Attack::Skewer(12),
                     Attack::Miss,
                     Attack::Hit(4),
-                    Attack::Cleave(4),
-                    Attack::Miss,
                     Attack::Cleave(4),
                     Attack::Hit(99),
                     Attack::Skewer(4),

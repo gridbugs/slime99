@@ -63,7 +63,13 @@ impl RealtimePeriodicState for FlickerState {
             until_next_event,
         }
     }
-    fn animate_event(event: Self::Event, entity: Entity, world: &mut World, _external_events: &mut Vec<ExternalEvent>) {
+    fn animate_event<R: Rng>(
+        event: Self::Event,
+        entity: Entity,
+        world: &mut World,
+        _external_events: &mut Vec<ExternalEvent>,
+        _rng: &mut R,
+    ) {
         if let Some(colour_hint) = event.colour_hint {
             world.components.colour_hint.insert(entity, colour_hint);
         }

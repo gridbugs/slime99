@@ -8,7 +8,13 @@ pub trait RealtimePeriodicState {
     type Event;
     type Components;
     fn tick<R: Rng>(&mut self, rng: &mut R) -> TimeConsumingEvent<Self::Event>;
-    fn animate_event(event: Self::Event, entity: Entity, world: &mut World, external_events: &mut Vec<ExternalEvent>);
+    fn animate_event<R: Rng>(
+        event: Self::Event,
+        entity: Entity,
+        world: &mut World,
+        external_events: &mut Vec<ExternalEvent>,
+        rng: &mut R,
+    );
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,6 +34,7 @@ macro_rules! realtime_periodic {
         mod $module_name {
             #[allow(unused_imports)]
             use super::*;
+            use rand::Rng;
             use $crate::world::{
                 World,
                 realtime_periodic::core::{RealtimePeriodicState, ScheduledRealtimePeriodicState, TimeConsumingEvent}};
@@ -44,11 +51,12 @@ macro_rules! realtime_periodic {
             }
 
             impl RealtimeEntityEvents {
-                pub fn animate(
+                pub fn animate<R: Rng>(
                     self,
                     entity: ecs::Entity,
                     world: &mut World,
                     external_events: &mut Vec<crate::ExternalEvent>,
+                    rng: &mut R,
                 ) {
                     $(if let Some(event) = self.$component_name {
                         <$component_type as RealtimePeriodicState>::animate_event(
@@ -56,6 +64,7 @@ macro_rules! realtime_periodic {
                             entity,
                             world,
                             external_events,
+                            rng,
                         );
                     })*
                 }

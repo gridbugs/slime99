@@ -33,7 +33,7 @@ ecs_components! {
         to_remove: (),
         sludge: (),
         safe_on_sludge: (),
-        on_death: OnDeath,
+        on_damage: OnDamage,
     }
 }
 pub use components::Components;
@@ -122,6 +122,7 @@ pub enum NpcAction {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum OnDeath {
+pub enum OnDamage {
     Sludge,
+    Divide,
 }
