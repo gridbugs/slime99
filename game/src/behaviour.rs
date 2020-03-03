@@ -8,7 +8,7 @@ use grid_search_cardinal::{
         Distance, DistanceMap, PopulateContext as DistanceMapPopulateContext, SearchContext as DistanceMapSearchContext,
     },
     point_to_point::{expand, Context as PointToPointSearchContext, NoPath},
-    CanEnter, Path,
+    CanEnter, Path, Step,
 };
 use line_2d::LineSegment;
 use rand::Rng;
@@ -23,7 +23,7 @@ fn has_line_of_sight(eye: Coord, dest: Coord, world: &World, vision_distance: vi
         if !vision_distance.in_range(eye_to_coord) {
             return false;
         }
-        if !world.can_npc_traverse_feature_at_coord(coord) {
+        if !world.can_npc_see_through_feature_at_coord(coord) {
             return false;
         }
     }
@@ -147,6 +147,24 @@ enum Behaviour {
     Flee,
 }
 
+fn can_enter_wrt_sludge(world: &World, step: Step, entity: Entity) -> bool {
+    if world.components.safe_on_sludge.contains(entity) {
+        return true;
+    }
+    let to_cell = world.spatial.get_cell_checked(step.to_coord());
+    if let Some(to_floor) = to_cell.floor {
+        if world.components.sludge.contains(to_floor) {
+            let from_cell = world.spatial.get_cell_checked(step.from_coord());
+            if let Some(from_floor) = from_cell.floor {
+                if !world.components.sludge.contains(from_floor) {
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
+
 struct Wander<'a, R> {
     world: &'a World,
     last_seen_grid: &'a LastSeenGrid,
@@ -161,7 +179,7 @@ impl<'a, R: Rng> BestSearch for Wander<'a, R> {
     fn is_at_max_depth(&self, _depth: Depth) -> bool {
         false
     }
-    fn can_enter_updating_best(&mut self, coord: Coord) -> bool {
+    fn can_enter_initial_updating_best(&mut self, coord: Coord) -> bool {
         if self.world.can_npc_traverse_feature_at_coord(coord) {
             if let Some(entity) = self.world.get_character_at_coord(coord) {
                 if entity != self.entity {
@@ -189,6 +207,9 @@ impl<'a, R: Rng> BestSearch for Wander<'a, R> {
             false
         }
     }
+    fn can_step_updating_best(&mut self, step: Step) -> bool {
+        can_enter_wrt_sludge(&self.world, step, self.entity) && self.can_enter_initial_updating_best(step.to_coord)
+    }
     fn best_coord(&self) -> Option<Coord> {
         self.min_last_seen_coord
     }
@@ -206,11 +227,15 @@ impl<'a> CanEnter for WorldCanEnterIgnoreCharacters<'a> {
 
 struct WorldCanEnterAvoidNpcs<'a> {
     world: &'a World,
+    entity: Entity,
 }
 
 impl<'a> CanEnter for WorldCanEnterAvoidNpcs<'a> {
     fn can_enter(&self, coord: Coord) -> bool {
         self.world.can_npc_traverse_feature_at_coord(coord) && !self.world.is_npc_at_coord(coord)
+    }
+    fn can_step(&self, step: Step) -> bool {
+        can_enter_wrt_sludge(&self.world, step, self.entity) && self.can_enter(step.to_coord)
     }
 }
 
@@ -332,7 +357,7 @@ impl Agent {
             }
             Behaviour::Flee => {
                 let maybe_cardinal_direction = behaviour_context.distance_map_search_context.search_first(
-                    &WorldCanEnterAvoidNpcs { world },
+                    &WorldCanEnterAvoidNpcs { world, entity },
                     coord,
                     5,
                     &behaviour_context.player_flee,
@@ -351,7 +376,7 @@ impl Agent {
             } => {
                 if accurate {
                     let maybe_cardinal_direction = behaviour_context.distance_map_search_context.search_first(
-                        &WorldCanEnterAvoidNpcs { world },
+                        &WorldCanEnterAvoidNpcs { world, entity },
                         coord,
                         5,
                         &behaviour_context.player_approach,
@@ -368,7 +393,7 @@ impl Agent {
                         .point_to_point_search_context
                         .point_to_point_search_first(
                             expand::JumpPoint,
-                            &WorldCanEnterAvoidNpcs { world },
+                            &WorldCanEnterAvoidNpcs { world, entity },
                             coord,
                             last_seen_player_coord,
                         );

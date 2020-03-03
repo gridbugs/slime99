@@ -1,7 +1,10 @@
 use crate::{
     visibility::Light,
     world::{
-        data::{CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, Npc, OnCollision, Tile},
+        data::{
+            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, Npc, OnCollision, OnDeath,
+            Tile,
+        },
         explosion, player,
         realtime_periodic::{
             core::ScheduledRealtimePeriodicState,
@@ -522,7 +525,7 @@ impl World {
                 entity,
                 Location {
                     coord,
-                    layer: Some(Layer::Feature),
+                    layer: Some(Layer::Floor),
                 },
             )
             .unwrap();
@@ -550,7 +553,7 @@ impl World {
                 until_next_event: Duration::from_millis(0),
             },
         );
-        self.components.solid.insert(entity, ());
+        self.components.sludge.insert(entity, ());
         entity
     }
 
@@ -657,6 +660,8 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
+        self.components.safe_on_sludge.insert(entity, ());
+        self.components.on_death.insert(entity, OnDeath::Sludge);
         self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }

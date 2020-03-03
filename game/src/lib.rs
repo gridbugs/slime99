@@ -58,6 +58,7 @@ pub struct Game {
     player: Entity,
     last_player_info: CharacterInfo,
     rng: Isaac64Rng,
+    animation_rng: Isaac64Rng,
     frame_count: u64,
     events: Vec<ExternalEvent>,
     shadowcast_context: ShadowcastContext<u8>,
@@ -73,6 +74,7 @@ pub struct Game {
 impl Game {
     pub fn new<R: Rng>(config: &Config, rng: &mut R) -> Self {
         let mut rng = Isaac64Rng::seed_from_u64(rng.gen());
+        let animation_rng = Isaac64Rng::seed_from_u64(rng.gen());
         //let Terrain { world, agents, player } = terrain::from_str(include_str!("terrain.txt"), make_player());
         let Terrain { world, agents, player } = terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(), &mut rng);
         let last_player_info = world.character_info(player).expect("couldn't get info for player");
@@ -82,6 +84,7 @@ impl Game {
             player,
             last_player_info,
             rng,
+            animation_rng,
             frame_count: 0,
             events,
             shadowcast_context: ShadowcastContext::default(),
@@ -146,6 +149,7 @@ impl Game {
             self.update_visibility(config);
             self.update_behaviour();
             self.npc_turn();
+            self.cleanup();
         }
         self.update_last_player_info();
         if self.is_game_over() {
@@ -174,7 +178,7 @@ impl Game {
         }
     }
     fn npc_turn(&mut self) {
-        for (entity, agent) in self.agents.iter_mut() {
+        for entity in self.agents.entities() {
             if !self.world.entity_exists(entity) {
                 self.agents_to_remove.push(entity);
                 continue;
@@ -184,6 +188,13 @@ impl Game {
                 NpcAction::Wait => (),
                 NpcAction::Walk(direction) => self.world.character_walk_in_direction(entity, direction, &mut self.rng),
             }
+        }
+        for entity in self.agents_to_remove.drain(..) {
+            self.agents.remove(entity);
+        }
+        self.cleanup();
+        self.update_behaviour();
+        for (entity, agent) in self.agents.iter_mut() {
             let next_action = agent.act(
                 entity,
                 &self.world,
@@ -194,10 +205,6 @@ impl Game {
             );
             self.world.commit_to_next_action(entity, next_action);
         }
-        for entity in self.agents_to_remove.drain(..) {
-            self.agents.remove(entity);
-        }
-        self.cleanup();
         self.after_turn();
     }
     fn generate_level(&mut self, config: &Config) {
@@ -220,6 +227,7 @@ impl Game {
                 self.generate_frame_countdown = Some(Duration::from_millis(200));
             }
         }
+        self.world.sludge_damage(&mut self.rng);
     }
     pub fn is_generating(&self) -> bool {
         if let Some(countdown) = self.generate_frame_countdown {
@@ -255,7 +263,7 @@ impl Game {
     fn handle_tick_inner(&mut self, config: &Config) -> Option<GameControlFlow> {
         self.update_visibility(config);
         self.world
-            .animation_tick(&mut self.animation_context, &mut self.events, &mut self.rng);
+            .animation_tick(&mut self.animation_context, &mut self.events, &mut self.animation_rng);
         self.frame_count += 1;
         self.update_last_player_info();
         if self.is_game_over() {

@@ -1,6 +1,6 @@
 use crate::{
     world::{
-        data::{DoorState, OnCollision, ProjectileDamage, Tile},
+        data::{DoorState, OnCollision, OnDeath, ProjectileDamage, Tile},
         explosion, player,
         realtime_periodic::{core::ScheduledRealtimePeriodicState, movement},
         spatial::OccupiedBy,
@@ -27,13 +27,17 @@ impl World {
             panic!("failed to find coord for {:?}", character);
         };
         let target_coord = current_coord + direction.coord();
-        if let Some(feature_entity) = self.spatial.get_cell(target_coord).and_then(|cell| cell.feature) {
-            if self.components.solid.contains(feature_entity) {
-                if let Some(DoorState::Closed) = self.components.door_state.get(feature_entity).cloned() {
-                    self.open_door(feature_entity);
+        if let Some(cell) = self.spatial.get_cell(target_coord) {
+            if let Some(feature_entity) = cell.feature {
+                if self.components.solid.contains(feature_entity) {
+                    if let Some(DoorState::Closed) = self.components.door_state.get(feature_entity).cloned() {
+                        self.open_door(feature_entity);
+                    }
+                    return;
                 }
-                return;
             }
+        } else {
+            return;
         }
         if let Err(OccupiedBy(occupant)) = self.spatial.update_coord(character, target_coord) {
             self.melee_attack(character, occupant, direction, rng);
@@ -47,10 +51,10 @@ impl World {
         }
     }
 
-    fn npc_melee_attack<R: Rng>(&mut self, attacker: Entity, victim: Entity, rng: &mut R) {
+    fn npc_melee_attack<R: Rng>(&mut self, _attacker: Entity, victim: Entity, rng: &mut R) {
         let player = self.components.player.get_mut(victim).unwrap();
         if let Some(defend) = player.defend.pop() {
-            self.apply_defend(defend, attacker, victim, rng);
+            self.apply_defend(defend, victim, rng);
         } else {
             self.character_die(victim);
         }
@@ -99,8 +103,16 @@ impl World {
             .spatial
             .enumerate()
             .filter_map(|(coord, cell)| {
-                if cell.floor.is_some() && cell.character.is_none() && cell.feature.is_none() {
-                    Some(coord)
+                if let Some(floor_entity) = cell.floor {
+                    if self.components.sludge.contains(floor_entity) {
+                        None
+                    } else {
+                        if cell.character.is_none() && cell.feature.is_none() {
+                            Some(coord)
+                        } else {
+                            None
+                        }
+                    }
                 } else {
                     None
                 }
@@ -115,7 +127,7 @@ impl World {
         self.cleave(entity, 100);
     }
 
-    fn apply_defend<R: Rng>(&mut self, defend: player::Defend, _attacker: Entity, victim: Entity, rng: &mut R) {
+    fn apply_defend<R: Rng>(&mut self, defend: player::Defend, victim: Entity, rng: &mut R) {
         use player::Defend::*;
         match defend {
             Dodge => (),
@@ -358,26 +370,30 @@ impl World {
                 .get(projectile_entity)
                 .cloned()
                 .unwrap_or_default();
-            let &spatial_cell = self.spatial.get_cell_checked(next_coord);
-            if let Some(character_entity) = spatial_cell.character {
-                if let Some(&projectile_damage) = self.components.projectile_damage.get(projectile_entity) {
-                    self.apply_projectile_damage(
-                        projectile_entity,
-                        projectile_damage,
-                        movement_direction,
-                        character_entity,
-                    );
+            if let Some(&spatial_cell) = self.spatial.get_cell(next_coord) {
+                if let Some(character_entity) = spatial_cell.character {
+                    if let Some(&projectile_damage) = self.components.projectile_damage.get(projectile_entity) {
+                        self.apply_projectile_damage(
+                            projectile_entity,
+                            projectile_damage,
+                            movement_direction,
+                            character_entity,
+                        );
+                    }
                 }
-            }
-            if let Some(entity_in_cell) = spatial_cell.feature.or(spatial_cell.character) {
-                if (collides_with.solid && self.components.solid.contains(entity_in_cell))
-                    || (collides_with.character && self.components.character.contains(entity_in_cell))
-                {
-                    self.projectile_stop(projectile_entity, external_events);
-                    return;
+                if let Some(entity_in_cell) = spatial_cell.feature.or(spatial_cell.character) {
+                    if (collides_with.solid && self.components.solid.contains(entity_in_cell))
+                        || (collides_with.character && self.components.character.contains(entity_in_cell))
+                    {
+                        self.projectile_stop(projectile_entity, external_events);
+                        return;
+                    }
                 }
+                let _ignore_if_occupied = self.spatial.update_coord(projectile_entity, next_coord);
+            } else {
+                self.projectile_stop(projectile_entity, external_events);
+                return;
             }
-            let _ignore_if_occupied = self.spatial.update_coord(projectile_entity, next_coord);
         } else {
             self.components.remove_entity(projectile_entity);
             self.realtime_components.remove_entity(projectile_entity);
@@ -413,8 +429,28 @@ impl World {
         }
     }
 
+    fn change_floor_to_sludge(&mut self, coord: Coord) {
+        if let Some(cell) = self.spatial.get_cell(coord) {
+            if let Some(floor_entity) = cell.floor {
+                self.spatial.remove(floor_entity);
+                self.components.remove_entity(floor_entity);
+                self.realtime_components.remove_entity(floor_entity);
+            }
+        }
+        self.spawn_sludge(coord);
+    }
+
     fn character_die(&mut self, character: Entity) {
         self.components.to_remove.insert(character, ());
+        if let Some(&on_death) = self.components.on_death.get(character) {
+            match on_death {
+                OnDeath::Sludge => {
+                    if let Some(&coord) = self.spatial.coord(character) {
+                        self.change_floor_to_sludge(coord);
+                    }
+                }
+            }
+        }
     }
 
     fn add_blood_stain_to_floor(&mut self, coord: Coord) {
@@ -435,5 +471,40 @@ impl World {
             self.character_push_in_direction(entity_to_damage, projectile_movement_direction);
         }
         self.components.remove_entity(projectile_entity);
+    }
+
+    pub fn sludge_damage<R: Rng>(&mut self, rng: &mut R) {
+        const DAMAGE: u32 = 10;
+        for entity in self
+            .components
+            .character
+            .entities()
+            .filter(|&entity| {
+                if self.components.safe_on_sludge.contains(entity) {
+                    return false;
+                }
+                if let Some(&coord) = self.spatial.coord(entity) {
+                    if let Some(cell) = self.spatial.get_cell(coord) {
+                        if let Some(floor) = cell.floor {
+                            if self.components.sludge.contains(floor) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                false
+            })
+            .collect::<Vec<_>>()
+        {
+            if let Some(player) = self.components.player.get_mut(entity) {
+                if let Some(defend) = player.defend.pop() {
+                    self.apply_defend(defend, entity, rng);
+                } else {
+                    self.character_die(entity);
+                }
+            } else {
+                self.damage_character(entity, DAMAGE);
+            }
+        }
     }
 }

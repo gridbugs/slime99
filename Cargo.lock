@@ -620,7 +620,7 @@ dependencies = [
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "ecs 0.1.0",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "line_2d 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "procgen 0.1.0",
@@ -964,28 +964,28 @@ dependencies = [
 
 [[package]]
 name = "grid_search_cardinal"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "grid_search_cardinal_best 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_distance_map 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_point_to_point 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_best 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_distance_map 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_point_to_point 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "grid_search_cardinal_best"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "coord_2d 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_common 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_common 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "grid_search_cardinal_common"
-version = "0.1.3"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -995,23 +995,23 @@ dependencies = [
 
 [[package]]
 name = "grid_search_cardinal_distance_map"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_common 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_common 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "grid_search_cardinal_point_to_point"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "coord_2d 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "direction 0.17.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "grid_search_cardinal_common 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "grid_search_cardinal_common 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2963,11 +2963,11 @@ dependencies = [
 "checksum glyph_brush 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)" = "5fca6f9d679bff1322c76c9a1ad4b8553b30a94f3f75bea6936e19032c2f2ec3"
 "checksum glyph_brush_layout 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)" = "8b70adc570f1dc71b6b32e241cbcc2b42175f5aea71951fbf41e68b04aec24c7"
 "checksum grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a6306fc8cbaa31d281e3dd0197d5f017149ba5fc77d9f3fcec700f9c308eb53d"
-"checksum grid_search_cardinal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "be8a1dc5007d29b69e2a9370c90552c4ccd0772fec1d2b2bfa5bba64ee62129c"
-"checksum grid_search_cardinal_best 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "beeeed028883db7804278b3938761a3d44941da0bb8cd28e180704f9e6995f89"
-"checksum grid_search_cardinal_common 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)" = "593b4d1ccdaab31210e7760a7c08727fa2409d868f8f9773425aafa81956f19e"
-"checksum grid_search_cardinal_distance_map 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2c721a158445369501b275e12f75dabfadc45d300ef9ba6cd9f397a3af48a763"
-"checksum grid_search_cardinal_point_to_point 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "beaaadf15710644b1bf40bed89228f458735494898bbc6e6fc65ba8243799d74"
+"checksum grid_search_cardinal 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0ab0f9e0c8b99dd27c6e2b0467ebaeb003f22463ee85b96c9e6a31d1592032e7"
+"checksum grid_search_cardinal_best 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d842a3cc357baef960207928db3d32d723b96f2003e945b9b4d9d370ee569b5d"
+"checksum grid_search_cardinal_common 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b2a5e778d1e71e2cde00a4b3067f55d2350e7e40be5e9bdad7c6ce300d62389e"
+"checksum grid_search_cardinal_distance_map 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7858282ae7d241bdfaf5739bab3981e33821a47020b61cb485b9d1d3fa57f5c4"
+"checksum grid_search_cardinal_point_to_point 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5e410b45aa01682df22e0af3def19dfe7de04b7fe2773b03c308dc4105af6a2f"
 "checksum hashbrown 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "728e7d31e63d53c436094370f1e6fa249f60a4bb318cc5dfbbbe0aa2bc5a29d7"
 "checksum heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "20564e78d53d2bb135c343b3f47714a56af2061f1c928fdb541dc7b9fdd94205"
 "checksum hermit-abi 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "1010591b26bbfe835e9faeabeb11866061cc7dcebffd56ad7d0942d0e61aefd8"

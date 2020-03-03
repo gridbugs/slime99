@@ -31,6 +31,9 @@ ecs_components! {
         stairs: (),
         next_action: NpcAction,
         to_remove: (),
+        sludge: (),
+        safe_on_sludge: (),
+        on_death: OnDeath,
     }
 }
 pub use components::Components;
@@ -116,4 +119,9 @@ pub enum DoorState {
 pub enum NpcAction {
     Walk(CardinalDirection),
     Wait,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OnDeath {
+    Sludge,
 }

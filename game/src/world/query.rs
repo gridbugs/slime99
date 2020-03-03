@@ -54,7 +54,19 @@ impl World {
                 true
             }
         } else {
-            true
+            false
+        }
+    }
+
+    pub fn can_npc_see_through_feature_at_coord(&self, coord: Coord) -> bool {
+        if let Some(spatial_cell) = self.spatial.get_cell(coord) {
+            if let Some(feature) = spatial_cell.feature {
+                self.components.opacity.get(feature).cloned().unwrap_or(0) < 127
+            } else {
+                true
+            }
+        } else {
+            false
         }
     }
 
