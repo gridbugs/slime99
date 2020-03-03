@@ -164,7 +164,7 @@ struct Quad {
 fn apply_lighting(cell_colour: Rgb24, light_colour: Rgb24) -> Rgb24 {
     let base_colour = cell_colour
         .saturating_add(light_colour.scalar_div(4))
-        .saturating_sub(light_colour.complement().scalar_div(4));
+        .saturating_sub(light_colour.complement().scalar_div(1));
     base_colour.normalised_mul(light_colour)
 }
 
@@ -243,7 +243,7 @@ impl Quad {
                 base.with_character('╔'),
                 base.with_character('╗'),
                 base.with_character('╚'),
-                base.with_character(' '),
+                base.with_character('╩'),
             ],
         }
     }
