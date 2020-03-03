@@ -55,7 +55,7 @@ pub enum Tile {
     SlimeCurse,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Disposition {
     Hostile,
     Afraid,
@@ -70,6 +70,7 @@ pub struct Npc {
 pub enum OnCollision {
     Explode(explosion_spec::Explosion),
     Remove,
+    RemoveRealtime,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

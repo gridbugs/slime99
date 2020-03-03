@@ -47,6 +47,9 @@ impl Spatial {
             spatial_grid,
         }
     }
+    pub fn enumerate(&self) -> impl Iterator<Item = (Coord, &SpatialCell)> {
+        self.spatial_grid.enumerate()
+    }
     pub fn grid_size(&self) -> Size {
         self.spatial_grid.size()
     }

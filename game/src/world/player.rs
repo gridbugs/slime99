@@ -12,7 +12,7 @@ pub enum Attack {
 pub enum Defend {
     Dodge,
     Teleport,
-    Panic,
+    Revenge,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -122,13 +122,11 @@ impl Player {
         Self {
             attack: Deck {
                 items: rev(vec![
+                    Attack::Skewer(12),
+                    Attack::Skewer(12),
                     Attack::Hit(4),
                     Attack::Miss,
                     Attack::Hit(4),
-                    Attack::Skewer(4),
-                    Attack::Miss,
-                    Attack::Hit(4),
-                    Attack::Miss,
                     Attack::Cleave(4),
                     Attack::Miss,
                     Attack::Cleave(4),
@@ -143,9 +141,9 @@ impl Player {
                     Defend::Dodge,
                     Defend::Dodge,
                     Defend::Teleport,
-                    Defend::Panic,
+                    Defend::Revenge,
                     Defend::Dodge,
-                    Defend::Panic,
+                    Defend::Revenge,
                     Defend::Dodge,
                     Defend::Dodge,
                     Defend::Teleport,
@@ -156,10 +154,10 @@ impl Player {
             tech: Deck {
                 items: rev(vec![
                     Tech::Blink,
-                    Tech::MissNext,
                     Tech::Attract,
-                    Tech::Blink,
                     Tech::Repel,
+                    Tech::MissNext,
+                    Tech::Blink,
                     Tech::CritNext,
                     Tech::TeleportNext,
                 ]),

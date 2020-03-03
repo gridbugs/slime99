@@ -28,7 +28,7 @@ pub fn make_player() -> EntityData {
             vision_distance: Circle::new_squared(60),
             diminish: Rational {
                 numerator: 1,
-                denominator: 15,
+                denominator: 20,
             },
         }),
         ..Default::default()

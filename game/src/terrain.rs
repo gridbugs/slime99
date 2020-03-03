@@ -59,6 +59,11 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                     let entity = world.spawn_slime_upgrade(coord);
                     agents.insert(entity, Agent::new(size));
                 }
+                'c' => {
+                    world.spawn_floor(coord);
+                    let entity = world.spawn_slime_curse(coord);
+                    agents.insert(entity, Agent::new(size));
+                }
                 '*' => {
                     world.spawn_floor(coord);
                     world.spawn_light(coord, Rgb24::new(187, 187, 187));

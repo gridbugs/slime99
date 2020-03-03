@@ -272,7 +272,8 @@ impl Agent {
                     } => {
                         if last_seen_player_coord == coord {
                             // walk up to where the player was last seen, then go back to wandering
-                            Behaviour::Wander { avoid: true }
+                            let avoid = npc.disposition == Disposition::Afraid;
+                            Behaviour::Wander { avoid }
                         } else {
                             Behaviour::Chase {
                                 last_seen_player_coord,

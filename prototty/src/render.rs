@@ -177,9 +177,12 @@ impl Quad {
     fn enumerate<'a>(&'a self) -> impl 'a + Iterator<Item = (Coord, ViewCell)> {
         quad::OFFSETS.iter().cloned().zip(self.cells.iter().cloned())
     }
-    fn new_wall_front(front: Rgb24, top: Rgb24) -> Self {
-        let top = ViewCell::new().with_character(' ').with_background(top);
-        let front = ViewCell::new().with_character(' ').with_background(front);
+    fn new_wall_front(front_col: Rgb24, top_col: Rgb24) -> Self {
+        let front = ViewCell::new().with_character(' ').with_background(front_col);
+        let top = ViewCell::new()
+            .with_character('█')
+            .with_background(front_col)
+            .with_foreground(top_col);
         Self {
             cells: [top, top, front, front],
         }

@@ -17,7 +17,7 @@ fn write_defend(defend: Defend, s: &mut String) {
     match defend {
         Defend::Dodge => write!(s, "Dodge").unwrap(),
         Defend::Teleport => write!(s, "Teleport").unwrap(),
-        Defend::Panic => write!(s, "Panic").unwrap(),
+        Defend::Revenge => write!(s, "Revenge").unwrap(),
     }
 }
 

@@ -130,7 +130,9 @@ impl Game {
         }
         if !self.is_gameplay_blocked() {
             match input {
-                Input::Walk(direction) => self.world.character_walk_in_direction(self.player, direction),
+                Input::Walk(direction) => self
+                    .world
+                    .character_walk_in_direction(self.player, direction, &mut self.rng),
                 Input::Tech => self.world.apply_tech(self.player),
                 Input::TechWithCoord(coord) => {
                     self.world
@@ -139,10 +141,12 @@ impl Game {
                 Input::Wait => (),
             }
         }
-        self.cleanup();
-        self.update_visibility(config);
-        self.update_behaviour();
-        self.npc_turn();
+        if !self.is_gameplay_blocked() {
+            self.cleanup();
+            self.update_visibility(config);
+            self.update_behaviour();
+            self.npc_turn();
+        }
         self.update_last_player_info();
         if self.is_game_over() {
             Some(GameControlFlow::GameOver)
@@ -178,7 +182,7 @@ impl Game {
             let current_action = self.world.next_npc_action(entity).unwrap_or(NpcAction::Wait);
             match current_action {
                 NpcAction::Wait => (),
-                NpcAction::Walk(direction) => self.world.character_walk_in_direction(entity, direction),
+                NpcAction::Walk(direction) => self.world.character_walk_in_direction(entity, direction, &mut self.rng),
             }
             let next_action = agent.act(
                 entity,
