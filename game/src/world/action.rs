@@ -490,6 +490,41 @@ impl World {
                         }
                     }
                     OnDamage::Divide => self.divide(character, rng),
+                    OnDamage::Teleport => {
+                        let maybe_player_entity = self.components.player.entities().next();
+                        if let Some(player_entity) = maybe_player_entity {
+                            if let Some(&player_coord) = self.spatial.coord(player_entity) {
+                                if let Some(&victim_coord) = self.spatial.coord(character) {
+                                    if player_coord.manhattan_distance(victim_coord) == 1 {
+                                        self.teleport(player_entity, rng);
+                                    }
+                                }
+                            }
+                        }
+                        self.teleport(character, rng);
+                    }
+                    OnDamage::Swap => {
+                        let maybe_player_entity = self.components.player.entities().next();
+                        if let Some(player_entity) = maybe_player_entity {
+                            if let Some(&player_coord) = self.spatial.coord(player_entity) {
+                                if let Some(&victim_coord) = self.spatial.coord(character) {
+                                    if player_coord.manhattan_distance(victim_coord) == 1 {
+                                        self.spatial.remove(player_entity);
+                                        self.spatial.update_coord(character, player_coord).unwrap();
+                                        self.spatial
+                                            .insert(
+                                                player_entity,
+                                                Location {
+                                                    coord: victim_coord,
+                                                    layer: Some(Layer::Character),
+                                                },
+                                            )
+                                            .unwrap();
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             self.add_blood_stain_to_floor(coord);

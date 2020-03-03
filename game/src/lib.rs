@@ -72,11 +72,11 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new<R: Rng>(config: &Config, rng: &mut R) -> Self {
-        let mut rng = Isaac64Rng::seed_from_u64(rng.gen());
-        let animation_rng = Isaac64Rng::seed_from_u64(rng.gen());
-        let Terrain { world, agents, player } = terrain::from_str(include_str!("terrain.txt"), make_player());
-        //let Terrain { world, agents, player } = terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(), &mut rng);
+    pub fn new<R: Rng>(config: &Config, base_rng: &mut R) -> Self {
+        let mut rng = Isaac64Rng::seed_from_u64(base_rng.gen());
+        let animation_rng = Isaac64Rng::seed_from_u64(base_rng.gen());
+        //let Terrain { world, agents, player } = terrain::from_str(include_str!("terrain.txt"), make_player());
+        let Terrain { world, agents, player } = terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(), &mut rng);
         let last_player_info = world.character_info(player).expect("couldn't get info for player");
         let events = vec![ExternalEvent::LoopMusic(Music::Fiberitron)];
         let mut game = Self {

@@ -155,6 +155,7 @@ impl Player {
                 items: rev(vec![
                     Tech::Blink,
                     Tech::Attract,
+                    Tech::Blink,
                     Tech::Repel,
                     Tech::MissNext,
                     Tech::Blink,

@@ -125,4 +125,6 @@ pub enum NpcAction {
 pub enum OnDamage {
     Sludge,
     Divide,
+    Teleport,
+    Swap,
 }

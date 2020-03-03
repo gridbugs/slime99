@@ -125,8 +125,18 @@ fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord) -> Entity {
 
 const NPC_TYPES: &[NpcType] = &[
     NpcType::Divide,
+    NpcType::Divide,
+    NpcType::Divide,
+    NpcType::Divide,
+    NpcType::Divide,
+    NpcType::Swap,
+    NpcType::Swap,
+    NpcType::Swap,
     NpcType::Swap,
     NpcType::Teleport,
+    NpcType::Teleport,
+    NpcType::Goo,
+    NpcType::Goo,
     NpcType::Goo,
     NpcType::Upgrade,
     NpcType::Curse,

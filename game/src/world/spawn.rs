@@ -615,6 +615,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
+        self.components.on_damage.insert(entity, OnDamage::Swap);
         self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }
@@ -638,6 +639,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
+        self.components.on_damage.insert(entity, OnDamage::Teleport);
         self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }
