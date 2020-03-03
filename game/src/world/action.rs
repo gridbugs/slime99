@@ -184,7 +184,7 @@ impl World {
             match tech {
                 Blink => {
                     if let Some(spatial_cell) = self.spatial.get_cell(coord) {
-                        if spatial_cell.character.is_none() && visibility_grid.is_coord_visible(coord) {
+                        if spatial_cell.character.is_none() && visibility_grid.is_coord_currently_visible(coord) {
                             let can_blink = if let Some(feature) = spatial_cell.feature {
                                 !self.components.solid.contains(feature)
                             } else {

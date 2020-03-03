@@ -295,7 +295,8 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
         Tile::Player => Quad::new_player(Rgb24::new(255, 255, 255)),
         Tile::Floor => Quad::new_floor(Rgb24::new(0, 187, 187), Rgb24::new(0, 127, 127)),
         Tile::Wall => {
-            if game.contains_wall(entity.coord + Coord::new(0, 1)) {
+            let below = entity.coord + Coord::new(0, 1);
+            if game.contains_wall(below) && !game.visibility_grid().is_coord_never_visible(below) {
                 Quad::new_wall_top(Rgb24::new(255, 0, 255))
             } else {
                 Quad::new_wall_front(Rgb24::new(127, 0, 127), Rgb24::new(255, 0, 255))
