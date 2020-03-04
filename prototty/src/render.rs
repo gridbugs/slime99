@@ -1,6 +1,6 @@
 use crate::{blink::Blink, depth, game::GameStatus, ui};
 use direction::CardinalDirection;
-use game::{CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
+use game::{ActionError, CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
 use line_2d::{Config as LineConfig, LineSegment};
 use prototty::render::{blend_mode, ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
 use prototty::text::{wrap, StringView, StringViewSingleLine};
@@ -17,6 +17,7 @@ pub struct GameToRender<'a> {
     pub status: GameStatus,
     pub mouse_coord: Option<Coord>,
     pub mode: Mode,
+    pub action_error: Option<ActionError>,
 }
 
 pub struct GameView {
@@ -102,6 +103,18 @@ impl GameView {
                     frame,
                 );
             }
+        }
+        if let Some(action_error) = game_to_render.action_error {
+            let s = action_error_str(action_error);
+            StringView::new(
+                Style::new().with_foreground(Rgb24::new(255, 255, 255)),
+                wrap::Word::new(),
+            )
+            .view(
+                s,
+                context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2 + 1)),
+                frame,
+            );
         }
         let ui = ui::Ui {
             player: game_to_render.game.player(),
@@ -490,5 +503,17 @@ fn tile_str(tile: Tile) -> Option<&'static str> {
         Tile::SlimeGoo => Some("a Goo Slime"),
         Tile::SlimeUpgrade => Some("an Upgrade Slime"),
         Tile::SlimeCurse => Some("an Curse Slime"),
+    }
+}
+
+fn action_error_str(action_error: ActionError) -> &'static str {
+    match action_error {
+        ActionError::BlinkToNonVisibleCell => "Can't blink to non-visible location",
+        ActionError::BlinkToSolidCell => "Can't blink to solid cell",
+        ActionError::NoTechToApply => "Tech stack is empty",
+        ActionError::BlinkWithoutDestination => "Can't blink without destination",
+        ActionError::AttackDeckFull => "Attack stack is full",
+        ActionError::DefendDeckFull => "Defend stack is full",
+        ActionError::WalkIntoSolidCell => "You can't walk there",
     }
 }

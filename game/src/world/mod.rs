@@ -24,6 +24,7 @@ mod explosion;
 pub use explosion::spec as explosion_spec;
 
 mod action;
+pub use action::Error as ActionError;
 
 mod spawn;
 pub use spawn::make_player;

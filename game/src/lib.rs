@@ -18,7 +18,9 @@ use procgen::SewerSpec;
 use terrain::Terrain;
 pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
-pub use world::{player, CharacterInfo, EntityData, HitPoints, Layer, NpcAction, PlayerDied, Tile, ToRenderEntity};
+pub use world::{
+    player, ActionError, CharacterInfo, EntityData, HitPoints, Layer, NpcAction, PlayerDied, Tile, ToRenderEntity,
+};
 
 pub const MAP_SIZE: Size = Size::new_u16(19, 19);
 
@@ -51,6 +53,12 @@ pub enum Input {
     Wait,
 }
 
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+enum Turn {
+    Player,
+    Npc,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Game {
     world: World,
@@ -59,7 +67,6 @@ pub struct Game {
     last_player_info: CharacterInfo,
     rng: Isaac64Rng,
     animation_rng: Isaac64Rng,
-    frame_count: u64,
     events: Vec<ExternalEvent>,
     shadowcast_context: ShadowcastContext<u8>,
     behaviour_context: BehaviourContext,
@@ -69,6 +76,7 @@ pub struct Game {
     since_last_frame: Duration,
     generate_frame_countdown: Option<Duration>,
     dead_player: Option<EntityData>,
+    turn_during_animation: Option<Turn>,
 }
 
 impl Game {
@@ -85,7 +93,6 @@ impl Game {
             last_player_info,
             rng,
             animation_rng,
-            frame_count: 0,
             events,
             shadowcast_context: ShadowcastContext::default(),
             behaviour_context: BehaviourContext::new(world.size()),
@@ -96,8 +103,8 @@ impl Game {
             since_last_frame: Duration::from_millis(0),
             generate_frame_countdown: None,
             dead_player: None,
+            turn_during_animation: None,
         };
-        game.update_behaviour();
         game.update_visibility(config);
         game.prime_npcs();
         game
@@ -126,121 +133,7 @@ impl Game {
     fn update_behaviour(&mut self) {
         self.behaviour_context.update(self.player, &self.world);
     }
-    #[must_use]
-    pub fn handle_input(&mut self, input: Input, config: &Config) -> Option<GameControlFlow> {
-        if self.generate_frame_countdown.is_some() {
-            return None;
-        }
-        if !self.is_gameplay_blocked() {
-            match input {
-                Input::Walk(direction) => self
-                    .world
-                    .character_walk_in_direction(self.player, direction, &mut self.rng),
-                Input::Tech => self.world.apply_tech(self.player),
-                Input::TechWithCoord(coord) => {
-                    self.world
-                        .apply_tech_with_coord(self.player, coord, &self.visibility_grid)
-                }
-                Input::Wait => (),
-            }
-        }
-        if !self.is_gameplay_blocked() {
-            self.cleanup();
-            self.update_visibility(config);
-            self.update_behaviour();
-            self.npc_turn();
-            self.cleanup();
-        }
-        for entity in self.world.components.npc.entities() {
-            if !self.agents.contains(entity) {
-                self.agents.insert(entity, Agent::new(self.world.size()));
-            }
-        }
-        self.update_last_player_info();
-        if self.is_game_over() {
-            Some(GameControlFlow::GameOver)
-        } else {
-            None
-        }
-    }
-    pub fn handle_npc_turn(&mut self) {
-        if !self.is_gameplay_blocked() {
-            self.update_behaviour();
-            self.npc_turn();
-        }
-    }
-    fn prime_npcs(&mut self) {
-        for (entity, agent) in self.agents.iter_mut() {
-            let next_action = agent.act(
-                entity,
-                &self.world,
-                self.player,
-                &mut self.behaviour_context,
-                &mut self.shadowcast_context,
-                &mut self.rng,
-            );
-            self.world.commit_to_next_action(entity, next_action);
-        }
-    }
-    fn npc_turn(&mut self) {
-        for entity in self.agents.entities() {
-            if !self.world.entity_exists(entity) {
-                self.agents_to_remove.push(entity);
-                continue;
-            }
-            let current_action = self.world.next_npc_action(entity).unwrap_or(NpcAction::Wait);
-            match current_action {
-                NpcAction::Wait => (),
-                NpcAction::Walk(direction) => self.world.character_walk_in_direction(entity, direction, &mut self.rng),
-            }
-        }
-        for entity in self.agents_to_remove.drain(..) {
-            self.agents.remove(entity);
-        }
-        self.cleanup();
-        self.update_behaviour();
-        for (entity, agent) in self.agents.iter_mut() {
-            let next_action = agent.act(
-                entity,
-                &self.world,
-                self.player,
-                &mut self.behaviour_context,
-                &mut self.shadowcast_context,
-                &mut self.rng,
-            );
-            self.world.commit_to_next_action(entity, next_action);
-        }
-        self.after_turn();
-    }
-    fn generate_level(&mut self, config: &Config) {
-        let player_data = self.world.clone_entity_data(self.player);
-        let Terrain { world, agents, player } =
-            terrain::sewer(SewerSpec { size: MAP_SIZE }, player_data, &mut self.rng);
-        self.visibility_grid = VisibilityGrid::new(world.size());
-        self.world = world;
-        self.agents = agents;
-        self.player = player;
-        self.update_last_player_info();
-        self.update_behaviour();
-        self.update_visibility(config);
-        self.prime_npcs();
-        self.events.push(ExternalEvent::LoopMusic(Music::Fiberitron));
-    }
-    fn after_turn(&mut self) {
-        if let Some(player_coord) = self.world.entity_coord(self.player) {
-            if let Some(_stairs_entity) = self.world.get_stairs_at_coord(player_coord) {
-                self.generate_frame_countdown = Some(Duration::from_millis(200));
-            }
-        }
-        self.world.sludge_damage(&mut self.rng);
-    }
-    pub fn is_generating(&self) -> bool {
-        if let Some(countdown) = self.generate_frame_countdown {
-            countdown.as_millis() == 0
-        } else {
-            false
-        }
-    }
+
     #[must_use]
     pub fn handle_tick(&mut self, since_last_tick: Duration, config: &Config) -> Option<GameControlFlow> {
         if let Some(countdown) = self.generate_frame_countdown.as_mut() {
@@ -266,15 +159,161 @@ impl Game {
         None
     }
     fn handle_tick_inner(&mut self, config: &Config) -> Option<GameControlFlow> {
-        self.update_visibility(config);
+        let pre_gameplay_blocked = self.is_gameplay_blocked();
         self.world
             .animation_tick(&mut self.animation_context, &mut self.events, &mut self.animation_rng);
-        self.frame_count += 1;
+        let post_gameplay_blocked = self.is_gameplay_blocked();
+        if pre_gameplay_blocked && !post_gameplay_blocked {
+            if let Some(turn_during_animation) = self.turn_during_animation {
+                self.after_turn();
+                if let Turn::Player = turn_during_animation {
+                    self.npc_turn();
+                }
+                self.turn_during_animation = None;
+            }
+        }
+        self.update_visibility(config);
         self.update_last_player_info();
         if self.is_game_over() {
             Some(GameControlFlow::GameOver)
         } else {
             None
+        }
+    }
+
+    #[must_use]
+    pub fn handle_input(&mut self, input: Input, config: &Config) -> Result<Option<GameControlFlow>, ActionError> {
+        if self.generate_frame_countdown.is_some() {
+            return Ok(None);
+        }
+        let mut change = false;
+        if !self.is_gameplay_blocked() {
+            change = true;
+            self.player_turn(input)?;
+        }
+        if !self.is_gameplay_blocked() {
+            self.npc_turn();
+        }
+        if change {
+            self.update_last_player_info();
+            self.update_visibility(config);
+        }
+        if self.is_game_over() {
+            Ok(Some(GameControlFlow::GameOver))
+        } else {
+            Ok(None)
+        }
+    }
+    pub fn handle_npc_turn(&mut self) {
+        if !self.is_gameplay_blocked() {
+            self.npc_turn();
+        }
+    }
+    fn prime_npcs(&mut self) {
+        self.update_behaviour();
+        for (entity, agent) in self.agents.iter_mut() {
+            let next_action = agent.act(
+                entity,
+                &self.world,
+                self.player,
+                &mut self.behaviour_context,
+                &mut self.shadowcast_context,
+                &mut self.rng,
+            );
+            self.world.commit_to_next_action(entity, next_action);
+        }
+    }
+
+    fn player_turn(&mut self, input: Input) -> Result<(), ActionError> {
+        let result = match input {
+            Input::Walk(direction) => self
+                .world
+                .character_walk_in_direction(self.player, direction, &mut self.rng),
+            Input::Tech => self.world.apply_tech(self.player),
+            Input::TechWithCoord(coord) => self
+                .world
+                .apply_tech_with_coord(self.player, coord, &self.visibility_grid),
+            Input::Wait => Ok(()),
+        };
+        if result.is_ok() {
+            if self.is_gameplay_blocked() {
+                self.turn_during_animation = Some(Turn::Player);
+            } else {
+                self.after_turn();
+            }
+        }
+        result
+    }
+
+    fn npc_turn(&mut self) {
+        self.update_behaviour();
+        for entity in self.agents.entities() {
+            if !self.world.entity_exists(entity) {
+                self.agents_to_remove.push(entity);
+                continue;
+            }
+            let current_action = self.world.next_npc_action(entity).unwrap_or(NpcAction::Wait);
+            match current_action {
+                NpcAction::Wait => (),
+                NpcAction::Walk(direction) => {
+                    let _ = self.world.character_walk_in_direction(entity, direction, &mut self.rng);
+                }
+            }
+        }
+        for entity in self.agents_to_remove.drain(..) {
+            self.agents.remove(entity);
+        }
+        self.cleanup();
+        self.update_behaviour();
+        for (entity, agent) in self.agents.iter_mut() {
+            let next_action = agent.act(
+                entity,
+                &self.world,
+                self.player,
+                &mut self.behaviour_context,
+                &mut self.shadowcast_context,
+                &mut self.rng,
+            );
+            self.world.commit_to_next_action(entity, next_action);
+        }
+        if self.is_gameplay_blocked() {
+            self.turn_during_animation = Some(Turn::Npc);
+        } else {
+            self.after_turn();
+        }
+    }
+    fn generate_level(&mut self, config: &Config) {
+        let player_data = self.world.clone_entity_data(self.player);
+        let Terrain { world, agents, player } =
+            terrain::sewer(SewerSpec { size: MAP_SIZE }, player_data, &mut self.rng);
+        self.visibility_grid = VisibilityGrid::new(world.size());
+        self.world = world;
+        self.agents = agents;
+        self.player = player;
+        self.update_last_player_info();
+        self.update_visibility(config);
+        self.prime_npcs();
+        self.events.push(ExternalEvent::LoopMusic(Music::Fiberitron));
+    }
+    fn after_turn(&mut self) {
+        self.cleanup();
+        if let Some(player_coord) = self.world.entity_coord(self.player) {
+            if let Some(_stairs_entity) = self.world.get_stairs_at_coord(player_coord) {
+                self.generate_frame_countdown = Some(Duration::from_millis(200));
+            }
+        }
+        for entity in self.world.components.npc.entities() {
+            if !self.agents.contains(entity) {
+                self.agents.insert(entity, Agent::new(self.world.size()));
+            }
+        }
+        self.world.sludge_damage(&mut self.rng);
+    }
+    pub fn is_generating(&self) -> bool {
+        if let Some(countdown) = self.generate_frame_countdown {
+            countdown.as_millis() == 0
+        } else {
+            false
         }
     }
     pub fn events(&mut self) -> impl '_ + Iterator<Item = ExternalEvent> {

@@ -15,13 +15,24 @@ use rand::{seq::IteratorRandom, seq::SliceRandom, Rng};
 use std::collections::{HashSet, VecDeque};
 use std::time::Duration;
 
+#[derive(Clone, Copy)]
+pub enum Error {
+    BlinkToNonVisibleCell,
+    BlinkToSolidCell,
+    NoTechToApply,
+    BlinkWithoutDestination,
+    AttackDeckFull,
+    DefendDeckFull,
+    WalkIntoSolidCell,
+}
+
 impl World {
     pub fn character_walk_in_direction<R: Rng>(
         &mut self,
         character: Entity,
         direction: CardinalDirection,
         rng: &mut R,
-    ) {
+    ) -> Result<(), Error> {
         let &current_coord = if let Some(coord) = self.spatial.coord(character) {
             coord
         } else {
@@ -33,16 +44,19 @@ impl World {
                 if self.components.solid.contains(feature_entity) {
                     if let Some(DoorState::Closed) = self.components.door_state.get(feature_entity).cloned() {
                         self.open_door(feature_entity);
+                        return Ok(());
+                    } else {
+                        return Err(Error::WalkIntoSolidCell);
                     }
-                    return;
                 }
             }
         } else {
-            return;
+            return Err(Error::WalkIntoSolidCell);
         }
         if let Err(OccupiedBy(occupant)) = self.spatial.update_coord(character, target_coord) {
             self.melee_attack(character, occupant, direction, rng);
         }
+        Ok(())
     }
 
     fn player_melee_attack<R: Rng>(
@@ -177,7 +191,12 @@ impl World {
         self.spatial.update_coord(entity, coord).unwrap();
     }
 
-    pub fn apply_tech_with_coord(&mut self, entity: Entity, coord: Coord, visibility_grid: &VisibilityGrid) {
+    pub fn apply_tech_with_coord(
+        &mut self,
+        entity: Entity,
+        coord: Coord,
+        visibility_grid: &VisibilityGrid,
+    ) -> Result<(), Error> {
         use player::Tech::*;
         let player = self.components.player.get_mut(entity).unwrap();
         if let Some(tech) = player.tech.peek() {
@@ -193,12 +212,21 @@ impl World {
                             if can_blink {
                                 player.tech.pop();
                                 self.blink(entity, coord);
+                                Ok(())
+                            } else {
+                                Err(Error::BlinkToSolidCell)
                             }
+                        } else {
+                            Err(Error::BlinkToNonVisibleCell)
                         }
+                    } else {
+                        Err(Error::BlinkToNonVisibleCell)
                     }
                 }
                 _ => self.apply_tech(entity),
             }
+        } else {
+            Err(Error::NoTechToApply)
         }
     }
 
@@ -284,38 +312,41 @@ impl World {
         }
     }
 
-    pub fn apply_tech(&mut self, entity: Entity) {
+    pub fn apply_tech(&mut self, entity: Entity) -> Result<(), Error> {
         use player::Tech::*;
         let player = self.components.player.get_mut(entity).unwrap();
-        let mut success = true;
+        let mut result = Ok(());
         if let Some(tech) = player.tech.peek() {
             match tech {
                 Blink => {
                     log::warn!("attempted to blink without destination coord");
-                    success = false;
+                    result = Err(Error::BlinkWithoutDestination);
                 }
                 CritNext => {
                     if player.attack.push(player::Attack::Hit(99)).is_err() {
-                        success = false;
+                        result = Err(Error::AttackDeckFull);
                     }
                 }
                 MissNext => {
                     if player.attack.push(player::Attack::Miss).is_err() {
-                        success = false;
+                        result = Err(Error::AttackDeckFull);
                     }
                 }
                 TeleportNext => {
                     if player.defend.push(player::Defend::Teleport).is_err() {
-                        success = false;
+                        result = Err(Error::DefendDeckFull);
                     }
                 }
                 Attract => self.attract(entity),
                 Repel => self.repel(entity),
             }
+        } else {
+            return Err(Error::NoTechToApply);
         }
-        if success {
+        if result.is_ok() {
             self.components.player.get_mut(entity).unwrap().tech.pop();
         }
+        result
     }
 
     pub fn character_fire_shotgun<R: Rng>(&mut self, character: Entity, target: Coord, rng: &mut R) {

@@ -310,6 +310,7 @@ impl<S: Storage, A: AudioPlayer> Decorate for DecorateMainMenu<S, A> {
                     status: GameStatus::Playing,
                     mouse_coord: None,
                     mode: Mode::Normal,
+                    action_error: None,
                 },
                 context.compose_col_modify(
                     ColModifyDefaultForeground(Rgb24::new_grey(255))
@@ -541,6 +542,7 @@ impl<S: Storage, A: AudioPlayer> Decorate for DecorateOptionsMenu<S, A> {
                     status: GameStatus::Playing,
                     mouse_coord: None,
                     mode: Mode::Normal,
+                    action_error: None,
                 },
                 context.compose_col_modify(
                     ColModifyDefaultForeground(Rgb24::new_grey(255))

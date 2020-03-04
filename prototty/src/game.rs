@@ -3,7 +3,7 @@ use crate::controls::{AppInput, Controls};
 use crate::frontend::Frontend;
 use crate::render::{GameToRender, GameView, Mode};
 use direction::{CardinalDirection, Direction};
-use game::{CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
+use game::{ActionError, CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
 pub use game::{Config as GameConfig, Input as GameInput, Omniscient};
 use prototty::event_routine::common_event::*;
 use prototty::event_routine::*;
@@ -497,6 +497,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                         blink_duration: self.duration,
                         target: self.screen_coord.0,
                     },
+                    action_error: None,
                 },
                 context,
                 frame,
@@ -510,6 +511,7 @@ pub struct GameEventRoutine<S: Storage, A: AudioPlayer> {
     a: PhantomData<A>,
     injected_inputs: Vec<InjectedInput>,
     mouse_coord: Coord,
+    action_error: Option<ActionError>,
 }
 
 impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
@@ -522,6 +524,7 @@ impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
             a: PhantomData,
             injected_inputs,
             mouse_coord: Coord::new(-1, -1),
+            action_error: None,
         }
     }
 }
@@ -553,12 +556,14 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
             for injected_input in self.injected_inputs.drain(..) {
                 match injected_input {
                     InjectedInput::Tech(coord) => {
-                        if let Some(game_control_flow) =
-                            instance.game.handle_input(GameInput::TechWithCoord(coord), game_config)
-                        {
-                            match game_control_flow {
+                        let game_control_flow =
+                            instance.game.handle_input(GameInput::TechWithCoord(coord), game_config);
+                        match game_control_flow {
+                            Err(error) => self.action_error = Some(error),
+                            Ok(None) => self.action_error = None,
+                            Ok(Some(game_control_flow)) => match game_control_flow {
                                 GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
-                            }
+                            },
                         }
                     }
                 }
@@ -590,10 +595,12 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                                         }
                                         AppInput::Wait => instance.game.handle_input(GameInput::Wait, game_config),
                                     };
-                                    if let Some(game_control_flow) = game_control_flow {
-                                        match game_control_flow {
+                                    match game_control_flow {
+                                        Err(error) => s.action_error = Some(error),
+                                        Ok(None) => s.action_error = None,
+                                        Ok(Some(game_control_flow)) => match game_control_flow {
                                             GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
-                                        }
+                                        },
                                     }
                                 }
                             }
@@ -649,6 +656,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                     status: GameStatus::Playing,
                     mouse_coord: Some(self.mouse_coord),
                     mode: Mode::Normal,
+                    action_error: self.action_error,
                 },
                 context,
                 frame,
@@ -735,6 +743,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameOverEventRoutine<S, A> {
                     status: GameStatus::Over,
                     mouse_coord: None,
                     mode: Mode::Normal,
+                    action_error: None,
                 },
                 context,
                 frame,
