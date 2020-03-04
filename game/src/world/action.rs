@@ -54,6 +54,13 @@ impl World {
         direction: CardinalDirection,
         rng: &mut R,
     ) -> Result<(), Error> {
+        if let Some(move_half_speed) = self.components.move_half_speed.get_mut(character) {
+            if move_half_speed.skip_next_move {
+                move_half_speed.skip_next_move = false;
+                return Ok(());
+            }
+            move_half_speed.skip_next_move = true;
+        }
         let &current_coord = if let Some(coord) = self.spatial.coord(character) {
             coord
         } else {
@@ -65,7 +72,6 @@ impl World {
                 if self.components.solid.contains(feature_entity) {
                     if let Some(DoorState::Closed) = self.components.door_state.get(feature_entity).cloned() {
                         self.open_door(feature_entity);
-                        return Ok(());
                     } else {
                         return Err(Error::WalkIntoSolidCell);
                     }
@@ -78,6 +84,11 @@ impl World {
             self.melee_attack(character, occupant, direction, rng);
         }
         Ok(())
+    }
+
+    pub fn grant_ability(&mut self, entity: Entity, ability: player::Ability) {
+        let player = self.components.player.get_mut(entity).unwrap();
+        let _ = player.ability.push(ability);
     }
 
     fn player_melee_attack<R: Rng>(
@@ -182,6 +193,10 @@ impl World {
             Dodge => (),
             Teleport => self.teleport(victim, rng),
             Revenge => self.revenge(victim, rng),
+            SkipAttack => {
+                let player = self.components.player.get_mut(victim).unwrap();
+                player.attack.pop();
+            }
         }
     }
 
@@ -360,6 +375,12 @@ impl World {
                 }
                 Attract => self.attract(entity),
                 Repel => self.repel(entity),
+                Skip => {
+                    player.attack.pop();
+                    if player.defend.pop().is_none() {
+                        self.character_die(entity);
+                    };
+                }
             }
         } else {
             return Err(Error::NoTechToApply);
@@ -576,6 +597,43 @@ impl World {
                                     }
                                 }
                             }
+                        }
+                    }
+                    OnDamage::Upgrade { level, ability_target } => {
+                        let maybe_player_entity = self.components.player.entities().next();
+                        if let Some(player_entity) = maybe_player_entity {
+                            let player = self.components.player.get_mut(player_entity).unwrap();
+                            use player::AbilityTarget::*;
+                            match ability_target {
+                                Attack => {
+                                    let _ = player
+                                        .attack
+                                        .insert_random(player::choose_attack_upgrade(*level, rng), rng);
+                                    let _ = player
+                                        .attack
+                                        .insert_random(player::choose_attack_upgrade(*level, rng), rng);
+                                }
+                                Defend => {
+                                    let _ = player
+                                        .defend
+                                        .insert_random(player::choose_defend_upgrade(*level, rng), rng);
+                                }
+                                Tech => {
+                                    let _ = player.tech.insert_random(player::choose_tech_upgrade(*level, rng), rng);
+                                }
+                            }
+                        }
+                    }
+                    OnDamage::Curse => {
+                        let maybe_player_entity = self.components.player.entities().next();
+                        if let Some(player_entity) = maybe_player_entity {
+                            let player = self.components.player.get_mut(player_entity).unwrap();
+                            use player::Outcome;
+                            let _ = match player::choose_curse(rng) {
+                                Outcome::Attack(attack) => player.attack.insert_random(attack, rng),
+                                Outcome::Defend(defend) => player.defend.insert_random(defend, rng),
+                                Outcome::Tech(tech) => player.tech.insert_random(tech, rng),
+                            };
                         }
                     }
                 }

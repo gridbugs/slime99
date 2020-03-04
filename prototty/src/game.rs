@@ -3,8 +3,8 @@ use crate::controls::{AppInput, Controls};
 use crate::frontend::Frontend;
 use crate::render::{GameToRender, GameView, Mode};
 use direction::{CardinalDirection, Direction};
-use game::{ActionError, CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
-pub use game::{Config as GameConfig, Input as GameInput, Omniscient};
+use game::{player::Ability, ActionError, CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
+pub use game::{AbilityChoice, Config as GameConfig, Input as GameInput, Omniscient};
 use prototty::event_routine::common_event::*;
 use prototty::event_routine::*;
 use prototty::input::*;
@@ -127,6 +127,7 @@ fn loop_music<A: AudioPlayer>(
 
 pub enum InjectedInput {
     Tech(Coord),
+    LevelChange(Ability),
 }
 
 #[derive(Clone, Copy)]
@@ -161,6 +162,7 @@ pub struct GameInstance {
     game: Game,
     screen_shake: Option<ScreenShake>,
     current_music: Option<Music>,
+    level_change: Option<AbilityChoice>,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -182,6 +184,7 @@ impl GameInstance {
             rng,
             screen_shake: None,
             current_music: None,
+            level_change: None,
         }
     }
     pub fn game(&self) -> &Game {
@@ -533,6 +536,7 @@ pub enum GameReturn {
     Pause,
     Aim,
     GameOver,
+    LevelChange(AbilityChoice),
 }
 
 impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
@@ -563,10 +567,34 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                             Ok(None) => self.action_error = None,
                             Ok(Some(game_control_flow)) => match game_control_flow {
                                 GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
+                                GameControlFlow::LevelChange(ability_choice) => {
+                                    instance.level_change = Some(ability_choice.clone());
+                                    return Handled::Return(GameReturn::LevelChange(ability_choice));
+                                }
+                            },
+                        }
+                    }
+                    InjectedInput::LevelChange(ability) => {
+                        instance.level_change = None;
+                        let game_control_flow = instance
+                            .game
+                            .handle_input(GameInput::GrantAbility(ability), game_config);
+                        match game_control_flow {
+                            Err(error) => self.action_error = Some(error),
+                            Ok(None) => self.action_error = None,
+                            Ok(Some(game_control_flow)) => match game_control_flow {
+                                GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
+                                GameControlFlow::LevelChange(ability_choice) => {
+                                    instance.level_change = Some(ability_choice.clone());
+                                    return Handled::Return(GameReturn::LevelChange(ability_choice));
+                                }
                             },
                         }
                     }
                 }
+            }
+            if let Some(ability_choice) = instance.level_change.as_ref() {
+                return Handled::Return(GameReturn::LevelChange(ability_choice.clone()));
             }
             let controls = &data.controls;
             event_or_peek_with_handled(event_or_peek, self, |mut s, event| match event {
@@ -603,6 +631,10 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                                         Ok(None) => s.action_error = None,
                                         Ok(Some(game_control_flow)) => match game_control_flow {
                                             GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
+                                            GameControlFlow::LevelChange(ability_choice) => {
+                                                instance.level_change = Some(ability_choice.clone());
+                                                return Handled::Return(GameReturn::LevelChange(ability_choice));
+                                            }
                                         },
                                     }
                                 }
@@ -636,6 +668,10 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                     if let Some(game_control_flow) = maybe_control_flow {
                         match game_control_flow {
                             GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
+                            GameControlFlow::LevelChange(ability_choice) => {
+                                instance.level_change = Some(ability_choice.clone());
+                                return Handled::Return(GameReturn::LevelChange(ability_choice));
+                            }
                         }
                     }
                     Handled::Continue(s)

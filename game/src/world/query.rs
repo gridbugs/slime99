@@ -49,7 +49,8 @@ impl World {
     pub fn can_npc_traverse_feature_at_coord(&self, coord: Coord) -> bool {
         if let Some(spatial_cell) = self.spatial.get_cell(coord) {
             if let Some(feature) = spatial_cell.feature {
-                self.components.door_state.contains(feature) || !self.components.solid.contains(feature)
+                self.components.door_state.contains(feature)
+                    || !(self.components.solid.contains(feature) || self.components.stairs.contains(feature))
             } else {
                 true
             }

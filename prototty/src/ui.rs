@@ -18,6 +18,7 @@ fn write_defend(defend: Defend, s: &mut String) {
         Defend::Dodge => write!(s, "Dodge").unwrap(),
         Defend::Teleport => write!(s, "Teleport").unwrap(),
         Defend::Revenge => write!(s, "Revenge").unwrap(),
+        Defend::SkipAttack => write!(s, "Skip Attack").unwrap(),
     }
 }
 
@@ -30,6 +31,7 @@ fn write_tech(tech: Tech, s: &mut String) {
         Tech::Repel => write!(s, "Repel").unwrap(),
         Tech::MissNext => write!(s, "Miss Next").unwrap(),
         Tech::TeleportNext => write!(s, "Teleport Next").unwrap(),
+        Tech::Skip => write!(s, "Skip").unwrap(),
     }
 }
 
@@ -41,7 +43,7 @@ fn write_ability_target(ability_target: AbilityTarget, s: &mut String) {
         AbilityTarget::Tech => write!(s, "Tech").unwrap(),
     }
 }
-fn write_abiilty(abiilty: Ability, s: &mut String) {
+pub fn write_abiilty(abiilty: Ability, s: &mut String) {
     use std::fmt::Write;
     match abiilty {
         Ability::Stash(target) => {

@@ -381,13 +381,28 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
             entity.hit_points.map(|hp| hp.current).unwrap_or(0),
             entity.next_action.unwrap_or(NpcAction::Wait),
         ),
-        Tile::SlimeUpgrade => Quad::new_slime(
-            'u',
-            Rgb24::new(255, 127, 0),
-            Rgb24::new(63, 31, 0),
+        Tile::SlimeAttackUpgrade => Quad::new_slime(
+            'A',
+            Rgb24::new(255, 255, 255),
+            Rgb24::new(31, 31, 31),
             entity.hit_points.map(|hp| hp.current).unwrap_or(0),
             entity.next_action.unwrap_or(NpcAction::Wait),
         ),
+        Tile::SlimeDefendUpgrade => Quad::new_slime(
+            'D',
+            Rgb24::new(255, 255, 255),
+            Rgb24::new(31, 31, 31),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+        Tile::SlimeTechUpgrade => Quad::new_slime(
+            'T',
+            Rgb24::new(255, 255, 255),
+            Rgb24::new(31, 31, 31),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
+
         Tile::SlimeCurse => Quad::new_slime(
             'c',
             Rgb24::new(187, 187, 187),
@@ -501,8 +516,10 @@ fn tile_str(tile: Tile) -> Option<&'static str> {
         Tile::SlimeSwap => Some("a Swap Slime"),
         Tile::SlimeTeleport => Some("a Teleport Slime"),
         Tile::SlimeGoo => Some("a Goo Slime"),
-        Tile::SlimeUpgrade => Some("an Upgrade Slime"),
-        Tile::SlimeCurse => Some("an Curse Slime"),
+        Tile::SlimeAttackUpgrade => Some("an Attack Upgrade Slime"),
+        Tile::SlimeDefendUpgrade => Some("a Defend Upgrade Slime"),
+        Tile::SlimeTechUpgrade => Some("a Tech Upgrade Slime"),
+        Tile::SlimeCurse => Some("a Curse Slime"),
     }
 }
 

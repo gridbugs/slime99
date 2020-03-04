@@ -2,14 +2,16 @@ use crate::controls::Controls;
 use crate::depth;
 use crate::frontend::Frontend;
 use crate::game::{
-    AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameStatus, InjectedInput,
-    ScreenCoord,
+    AbilityChoice, AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameStatus,
+    InjectedInput, ScreenCoord,
 };
 pub use crate::game::{GameConfig, Omniscient, RngSeed};
 use crate::render::{GameToRender, GameView, Mode};
+use crate::ui;
 use common_event::*;
 use decorator::*;
 use event_routine::*;
+use game::player::Ability;
 use maplit::hashmap;
 use menu::{fade_spec, FadeMenuInstanceView, MenuEntryStringFn, MenuInstanceChoose};
 use prototty::input::*;
@@ -82,6 +84,7 @@ struct AppData<S: Storage, A: AudioPlayer> {
     main_menu: menu::MenuInstanceChooseOrEscape<MainMenuEntry>,
     main_menu_type: MainMenuType,
     options_menu: menu::MenuInstanceChooseOrEscape<OrBack<OptionsMenuEntry>>,
+    level_change_menu: Option<menu::MenuInstanceChooseOrEscape<Ability>>,
     last_mouse_coord: Coord,
     env: Box<dyn Env>,
 }
@@ -90,6 +93,7 @@ struct AppView {
     game: GameView,
     main_menu: FadeMenuInstanceView,
     options_menu: FadeMenuInstanceView,
+    level_change_menu: FadeMenuInstanceView,
 }
 
 impl<S: Storage, A: AudioPlayer> AppData<S, A> {
@@ -123,6 +127,7 @@ impl<S: Storage, A: AudioPlayer> AppData<S, A> {
         }
         Self {
             options_menu: OptionsMenuEntry::instance(&env),
+            level_change_menu: None,
             frontend,
             game: game_data,
             main_menu: MainMenuEntry::init(frontend).into_choose_or_escape(),
@@ -171,6 +176,7 @@ impl AppView {
             game: GameView::new(),
             main_menu: FadeMenuInstanceView::new(spec.clone()),
             options_menu: FadeMenuInstanceView::new(spec.clone()),
+            level_change_menu: FadeMenuInstanceView::new(spec.clone()),
         }
     }
 }
@@ -259,6 +265,27 @@ impl<S: Storage, A: AudioPlayer> DecorateMainMenu<S, A> {
             s: PhantomData,
             a: PhantomData,
         }
+    }
+}
+
+struct LevelChangeMenu<'b, 'e, 'v, E: EventRoutine>(&'b mut EventRoutineView<'e, 'v, E>);
+impl<'b, 'a, 'e, 'v, S, A, E> View<&'a AppData<S, A>> for LevelChangeMenu<'b, 'e, 'v, E>
+where
+    S: Storage,
+    A: AudioPlayer,
+    E: EventRoutine<View = AppView, Data = AppData<S, A>>,
+{
+    fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData<S, A>, context: ViewContext<C>, frame: &mut F) {
+        text::StringView::new(
+            Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true),
+            text::wrap::Word::new(),
+        )
+        .view(
+            "Good work soldier.\nYou get an abiltiy.\nChoose now:",
+            context.add_offset(Coord::new(1, 1)),
+            frame,
+        );
+        self.0.view(app_data, context.add_offset(Coord::new(1, 5)), frame);
     }
 }
 
@@ -422,6 +449,128 @@ impl<S: Storage, A: AudioPlayer, E: EventRoutine<Data = AppData<S, A>, Event = C
     {
         self.e.view(data, view, context, frame)
     }
+}
+
+struct SelectLevelChangeMenu<S: Storage, A: AudioPlayer> {
+    s: PhantomData<S>,
+    a: PhantomData<A>,
+}
+impl<S: Storage, A: AudioPlayer> SelectLevelChangeMenu<S, A> {
+    fn new() -> Self {
+        Self {
+            s: PhantomData,
+            a: PhantomData,
+        }
+    }
+}
+impl<S: Storage, A: AudioPlayer> ViewSelector for SelectLevelChangeMenu<S, A> {
+    type ViewInput = AppView;
+    type ViewOutput = FadeMenuInstanceView;
+    fn view<'a>(&self, input: &'a Self::ViewInput) -> &'a Self::ViewOutput {
+        &input.level_change_menu
+    }
+    fn view_mut<'a>(&self, input: &'a mut Self::ViewInput) -> &'a mut Self::ViewOutput {
+        &mut input.level_change_menu
+    }
+}
+impl<S: Storage, A: AudioPlayer> DataSelector for SelectLevelChangeMenu<S, A> {
+    type DataInput = AppData<S, A>;
+    type DataOutput = menu::MenuInstanceChooseOrEscape<Ability>;
+    fn data<'a>(&self, input: &'a Self::DataInput) -> &'a Self::DataOutput {
+        input.level_change_menu.as_ref().unwrap()
+    }
+    fn data_mut<'a>(&self, input: &'a mut Self::DataInput) -> &'a mut Self::DataOutput {
+        input.level_change_menu.as_mut().unwrap()
+    }
+}
+impl<S: Storage, A: AudioPlayer> Selector for SelectLevelChangeMenu<S, A> {}
+
+struct DecorateLevelChangeMenu<S, A> {
+    s: PhantomData<S>,
+    a: PhantomData<A>,
+}
+impl<S: Storage, A: AudioPlayer> DecorateLevelChangeMenu<S, A> {
+    fn new() -> Self {
+        Self {
+            s: PhantomData,
+            a: PhantomData,
+        }
+    }
+}
+impl<S: Storage, A: AudioPlayer> Decorate for DecorateLevelChangeMenu<S, A> {
+    type View = AppView;
+    type Data = AppData<S, A>;
+    fn view<E, F, C>(
+        data: &Self::Data,
+        mut event_routine_view: EventRoutineView<E>,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) where
+        E: EventRoutine<Data = Self::Data, View = Self::View>,
+        F: Frame,
+        C: ColModify,
+    {
+        if let Some(instance) = data.game.instance() {
+            AlignView {
+                alignment: Alignment::centre(),
+                view: FillBackgroundView {
+                    rgb24: Rgb24::new_grey(0),
+                    view: BorderView {
+                        style: &BorderStyle::new(),
+                        view: PadView {
+                            size: Size::new(0, 1),
+                            view: LevelChangeMenu(&mut event_routine_view),
+                        },
+                    },
+                },
+            }
+            .view(data, context.add_depth(depth::GAME_MAX + 1), frame);
+            event_routine_view.view.game.view(
+                GameToRender {
+                    game: instance.game(),
+                    status: GameStatus::Playing,
+                    mouse_coord: None,
+                    mode: Mode::Normal,
+                    action_error: None,
+                },
+                context.compose_col_modify(
+                    ColModifyDefaultForeground(Rgb24::new_grey(255))
+                        .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
+                ),
+                frame,
+            );
+        } else {
+            AlignView {
+                view: InitMenu(event_routine_view),
+                alignment: Alignment::centre(),
+            }
+            .view(&data, context, frame);
+        }
+    }
+}
+
+fn level_change_menu<S: Storage, A: AudioPlayer>(
+    AbilityChoice(choices): AbilityChoice,
+) -> impl EventRoutine<Return = Result<Ability, menu::Escape>, Data = AppData<S, A>, View = AppView, Event = CommonEvent>
+{
+    SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
+        data.level_change_menu = Some(
+            menu::MenuInstanceBuilder {
+                items: choices,
+                selected_index: 0,
+                hotkeys: None,
+            }
+            .build()
+            .unwrap()
+            .into_choose_or_escape(),
+        );
+        let menu_entry_string = MenuEntryStringFn::new(move |entry: &Ability, _maybe_selected, buf: &mut String| {
+            ui::write_abiilty(*entry, buf);
+        });
+        menu::FadeMenuInstanceRoutine::new(menu_entry_string)
+            .select(SelectLevelChangeMenu::new())
+            .decorated(DecorateLevelChangeMenu::new())
+    })
 }
 
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
@@ -734,11 +883,20 @@ enum GameLoopBreak {
 
 fn game_loop<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
-    make_either!(Ei = A | B);
+    make_either!(Ei = A | B | C);
     SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| data.game.pre_game_loop())
         .then(|| {
             Ei::A(game())
                 .repeat(|game_return| match game_return {
+                    GameReturn::LevelChange(ability_choice) => {
+                        Handled::Continue(Ei::C(level_change_menu(ability_choice).and_then(|choice| {
+                            make_either!(Ei = A | B);
+                            match choice {
+                                Err(menu::Escape) => Ei::A(Value::new(GameReturn::Pause)),
+                                Ok(ability) => Ei::B(game_injecting_inputs(vec![InjectedInput::LevelChange(ability)])),
+                            }
+                        })))
+                    }
                     GameReturn::Pause => Handled::Return(GameLoopBreak::Pause),
                     GameReturn::GameOver => Handled::Return(GameLoopBreak::GameOver),
                     GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_coord| {

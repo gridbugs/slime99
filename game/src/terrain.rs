@@ -56,7 +56,7 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                 }
                 'u' => {
                     world.spawn_floor(coord);
-                    let entity = world.spawn_slime_upgrade(coord);
+                    let entity = world.spawn_slime_attack_upgrade(coord, 0);
                     agents.insert(entity, Agent::new(size));
                 }
                 'c' => {
@@ -75,6 +75,9 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                 '+' => {
                     world.spawn_floor(coord);
                     world.spawn_door(coord);
+                }
+                '>' => {
+                    world.spawn_stairs(coord);
                 }
                 '@' => {
                     world.spawn_floor(coord);
@@ -108,38 +111,40 @@ enum NpcType {
     Swap,
     Teleport,
     Goo,
-    Upgrade,
+    AttackUpgrade,
+    DefendUpgrade,
+    TechUpgrade,
     Curse,
 }
 
-fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord) -> Entity {
+fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord, level: u32) -> Entity {
     match npc_type {
         NpcType::Divide => world.spawn_slime_divide(coord),
         NpcType::Swap => world.spawn_slime_swap(coord),
         NpcType::Teleport => world.spawn_slime_teleport(coord),
         NpcType::Goo => world.spawn_slime_goo(coord),
-        NpcType::Upgrade => world.spawn_slime_upgrade(coord),
+        NpcType::AttackUpgrade => world.spawn_slime_attack_upgrade(coord, level),
+        NpcType::DefendUpgrade => world.spawn_slime_defend_upgrade(coord, level),
+        NpcType::TechUpgrade => world.spawn_slime_tech_upgrade(coord, level),
         NpcType::Curse => world.spawn_slime_curse(coord),
     }
 }
 
-const NPC_TYPES: &[NpcType] = &[
+const ENEMY_TYPES: &[NpcType] = &[
     NpcType::Divide,
-    NpcType::Divide,
-    NpcType::Divide,
-    NpcType::Divide,
-    NpcType::Divide,
-    NpcType::Swap,
-    NpcType::Swap,
-    NpcType::Swap,
     NpcType::Swap,
     NpcType::Teleport,
-    NpcType::Teleport,
     NpcType::Goo,
-    NpcType::Goo,
-    NpcType::Goo,
-    NpcType::Upgrade,
     NpcType::Curse,
+];
+
+const UPGRADE_TYPES: &[NpcType] = &[
+    NpcType::AttackUpgrade,
+    NpcType::AttackUpgrade,
+    NpcType::AttackUpgrade,
+    NpcType::DefendUpgrade,
+    NpcType::DefendUpgrade,
+    NpcType::TechUpgrade,
 ];
 
 pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
@@ -189,9 +194,14 @@ pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> T
         })
         .collect::<Vec<_>>();
     empty_coords.shuffle(rng);
-    for &coord in empty_coords.iter().take(20) {
-        let npc_type = NPC_TYPES.choose(rng).unwrap().clone();
-        let entity = spawn_npc(&mut world, npc_type, coord);
+    for &coord in empty_coords.iter().take(5) {
+        let npc_type = ENEMY_TYPES.choose(rng).unwrap().clone();
+        let entity = spawn_npc(&mut world, npc_type, coord, 0);
+        agents.insert(entity, Agent::new(spec.size));
+    }
+    for &coord in empty_coords.iter().skip(5).take(5) {
+        let npc_type = UPGRADE_TYPES.choose(rng).unwrap().clone();
+        let entity = spawn_npc(&mut world, npc_type, coord, 0);
         agents.insert(entity, Agent::new(spec.size));
     }
     Terrain { world, player, agents }

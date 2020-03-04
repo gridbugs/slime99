@@ -2,8 +2,8 @@ use crate::{
     visibility::Light,
     world::{
         data::{
-            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, Npc, OnCollision, OnDamage,
-            Tile,
+            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, MoveHalfSpeed, Npc,
+            OnCollision, OnDamage, Tile,
         },
         explosion, player,
         realtime_periodic::{
@@ -669,7 +669,7 @@ impl World {
         entity
     }
 
-    pub fn spawn_slime_upgrade(&mut self, coord: Coord) -> Entity {
+    pub fn spawn_slime_attack_upgrade(&mut self, coord: Coord, level: u32) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
@@ -680,7 +680,7 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::SlimeUpgrade);
+        self.components.tile.insert(entity, Tile::SlimeAttackUpgrade);
         self.components.npc.insert(
             entity,
             Npc {
@@ -688,7 +688,77 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
+        self.components.on_damage.insert(
+            entity,
+            OnDamage::Upgrade {
+                level,
+                ability_target: player::AbilityTarget::Attack,
+            },
+        );
         self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components.move_half_speed.insert(entity, MoveHalfSpeed::default());
+        entity
+    }
+
+    pub fn spawn_slime_defend_upgrade(&mut self, coord: Coord, level: u32) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeDefendUpgrade);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Afraid,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.on_damage.insert(
+            entity,
+            OnDamage::Upgrade {
+                level,
+                ability_target: player::AbilityTarget::Defend,
+            },
+        );
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components.move_half_speed.insert(entity, MoveHalfSpeed::default());
+        entity
+    }
+
+    pub fn spawn_slime_tech_upgrade(&mut self, coord: Coord, level: u32) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeTechUpgrade);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Afraid,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.on_damage.insert(
+            entity,
+            OnDamage::Upgrade {
+                level,
+                ability_target: player::AbilityTarget::Tech,
+            },
+        );
+        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components.move_half_speed.insert(entity, MoveHalfSpeed::default());
         entity
     }
 
@@ -711,6 +781,7 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
+        self.components.on_damage.insert(entity, OnDamage::Curse);
         self.components.hit_points.insert(entity, HitPoints::new_full(12));
         entity
     }

@@ -1,7 +1,7 @@
 use crate::visibility::Light;
 pub use crate::world::{
     explosion_spec,
-    player::Player,
+    player::{AbilityTarget, Player},
     spatial::{Layer, Location},
 };
 use direction::CardinalDirection;
@@ -34,6 +34,7 @@ ecs_components! {
         sludge: (),
         safe_on_sludge: (),
         on_damage: OnDamage,
+        move_half_speed: MoveHalfSpeed,
     }
 }
 pub use components::Components;
@@ -54,8 +55,10 @@ pub enum Tile {
     SlimeTeleport,
     SlimeSwap,
     SlimeGoo,
-    SlimeUpgrade,
     SlimeCurse,
+    SlimeAttackUpgrade,
+    SlimeDefendUpgrade,
+    SlimeTechUpgrade,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -127,4 +130,11 @@ pub enum OnDamage {
     Divide,
     Teleport,
     Swap,
+    Upgrade { level: u32, ability_target: AbilityTarget },
+    Curse,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct MoveHalfSpeed {
+    pub skip_next_move: bool,
 }

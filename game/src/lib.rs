@@ -41,8 +41,12 @@ pub enum ExternalEvent {
     LoopMusic(Music),
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct AbilityChoice(pub Vec<player::Ability>);
+
 pub enum GameControlFlow {
     GameOver,
+    LevelChange(AbilityChoice),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -52,6 +56,7 @@ pub enum Input {
     TechWithCoord(Coord),
     Wait,
     Ability(u8),
+    GrantAbility(player::Ability),
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -141,6 +146,9 @@ impl Game {
             if countdown.as_millis() == 0 {
                 self.generate_level(config);
                 self.generate_frame_countdown = None;
+                return Some(GameControlFlow::LevelChange(AbilityChoice(
+                    player::choose_ability_multi(&mut self.rng),
+                )));
             } else {
                 *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick) {
                     remaining
@@ -236,6 +244,10 @@ impl Game {
                 .apply_tech_with_coord(self.player, coord, &self.visibility_grid),
             Input::Wait => Ok(()),
             Input::Ability(n) => self.world.apply_ability(self.player, n),
+            Input::GrantAbility(ability) => {
+                self.world.grant_ability(self.player, ability);
+                Ok(())
+            }
         };
         if result.is_ok() {
             if self.is_gameplay_blocked() {
@@ -286,8 +298,13 @@ impl Game {
     }
     fn generate_level(&mut self, config: &Config) {
         let player_data = self.world.clone_entity_data(self.player);
-        let Terrain { world, agents, player } =
-            terrain::sewer(SewerSpec { size: MAP_SIZE }, player_data, &mut self.rng);
+        let Terrain { world, agents, player } = terrain::sewer(
+            SewerSpec {
+                size: self.world.size(),
+            },
+            player_data,
+            &mut self.rng,
+        );
         self.visibility_grid = VisibilityGrid::new(world.size());
         self.world = world;
         self.agents = agents;
