@@ -515,5 +515,9 @@ fn action_error_str(action_error: ActionError) -> &'static str {
         ActionError::AttackDeckFull => "Attack stack is full",
         ActionError::DefendDeckFull => "Defend stack is full",
         ActionError::WalkIntoSolidCell => "You can't walk there",
+        ActionError::NoAbilityInSlot => "No ability in slot",
+        ActionError::NotEnoughAttacks => "Too few attacks",
+        ActionError::NotEnoughDefends => "Too few defends",
+        ActionError::NotEnoughTechs => "Too few techs",
     }
 }

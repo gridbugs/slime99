@@ -48,8 +48,8 @@ fn write_abiilty(abiilty: Ability, s: &mut String) {
             write!(s, "Stash ").unwrap();
             write_ability_target(target, s);
         }
-        Ability::Skip(target) => {
-            write!(s, "Skip ").unwrap();
+        Ability::SwapTop2(target) => {
+            write!(s, "Swap top 2 ").unwrap();
             write_ability_target(target, s);
         }
     }

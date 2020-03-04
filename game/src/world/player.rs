@@ -35,7 +35,7 @@ pub enum AbilityTarget {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Ability {
     Stash(AbilityTarget),
-    Skip(AbilityTarget),
+    SwapTop2(AbilityTarget),
 }
 
 impl Tech {
@@ -59,6 +59,7 @@ pub struct Deck<T> {
 }
 
 pub struct DeckIsFull;
+pub struct NotEnoughCards;
 
 impl<T> Deck<T> {
     pub fn iter(&self) -> impl Iterator<Item = &T> {
@@ -84,6 +85,23 @@ impl<T> Deck<T> {
             Err(DeckIsFull)
         }
     }
+    pub fn swap_top_2(&mut self) -> Result<(), NotEnoughCards> {
+        if self.items.len() < 2 {
+            return Err(NotEnoughCards);
+        }
+        let a = self.items.len() - 1;
+        let b = self.items.len() - 2;
+        self.items.swap(a, b);
+        Ok(())
+    }
+    pub fn stash(&mut self) -> Result<(), NotEnoughCards> {
+        if self.items.len() < 2 {
+            return Err(NotEnoughCards);
+        }
+        let top = self.items.pop().unwrap();
+        self.items.insert(0, top);
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -101,6 +119,9 @@ impl AbilityTable {
     }
     pub const fn max_size(&self) -> usize {
         self.max_size
+    }
+    pub fn get(&self, index: usize) -> Option<Ability> {
+        self.abilities.get(index).cloned()
     }
 }
 
@@ -166,10 +187,10 @@ impl Player {
             },
             ability: AbilityTable {
                 abilities: vec![
-                    Ability::Skip(AbilityTarget::Attack),
+                    Ability::SwapTop2(AbilityTarget::Attack),
                     Ability::Stash(AbilityTarget::Defend),
                     Ability::Stash(AbilityTarget::Attack),
-                    Ability::Skip(AbilityTarget::Attack),
+                    Ability::SwapTop2(AbilityTarget::Defend),
                     Ability::Stash(AbilityTarget::Tech),
                 ],
                 max_size: 8,

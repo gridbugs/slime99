@@ -24,9 +24,30 @@ pub enum Error {
     AttackDeckFull,
     DefendDeckFull,
     WalkIntoSolidCell,
+    NoAbilityInSlot,
+    NotEnoughAttacks,
+    NotEnoughDefends,
+    NotEnoughTechs,
 }
 
 impl World {
+    pub fn apply_ability(&mut self, player: Entity, ability_slot: u8) -> Result<(), Error> {
+        let player = self.components.player.get_mut(player).unwrap();
+        if let Some(ability) = player.ability.get(ability_slot as usize) {
+            use player::{Ability::*, AbilityTarget::*};
+            match ability {
+                SwapTop2(Attack) => player.attack.swap_top_2().map_err(|_| Error::NotEnoughAttacks)?,
+                SwapTop2(Defend) => player.defend.swap_top_2().map_err(|_| Error::NotEnoughDefends)?,
+                SwapTop2(Tech) => player.tech.swap_top_2().map_err(|_| Error::NotEnoughTechs)?,
+                Stash(Attack) => player.attack.stash().map_err(|_| Error::NotEnoughAttacks)?,
+                Stash(Defend) => player.defend.stash().map_err(|_| Error::NotEnoughDefends)?,
+                Stash(Tech) => player.tech.stash().map_err(|_| Error::NotEnoughTechs)?,
+            }
+        } else {
+            return Err(Error::NoAbilityInSlot);
+        }
+        Ok(())
+    }
     pub fn character_walk_in_direction<R: Rng>(
         &mut self,
         character: Entity,
@@ -487,7 +508,8 @@ impl World {
                         }
                     }
                     if let Some(spawn_coord) = spawn_coord {
-                        let new_entity_data = self.components.clone_entity_data(entity);
+                        let mut new_entity_data = self.components.clone_entity_data(entity);
+                        new_entity_data.next_action = None;
                         self.insert_entity_data(
                             Location {
                                 coord: spawn_coord,

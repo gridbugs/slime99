@@ -413,7 +413,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                             if let Some(app_input) = controls.get(keyboard_input) {
                                 match app_input {
                                     AppInput::Move(direction) => Aim::KeyboardDirection(direction),
-                                    AppInput::Wait | AppInput::Tech => Aim::Ignore,
+                                    AppInput::Wait | AppInput::Tech | AppInput::Ability(_) => Aim::Ignore,
                                 }
                             } else {
                                 match keyboard_input {
@@ -594,6 +594,9 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                                             }
                                         }
                                         AppInput::Wait => instance.game.handle_input(GameInput::Wait, game_config),
+                                        AppInput::Ability(n) => {
+                                            instance.game.handle_input(GameInput::Ability(n), game_config)
+                                        }
                                     };
                                     match game_control_flow {
                                         Err(error) => s.action_error = Some(error),

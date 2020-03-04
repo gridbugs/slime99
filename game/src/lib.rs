@@ -51,6 +51,7 @@ pub enum Input {
     Tech,
     TechWithCoord(Coord),
     Wait,
+    Ability(u8),
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -234,6 +235,7 @@ impl Game {
                 .world
                 .apply_tech_with_coord(self.player, coord, &self.visibility_grid),
             Input::Wait => Ok(()),
+            Input::Ability(n) => self.world.apply_ability(self.player, n),
         };
         if result.is_ok() {
             if self.is_gameplay_blocked() {
