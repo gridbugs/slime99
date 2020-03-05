@@ -731,7 +731,7 @@ impl World {
         self.components
             .drop_item_on_death
             .insert(entity, DropItemOnDeath::GuaranteeSpecial);
-        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        self.components.hit_points.insert(entity, HitPoints::new_full(99));
         entity
     }
 
