@@ -81,6 +81,8 @@ pub struct Game {
     agents_to_remove: Vec<Entity>,
     since_last_frame: Duration,
     generate_frame_countdown: Option<Duration>,
+    after_player_turn_countdown: Option<Duration>,
+    before_npc_turn_cooldown: Option<Duration>,
     dead_player: Option<EntityData>,
     turn_during_animation: Option<Turn>,
 }
@@ -110,6 +112,8 @@ impl Game {
             world,
             since_last_frame: Duration::from_millis(0),
             generate_frame_countdown: None,
+            after_player_turn_countdown: None,
+            before_npc_turn_cooldown: None,
             dead_player: None,
             turn_during_animation: None,
         };
@@ -163,20 +167,42 @@ impl Game {
         self.since_last_frame += since_last_tick;
         while let Some(remaining_since_last_frame) = self.since_last_frame.checked_sub(ANIMATION_FRAME_DURATION) {
             self.since_last_frame = remaining_since_last_frame;
-            if let Some(game_control_flow) = self.handle_tick_inner(config) {
+            if let Some(game_control_flow) = self.handle_tick_inner(since_last_tick, config) {
                 return Some(game_control_flow);
             }
         }
         None
     }
-    fn handle_tick_inner(&mut self, config: &Config) -> Option<GameControlFlow> {
-        let pre_gameplay_blocked = self.is_gameplay_blocked();
+    fn handle_tick_inner(&mut self, since_last_tick: Duration, config: &Config) -> Option<GameControlFlow> {
         self.world
             .animation_tick(&mut self.animation_context, &mut self.events, &mut self.animation_rng);
-        let post_gameplay_blocked = self.is_gameplay_blocked();
-        if pre_gameplay_blocked && !post_gameplay_blocked {
+        if !self.is_gameplay_blocked() {
             if let Some(turn_during_animation) = self.turn_during_animation {
-                self.after_turn();
+                if let Some(countdown) = self.after_player_turn_countdown.as_mut() {
+                    if countdown.as_millis() == 0 {
+                        self.after_player_turn_countdown = None;
+                        self.after_turn();
+                    } else {
+                        *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick) {
+                            remaining
+                        } else {
+                            Duration::from_millis(0)
+                        }
+                    }
+                    return None;
+                }
+                if let Some(countdown) = self.before_npc_turn_cooldown.as_mut() {
+                    if countdown.as_millis() == 0 {
+                        self.before_npc_turn_cooldown = None;
+                    } else {
+                        *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick) {
+                            remaining
+                        } else {
+                            Duration::from_millis(0)
+                        }
+                    }
+                    return None;
+                }
                 if let Turn::Player = turn_during_animation {
                     self.npc_turn();
                 }
@@ -198,12 +224,9 @@ impl Game {
             return Ok(None);
         }
         let mut change = false;
-        if !self.is_gameplay_blocked() {
+        if !self.is_gameplay_blocked() && self.turn_during_animation.is_none() {
             change = true;
             self.player_turn(input)?;
-        }
-        if !self.is_gameplay_blocked() {
-            self.npc_turn();
         }
         if change {
             self.update_last_player_info();
@@ -257,10 +280,10 @@ impl Game {
         };
         if result.is_ok() {
             if self.is_gameplay_blocked() {
-                self.turn_during_animation = Some(Turn::Player);
-            } else {
-                self.after_turn();
+                self.after_player_turn_countdown = Some(Duration::from_millis(0));
+                self.before_npc_turn_cooldown = Some(Duration::from_millis(100));
             }
+            self.turn_during_animation = Some(Turn::Player);
         }
         result
     }
@@ -333,6 +356,7 @@ impl Game {
             }
         }
         self.world.sludge_damage(&mut self.rng);
+        self.cleanup();
     }
     pub fn is_generating(&self) -> bool {
         if let Some(countdown) = self.generate_frame_countdown {

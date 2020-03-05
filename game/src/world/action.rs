@@ -169,7 +169,6 @@ impl World {
     }
 
     fn npc_melee_attack<R: Rng>(&mut self, _attacker: Entity, victim: Entity, rng: &mut R) {
-        let player = self.components.player.get_mut(victim).unwrap();
         self.apply_defend(victim, rng);
     }
 

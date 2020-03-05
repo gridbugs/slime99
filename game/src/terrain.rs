@@ -4,7 +4,6 @@ use crate::{
     world::{Layer, Location},
     World,
 };
-use direction::CardinalDirection;
 use ecs::{ComponentTable, Entity};
 use grid_2d::{Coord, Size};
 use procgen::{Sewer, SewerCell, SewerSpec};
@@ -131,22 +130,14 @@ enum NpcType {
     Swap,
     Teleport,
     Goo,
-    AttackUpgrade,
-    DefendUpgrade,
-    TechUpgrade,
-    Curse,
 }
 
-fn spawn_npc<R: Rng>(world: &mut World, npc_type: NpcType, coord: Coord, level: u32, rng: &mut R) -> Entity {
+fn spawn_npc<R: Rng>(world: &mut World, npc_type: NpcType, coord: Coord, rng: &mut R) -> Entity {
     match npc_type {
         NpcType::Divide => world.spawn_slime_divide(coord, rng),
         NpcType::Swap => world.spawn_slime_swap(coord, rng),
         NpcType::Teleport => world.spawn_slime_teleport(coord, rng),
         NpcType::Goo => world.spawn_slime_goo(coord, rng),
-        NpcType::AttackUpgrade => world.spawn_slime_attack_upgrade(coord, level),
-        NpcType::DefendUpgrade => world.spawn_slime_defend_upgrade(coord, level),
-        NpcType::TechUpgrade => world.spawn_slime_tech_upgrade(coord, level),
-        NpcType::Curse => world.spawn_slime_curse(coord),
     }
 }
 
@@ -162,20 +153,6 @@ const ENEMY_TYPES: &[NpcType] = &[
     NpcType::Swap,
     NpcType::Swap,
     NpcType::Teleport,
-    /*
-    NpcType::Swap,
-    NpcType::Teleport,
-    NpcType::Goo,
-    NpcType::Curse, */
-];
-
-const UPGRADE_TYPES: &[NpcType] = &[
-    NpcType::AttackUpgrade,
-    NpcType::AttackUpgrade,
-    NpcType::AttackUpgrade,
-    NpcType::DefendUpgrade,
-    NpcType::DefendUpgrade,
-    NpcType::TechUpgrade,
 ];
 
 #[derive(Clone, Copy)]
@@ -248,7 +225,7 @@ pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> T
     empty_coords.shuffle(rng);
     for &coord in empty_coords.iter().take(num_npcs) {
         let npc_type = ENEMY_TYPES.choose(rng).unwrap().clone();
-        let entity = spawn_npc(&mut world, npc_type, coord, 0, rng);
+        let entity = spawn_npc(&mut world, npc_type, coord, rng);
         agents.insert(entity, Agent::new(spec.size));
     }
     for &coord in empty_coords.iter().skip(num_npcs).take(num_items) {

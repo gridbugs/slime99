@@ -1,4 +1,3 @@
-use crate::world::data::Item;
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -287,7 +286,7 @@ pub fn choose_defend<R: Rng>(level: u32, special: bool, rng: &mut R) -> Defend {
     }
 }
 
-pub fn choose_tech<R: Rng>(level: u32, special: bool, rng: &mut R) -> Tech {
+pub fn choose_tech<R: Rng>(_level: u32, special: bool, rng: &mut R) -> Tech {
     if special {
         Tech::Blink
     } else {
