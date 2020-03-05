@@ -55,6 +55,10 @@ pub fn write_abiilty(abiilty: Ability, s: &mut String) {
             write!(s, "Swap top 2 ").unwrap();
             write_ability_target(target, s);
         }
+        Ability::Discard(target) => {
+            write!(s, "Discard ").unwrap();
+            write_ability_target(target, s);
+        }
     }
 }
 

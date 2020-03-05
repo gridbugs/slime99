@@ -42,6 +42,15 @@ impl World {
                 Stash(Attack) => player.attack.stash().map_err(|_| Error::NotEnoughAttacks)?,
                 Stash(Defend) => player.defend.stash().map_err(|_| Error::NotEnoughDefends)?,
                 Stash(Tech) => player.tech.stash().map_err(|_| Error::NotEnoughTechs)?,
+                Discard(Attack) => {
+                    player.attack.pop().ok_or_else(|| Error::NotEnoughAttacks)?;
+                }
+                Discard(Defend) => {
+                    player.defend.pop().ok_or_else(|| Error::NotEnoughDefends)?;
+                }
+                Discard(Tech) => {
+                    player.tech.pop().ok_or_else(|| Error::NotEnoughTechs)?;
+                }
             }
             self.wait(entity, rng);
         } else {

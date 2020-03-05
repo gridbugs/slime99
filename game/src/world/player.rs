@@ -42,6 +42,7 @@ pub enum AbilityTarget {
 pub enum Ability {
     Stash(AbilityTarget),
     SwapTop2(AbilityTarget),
+    Discard(AbilityTarget),
 }
 
 impl Ability {
