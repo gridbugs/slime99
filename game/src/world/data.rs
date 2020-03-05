@@ -36,6 +36,7 @@ ecs_components! {
         on_damage: OnDamage,
         move_half_speed: MoveHalfSpeed,
         item: Item,
+        drop_item_on_death: DropItemOnDeath,
     }
 }
 pub use components::Components;
@@ -148,4 +149,10 @@ pub enum OnDamage {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct MoveHalfSpeed {
     pub skip_next_move: bool,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum DropItemOnDeath {
+    GuaranteeSpecial,
+    RandomNormal,
 }

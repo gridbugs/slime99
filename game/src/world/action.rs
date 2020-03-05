@@ -1,6 +1,6 @@
 use crate::{
     world::{
-        data::{DoorState, Item, OnCollision, OnDamage, ProjectileDamage, Tile},
+        data::{DoorState, DropItemOnDeath, Item, OnCollision, OnDamage, ProjectileDamage, Tile},
         explosion, player,
         realtime_periodic::{core::ScheduledRealtimePeriodicState, movement},
         spatial::{Layer, Location, OccupiedBy},
@@ -303,7 +303,7 @@ impl World {
                 }
             }
         } else {
-            self.character_die(victim);
+            self.character_die(victim, rng);
         }
     }
 
@@ -489,7 +489,7 @@ impl World {
                 Skip => {
                     player.attack.pop();
                     if player.defend.pop().is_none() {
-                        self.character_die(entity);
+                        self.character_die(entity, rng);
                     };
                 }
             }
@@ -662,7 +662,7 @@ impl World {
             match hit_points.current.checked_sub(hit_points_to_lose) {
                 None | Some(0) => {
                     hit_points.current = 0;
-                    self.character_die(character);
+                    self.character_die(character, rng);
                 }
                 Some(non_zero_remaining_hit_points) => {
                     hit_points.current = non_zero_remaining_hit_points;
@@ -778,8 +778,75 @@ impl World {
         self.spawn_sludge_light(coord);
     }
 
-    fn character_die(&mut self, character: Entity) {
+    fn character_die<R: Rng>(&mut self, character: Entity, rng: &mut R) {
         self.components.to_remove.insert(character, ());
+        if let Some(drop_item_on_death) = self.components.drop_item_on_death.get(character) {
+            if let Some(coord) = self.spatial.coord(character) {
+                if let Some(cell) = self.spatial.get_cell(coord) {
+                    let spawn_coord = if cell.feature.is_none() {
+                        Some(coord)
+                    } else {
+                        let mut queue = VecDeque::new();
+                        let mut seen = HashSet::new();
+                        let mut directions = CardinalDirection::all().collect::<Vec<_>>();
+                        let mut spawn_coord = None;
+                        queue.push_front(coord);
+                        seen.insert(coord);
+                        while let Some(coord) = queue.pop_back() {
+                            directions.shuffle(rng);
+                            for &direction in directions.iter() {
+                                let neighbour_coord = coord + direction.coord();
+                                if seen.insert(neighbour_coord) {
+                                    if let Some(cell) = self.spatial.get_cell(neighbour_coord) {
+                                        if let Some(feature) = cell.feature {
+                                            if !self.components.solid.contains(feature) {
+                                                queue.push_front(neighbour_coord);
+                                            }
+                                        } else {
+                                            spawn_coord = Some(neighbour_coord);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        spawn_coord
+                    };
+                    if let Some(spawn_coord) = spawn_coord {
+                        match drop_item_on_death {
+                            DropItemOnDeath::GuaranteeSpecial => match rng.gen_range(0, 7) {
+                                0 => {
+                                    self.spawn_defend(spawn_coord, true);
+                                }
+                                1 => {
+                                    self.spawn_tech(spawn_coord, true);
+                                }
+                                2..=6 => {
+                                    self.spawn_attack(spawn_coord, true);
+                                }
+                                _ => unreachable!(),
+                            },
+                            DropItemOnDeath::RandomNormal => match rng.gen_range(0, 2) {
+                                0 => match rng.gen_range(0, 7) {
+                                    0 => {
+                                        self.spawn_defend(spawn_coord, false);
+                                    }
+                                    1 => {
+                                        self.spawn_tech(spawn_coord, false);
+                                    }
+                                    2..=6 => {
+                                        self.spawn_attack(spawn_coord, false);
+                                    }
+                                    _ => unreachable!(),
+                                },
+                                1 => (),
+                                _ => unreachable!(),
+                            },
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fn add_blood_stain_to_floor(&mut self, coord: Coord) {

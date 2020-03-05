@@ -2,8 +2,8 @@ use crate::{
     visibility::Light,
     world::{
         data::{
-            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Item, Layer, Location, MoveHalfSpeed, Npc,
-            OnCollision, OnDamage, Tile,
+            CollidesWith, Disposition, DoorState, DropItemOnDeath, EntityData, HitPoints, Item, Layer, Location,
+            MoveHalfSpeed, Npc, OnCollision, OnDamage, Tile,
         },
         explosion, player,
         realtime_periodic::{
@@ -611,6 +611,9 @@ impl World {
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Divide);
         self.components
+            .drop_item_on_death
+            .insert(entity, DropItemOnDeath::RandomNormal);
+        self.components
             .hit_points
             .insert(entity, HitPoints::new_full(rng.gen_range(20, 40)));
         entity
@@ -636,6 +639,9 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Swap);
+        self.components
+            .drop_item_on_death
+            .insert(entity, DropItemOnDeath::RandomNormal);
         self.components
             .hit_points
             .insert(entity, HitPoints::new_full(rng.gen_range(10, 20)));
@@ -663,6 +669,9 @@ impl World {
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Teleport);
         self.components
+            .drop_item_on_death
+            .insert(entity, DropItemOnDeath::RandomNormal);
+        self.components
             .hit_points
             .insert(entity, HitPoints::new_full(rng.gen_range(2, 8)));
         entity
@@ -689,6 +698,9 @@ impl World {
         self.components.character.insert(entity, ());
         self.components.safe_on_sludge.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Sludge);
+        self.components
+            .drop_item_on_death
+            .insert(entity, DropItemOnDeath::GuaranteeSpecial);
         self.components
             .hit_points
             .insert(entity, HitPoints::new_full(rng.gen_range(8, 16)));

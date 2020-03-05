@@ -174,6 +174,16 @@ impl Item {
 }
 
 const ALL_ITEMS: &[Item] = &[Item::Attack, Item::Defend, Item::Tech];
+const BALANCED_ITEMS: &[Item] = &[
+    Item::Attack,
+    Item::Attack,
+    Item::Attack,
+    Item::Attack,
+    Item::Attack,
+    Item::Attack,
+    Item::Defend,
+    Item::Tech,
+];
 
 fn sewer_mini<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
     const MINI_SIZE: Size = Size::new_u16(8, 8);
@@ -267,7 +277,7 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
             }
         })
         .collect::<Vec<_>>();
-    let num_npcs = 4;
+    let num_npcs = level as usize * 2 + 2;
     let num_items = 8;
     empty_coords.shuffle(rng);
     for &coord in empty_coords.iter().take(num_npcs) {
@@ -276,7 +286,7 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
         agents.insert(entity, Agent::new(spec.size));
     }
     for &coord in empty_coords.iter().skip(num_npcs).take(num_items) {
-        let item = ALL_ITEMS.choose(rng).unwrap();
+        let item = BALANCED_ITEMS.choose(rng).unwrap();
         item.spawn(&mut world, coord, false);
     }
     let num_special_items = 4;
