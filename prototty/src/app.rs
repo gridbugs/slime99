@@ -302,7 +302,7 @@ where
 {
     fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData<S, A>, context: ViewContext<C>, frame: &mut F) {
         text::StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true)).view(
-            "Slime99",
+            "slime99",
             context.add_offset(Coord::new(1, 1)),
             frame,
         );
