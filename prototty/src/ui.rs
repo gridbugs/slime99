@@ -1,4 +1,4 @@
-use game::player::{Ability, AbilityTable, AbilityTarget, Attack, Deck, Defend, Player, Tech};
+use game::player::{Ability, AbilityTable, AbilityTarget, Attack, Deck, Defend, Player, Tech, EMPTY_ATTACK};
 use prototty::render::{ColModify, Coord, Frame, Rgb24, Style, View, ViewContext};
 use prototty::text::StringViewSingleLine;
 
@@ -18,6 +18,7 @@ fn write_defend(defend: Defend, s: &mut String) {
         Defend::Dodge => write!(s, "Dodge").unwrap(),
         Defend::Teleport => write!(s, "Teleport").unwrap(),
         Defend::Revenge => write!(s, "Revenge").unwrap(),
+        Defend::Armour(n) => write!(s, "Armour {}", n).unwrap(),
         Defend::SkipAttack => write!(s, "Skip Attack").unwrap(),
     }
 }
@@ -40,7 +41,7 @@ fn write_ability_target(ability_target: AbilityTarget, s: &mut String) {
     match ability_target {
         AbilityTarget::Attack => write!(s, "Atk").unwrap(),
         AbilityTarget::Defend => write!(s, "Def").unwrap(),
-        AbilityTarget::Tech => write!(s, "Tech").unwrap(),
+        AbilityTarget::Tech => write!(s, "Tch").unwrap(),
     }
 }
 pub fn write_abiilty(abiilty: Ability, s: &mut String) {
@@ -78,6 +79,18 @@ fn view_attack_list<F: Frame, C: ColModify>(attack: &Deck<Attack>, context: View
         write_attack(attack, &mut buf);
         view.view(&buf, context.add_offset(Coord::new(0, (i + padding) as i32 + 1)), frame);
     }
+    let empty_colour = if attack.len() == 0 {
+        Rgb24::new(255, 0, 0)
+    } else {
+        Rgb24::new_grey(63)
+    };
+    buf.clear();
+    write_attack(EMPTY_ATTACK, &mut buf);
+    StringViewSingleLine::new(Style::new().with_foreground(empty_colour)).view(
+        &buf,
+        context.add_offset(Coord::new(0, attack.max_size() as i32 + 1)),
+        frame,
+    );
 }
 fn view_defend_list<F: Frame, C: ColModify>(defend: &Deck<Defend>, context: ViewContext<C>, frame: &mut F) {
     StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view("Def:", context, frame);
@@ -100,14 +113,19 @@ fn view_defend_list<F: Frame, C: ColModify>(defend: &Deck<Defend>, context: View
         write_defend(defend, &mut buf);
         view.view(&buf, context.add_offset(Coord::new(0, (i + padding) as i32 + 1)), frame);
     }
-    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(63))).view(
+    let die_colour = if defend.len() == 0 {
+        Rgb24::new(255, 0, 0)
+    } else {
+        Rgb24::new_grey(63)
+    };
+    StringViewSingleLine::new(Style::new().with_foreground(die_colour)).view(
         "Die",
         context.add_offset(Coord::new(0, defend.max_size() as i32 + 1)),
         frame,
     );
 }
 fn view_tech_list<F: Frame, C: ColModify>(tech: &Deck<Tech>, context: ViewContext<C>, frame: &mut F) {
-    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view("(t) Tech:", context, frame);
+    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view("(t) Tch:", context, frame);
     let padding = tech.max_size() - tech.len();
     for i in 0..padding {
         StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(63))).view(

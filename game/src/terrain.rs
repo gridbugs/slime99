@@ -4,10 +4,14 @@ use crate::{
     world::{Layer, Location},
     World,
 };
+use direction::CardinalDirection;
 use ecs::{ComponentTable, Entity};
 use grid_2d::{Coord, Size};
 use procgen::{Sewer, SewerCell, SewerSpec};
-use rand::{seq::SliceRandom, Rng};
+use rand::{
+    seq::{IteratorRandom, SliceRandom},
+    Rng,
+};
 use rgb24::Rgb24;
 
 pub struct Terrain {
@@ -17,10 +21,10 @@ pub struct Terrain {
 }
 
 #[allow(dead_code)]
-pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
+pub fn from_str<R: Rng>(s: &str, player_data: EntityData, rng: &mut R) -> Terrain {
     let rows = s.split('\n').filter(|s| !s.is_empty()).collect::<Vec<_>>();
     let size = Size::new_u16(rows[0].len() as u16, rows.len() as u16);
-    let mut world = World::new(size);
+    let mut world = World::new(size, 0);
     let mut agents = ComponentTable::default();
     let mut player_data = Some(player_data);
     let mut player = None;
@@ -36,22 +40,22 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                 }
                 'd' => {
                     world.spawn_floor(coord);
-                    let entity = world.spawn_slime_divide(coord);
+                    let entity = world.spawn_slime_divide(coord, rng);
                     agents.insert(entity, Agent::new(size));
                 }
                 's' => {
                     world.spawn_floor(coord);
-                    let entity = world.spawn_slime_swap(coord);
+                    let entity = world.spawn_slime_swap(coord, rng);
                     agents.insert(entity, Agent::new(size));
                 }
                 't' => {
                     world.spawn_floor(coord);
-                    let entity = world.spawn_slime_teleport(coord);
+                    let entity = world.spawn_slime_teleport(coord, rng);
                     agents.insert(entity, Agent::new(size));
                 }
                 'g' => {
                     world.spawn_floor(coord);
-                    let entity = world.spawn_slime_goo(coord);
+                    let entity = world.spawn_slime_goo(coord, rng);
                     agents.insert(entity, Agent::new(size));
                 }
                 'u' => {
@@ -79,6 +83,9 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                 '>' => {
                     world.spawn_stairs(coord);
                 }
+                '~' => {
+                    world.spawn_sludge(coord);
+                }
                 '@' => {
                     world.spawn_floor(coord);
                     let location = Location {
@@ -96,6 +103,19 @@ pub fn from_str(s: &str, player_data: EntityData) -> Terrain {
                     world.spawn_floor(coord);
                     let entity = world.spawn_human(coord);
                     agents.insert(entity, Agent::new(size));
+                }
+                'A' => {
+                    world.spawn_floor(coord);
+                    world.spawn_attack(coord, false);
+                }
+                'D' => {
+                    world.spawn_sludge(coord);
+                    world.spawn_sludge_light(coord);
+                    world.spawn_defend(coord, true);
+                }
+                'T' => {
+                    world.spawn_floor(coord);
+                    world.spawn_tech(coord, false);
                 }
                 _ => log::warn!("unexpected char in terrain: {} ({})", ch.escape_unicode(), ch),
             }
@@ -117,12 +137,12 @@ enum NpcType {
     Curse,
 }
 
-fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord, level: u32) -> Entity {
+fn spawn_npc<R: Rng>(world: &mut World, npc_type: NpcType, coord: Coord, level: u32, rng: &mut R) -> Entity {
     match npc_type {
-        NpcType::Divide => world.spawn_slime_divide(coord),
-        NpcType::Swap => world.spawn_slime_swap(coord),
-        NpcType::Teleport => world.spawn_slime_teleport(coord),
-        NpcType::Goo => world.spawn_slime_goo(coord),
+        NpcType::Divide => world.spawn_slime_divide(coord, rng),
+        NpcType::Swap => world.spawn_slime_swap(coord, rng),
+        NpcType::Teleport => world.spawn_slime_teleport(coord, rng),
+        NpcType::Goo => world.spawn_slime_goo(coord, rng),
         NpcType::AttackUpgrade => world.spawn_slime_attack_upgrade(coord, level),
         NpcType::DefendUpgrade => world.spawn_slime_defend_upgrade(coord, level),
         NpcType::TechUpgrade => world.spawn_slime_tech_upgrade(coord, level),
@@ -132,10 +152,21 @@ fn spawn_npc(world: &mut World, npc_type: NpcType, coord: Coord, level: u32) -> 
 
 const ENEMY_TYPES: &[NpcType] = &[
     NpcType::Divide,
+    NpcType::Divide,
+    NpcType::Divide,
+    NpcType::Divide,
+    NpcType::Goo,
+    NpcType::Goo,
+    NpcType::Goo,
+    NpcType::Goo,
+    NpcType::Swap,
+    NpcType::Swap,
+    NpcType::Teleport,
+    /*
     NpcType::Swap,
     NpcType::Teleport,
     NpcType::Goo,
-    NpcType::Curse,
+    NpcType::Curse, */
 ];
 
 const UPGRADE_TYPES: &[NpcType] = &[
@@ -147,8 +178,27 @@ const UPGRADE_TYPES: &[NpcType] = &[
     NpcType::TechUpgrade,
 ];
 
+#[derive(Clone, Copy)]
+enum Item {
+    Attack,
+    Defend,
+    Tech,
+}
+
+impl Item {
+    fn spawn(self, world: &mut World, coord: Coord, special: bool) {
+        match self {
+            Self::Attack => world.spawn_attack(coord, special),
+            Self::Defend => world.spawn_defend(coord, special),
+            Self::Tech => world.spawn_tech(coord, special),
+        };
+    }
+}
+
+const ALL_ITEMS: &[Item] = &[Item::Attack, Item::Defend, Item::Tech];
+
 pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
-    let mut world = World::new(spec.size);
+    let mut world = World::new(spec.size, 0);
     let mut agents = ComponentTable::default();
     let sewer = Sewer::generate(spec, rng);
     let mut npc_candidates = Vec::new();
@@ -193,16 +243,35 @@ pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> T
             }
         })
         .collect::<Vec<_>>();
+    let num_npcs = 4;
+    let num_items = 8;
     empty_coords.shuffle(rng);
-    for &coord in empty_coords.iter().take(5) {
+    for &coord in empty_coords.iter().take(num_npcs) {
         let npc_type = ENEMY_TYPES.choose(rng).unwrap().clone();
-        let entity = spawn_npc(&mut world, npc_type, coord, 0);
+        let entity = spawn_npc(&mut world, npc_type, coord, 0, rng);
         agents.insert(entity, Agent::new(spec.size));
     }
-    for &coord in empty_coords.iter().skip(5).take(5) {
-        let npc_type = UPGRADE_TYPES.choose(rng).unwrap().clone();
-        let entity = spawn_npc(&mut world, npc_type, coord, 0);
-        agents.insert(entity, Agent::new(spec.size));
+    for &coord in empty_coords.iter().skip(num_npcs).take(num_items) {
+        let item = ALL_ITEMS.choose(rng).unwrap();
+        item.spawn(&mut world, coord, false);
+    }
+    let num_special_items = 4;
+    let special_item_coords = sewer
+        .map
+        .enumerate()
+        .filter_map(
+            |(coord, &cell)| {
+                if cell == SewerCell::Pool {
+                    Some(coord)
+                } else {
+                    None
+                }
+            },
+        )
+        .choose_multiple(rng, num_special_items);
+    for (i, &coord) in special_item_coords.iter().enumerate() {
+        let item = ALL_ITEMS[i % ALL_ITEMS.len()];
+        item.spawn(&mut world, coord, true);
     }
     Terrain { world, player, agents }
 }

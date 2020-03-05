@@ -62,8 +62,8 @@ impl Spatial {
     pub fn location(&self, entity: Entity) -> Option<&Location> {
         self.location_component.get(entity)
     }
-    pub fn coord(&self, entity: Entity) -> Option<&Coord> {
-        self.location(entity).map(|l| &l.coord)
+    pub fn coord(&self, entity: Entity) -> Option<Coord> {
+        self.location(entity).map(|l| l.coord)
     }
     pub fn insert(&mut self, entity: Entity, location: Location) -> Result<(), OccupiedBy> {
         if let Some(layer) = location.layer {

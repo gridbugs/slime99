@@ -1,6 +1,6 @@
 use crate::{
     world::{
-        data::{DoorState, OnCollision, OnDamage, ProjectileDamage, Tile},
+        data::{DoorState, Item, OnCollision, OnDamage, ProjectileDamage, Tile},
         explosion, player,
         realtime_periodic::{core::ScheduledRealtimePeriodicState, movement},
         spatial::{Layer, Location, OccupiedBy},
@@ -31,8 +31,8 @@ pub enum Error {
 }
 
 impl World {
-    pub fn apply_ability(&mut self, player: Entity, ability_slot: u8) -> Result<(), Error> {
-        let player = self.components.player.get_mut(player).unwrap();
+    pub fn apply_ability<R: Rng>(&mut self, entity: Entity, ability_slot: u8, rng: &mut R) -> Result<(), Error> {
+        let player = self.components.player.get_mut(entity).unwrap();
         if let Some(ability) = player.ability.get(ability_slot as usize) {
             use player::{Ability::*, AbilityTarget::*};
             match ability {
@@ -43,10 +43,71 @@ impl World {
                 Stash(Defend) => player.defend.stash().map_err(|_| Error::NotEnoughDefends)?,
                 Stash(Tech) => player.tech.stash().map_err(|_| Error::NotEnoughTechs)?,
             }
+            self.wait(entity, rng);
         } else {
             return Err(Error::NoAbilityInSlot);
         }
         Ok(())
+    }
+
+    pub fn wait<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
+        if let Some(coord) = self.spatial.coord(entity) {
+            self.after_player_move(entity, coord, rng);
+        }
+    }
+    fn pick_up_item<R: Rng>(&mut self, character: Entity, item_entity: Entity, rng: &mut R) {
+        if self.components.to_remove.contains(character) {
+            return;
+        }
+        let player = self.components.player.get_mut(character).unwrap();
+        if let Some(item) = self.components.item.get(item_entity) {
+            let taken = match item {
+                Item::Attack { special } => {
+                    if player.attack.is_full() {
+                        false
+                    } else {
+                        let attack = player::choose_attack(self.level, *special, rng);
+                        let _ = player.attack.push(attack);
+                        true
+                    }
+                }
+                Item::Defend { special } => {
+                    if player.defend.is_full() {
+                        false
+                    } else {
+                        let defend = player::choose_defend(self.level, *special, rng);
+                        let _ = player.defend.push(defend);
+                        true
+                    }
+                }
+                Item::Tech { special } => {
+                    if player.tech.is_full() {
+                        false
+                    } else {
+                        let tech = player::choose_tech(self.level, *special, rng);
+                        let _ = player.tech.push(tech);
+                        true
+                    }
+                }
+            };
+            if taken {
+                self.components.to_remove.insert(item_entity, ());
+            }
+        }
+    }
+    fn after_player_move<R: Rng>(&mut self, character: Entity, target_coord: Coord, rng: &mut R) {
+        if let Some(&cell) = self.spatial.get_cell(target_coord) {
+            if let Some(floor_entity) = cell.floor {
+                if self.components.sludge.contains(floor_entity) {
+                    self.apply_defend(character, rng);
+                }
+            }
+            if let Some(feature_entity) = cell.feature {
+                if self.components.item.contains(feature_entity) {
+                    self.pick_up_item(character, feature_entity, rng);
+                }
+            }
+        }
     }
     pub fn character_walk_in_direction<R: Rng>(
         &mut self,
@@ -61,13 +122,13 @@ impl World {
             }
             move_half_speed.skip_next_move = true;
         }
-        let &current_coord = if let Some(coord) = self.spatial.coord(character) {
+        let current_coord = if let Some(coord) = self.spatial.coord(character) {
             coord
         } else {
             panic!("failed to find coord for {:?}", character);
         };
         let target_coord = current_coord + direction.coord();
-        if let Some(cell) = self.spatial.get_cell(target_coord) {
+        if let Some(&cell) = self.spatial.get_cell(target_coord) {
             if let Some(feature_entity) = cell.feature {
                 if self.components.solid.contains(feature_entity) {
                     if let Some(DoorState::Closed) = self.components.door_state.get(feature_entity).cloned() {
@@ -82,6 +143,10 @@ impl World {
         }
         if let Err(OccupiedBy(occupant)) = self.spatial.update_coord(character, target_coord) {
             self.melee_attack(character, occupant, direction, rng);
+        } else {
+            if self.components.player.contains(character) {
+                self.after_player_move(character, target_coord, rng);
+            }
         }
         Ok(())
     }
@@ -99,22 +164,17 @@ impl World {
         rng: &mut R,
     ) {
         let player = self.components.player.get_mut(attacker).unwrap();
-        if let Some(attack) = player.attack.pop() {
-            self.apply_attack(attack, attacker, victim, direction, rng);
-        }
+        let attack = player.attack.pop().unwrap_or(player::EMPTY_ATTACK);
+        self.apply_attack(attack, attacker, victim, direction, rng);
     }
 
     fn npc_melee_attack<R: Rng>(&mut self, _attacker: Entity, victim: Entity, rng: &mut R) {
         let player = self.components.player.get_mut(victim).unwrap();
-        if let Some(defend) = player.defend.pop() {
-            self.apply_defend(defend, victim, rng);
-        } else {
-            self.character_die(victim);
-        }
+        self.apply_defend(victim, rng);
     }
 
     fn cleave<R: Rng>(&mut self, entity: Entity, damage: u32, rng: &mut R) {
-        let &this_coord = self.spatial.coord(entity).unwrap();
+        let this_coord = self.spatial.coord(entity).unwrap();
         for direction in Direction::all() {
             let coord = this_coord + direction.coord();
             if let Some(cell) = self.spatial.get_cell(coord) {
@@ -127,7 +187,7 @@ impl World {
 
     fn skewer<R: Rng>(&mut self, entity: Entity, damage: u32, direction: CardinalDirection, rng: &mut R) {
         const RANGE: u32 = 4;
-        let &(mut coord) = self.spatial.coord(entity).unwrap();
+        let mut coord = self.spatial.coord(entity).unwrap();
         for _ in 0..RANGE {
             coord += direction.coord();
             if let Some(cell) = self.spatial.get_cell(coord) {
@@ -187,16 +247,64 @@ impl World {
         self.cleave(entity, 100, rng);
     }
 
-    fn apply_defend<R: Rng>(&mut self, defend: player::Defend, victim: Entity, rng: &mut R) {
+    fn apply_defend<R: Rng>(&mut self, victim: Entity, rng: &mut R) {
         use player::Defend::*;
-        match defend {
-            Dodge => (),
-            Teleport => self.teleport(victim, rng),
-            Revenge => self.revenge(victim, rng),
-            SkipAttack => {
-                let player = self.components.player.get_mut(victim).unwrap();
-                player.attack.pop();
+        let player = self.components.player.get_mut(victim).unwrap();
+        if let Some(defend) = player.defend.pop() {
+            match defend {
+                Dodge => {
+                    if let Some(player_coord) = self.spatial.coord(victim) {
+                        if let Some(cell) = self.spatial.get_cell(player_coord) {
+                            if let Some(floor) = cell.floor {
+                                if self.components.sludge.contains(floor) {
+                                    return;
+                                }
+                            }
+                        }
+                        let mut directions = CardinalDirection::all().collect::<Vec<_>>();
+                        directions.shuffle(rng);
+                        let maybe_direction = directions
+                            .into_iter()
+                            .filter_map(|d| {
+                                let coord = player_coord + d.coord();
+                                if let Some(cell) = self.spatial.get_cell(coord) {
+                                    if cell.character.is_none() {
+                                        if let Some(floor) = cell.floor {
+                                            if self.components.sludge.contains(floor) {
+                                                return None;
+                                            }
+                                        }
+                                        if let Some(feature) = cell.feature {
+                                            if !self.components.solid.contains(feature) {
+                                                return Some(d);
+                                            }
+                                        } else {
+                                            return Some(d);
+                                        }
+                                    }
+                                }
+                                None
+                            })
+                            .next();
+                        if let Some(direction) = maybe_direction {
+                            let _ = self.character_walk_in_direction(victim, direction, rng);
+                        }
+                    }
+                }
+                Armour(n) => {
+                    if n > 1 {
+                        let _ = player.defend.push(Armour(n - 1));
+                    }
+                }
+                Teleport => self.teleport(victim, rng),
+                Revenge => self.revenge(victim, rng),
+                SkipAttack => {
+                    let player = self.components.player.get_mut(victim).unwrap();
+                    player.attack.pop();
+                }
             }
+        } else {
+            self.character_die(victim);
         }
     }
 
@@ -215,7 +323,7 @@ impl World {
     }
 
     pub fn character_fire_bullet(&mut self, character: Entity, target: Coord) {
-        let &character_coord = self.spatial.coord(character).unwrap();
+        let character_coord = self.spatial.coord(character).unwrap();
         if character_coord == target {
             return;
         }
@@ -223,15 +331,19 @@ impl World {
         self.spawn_flash(character_coord);
     }
 
-    fn blink(&mut self, entity: Entity, coord: Coord) {
+    fn blink<R: Rng>(&mut self, entity: Entity, coord: Coord, rng: &mut R) {
         self.spatial.update_coord(entity, coord).unwrap();
+        if self.components.player.contains(entity) {
+            self.after_player_move(entity, coord, rng);
+        }
     }
 
-    pub fn apply_tech_with_coord(
+    pub fn apply_tech_with_coord<R: Rng>(
         &mut self,
         entity: Entity,
         coord: Coord,
         visibility_grid: &VisibilityGrid,
+        rng: &mut R,
     ) -> Result<(), Error> {
         use player::Tech::*;
         let player = self.components.player.get_mut(entity).unwrap();
@@ -247,7 +359,7 @@ impl World {
                             };
                             if can_blink {
                                 player.tech.pop();
-                                self.blink(entity, coord);
+                                self.blink(entity, coord, rng);
                                 Ok(())
                             } else {
                                 Err(Error::BlinkToSolidCell)
@@ -259,7 +371,7 @@ impl World {
                         Err(Error::BlinkToNonVisibleCell)
                     }
                 }
-                _ => self.apply_tech(entity),
+                _ => return self.apply_tech(entity, rng),
             }
         } else {
             Err(Error::NoTechToApply)
@@ -269,13 +381,13 @@ impl World {
     fn attract(&mut self, entity: Entity) {
         const RANGE: u32 = 8;
         const ATTRACT_BY: u32 = 4;
-        let &this_coord = self.spatial.coord(entity).unwrap();
+        let this_coord = self.spatial.coord(entity).unwrap();
         let mut to_push_back = self
             .components
             .npc
             .entities()
             .filter_map(|entity| {
-                if let Some(&coord) = self.spatial.coord(entity) {
+                if let Some(coord) = self.spatial.coord(entity) {
                     let distance2 = this_coord.distance2(coord);
                     if distance2 < RANGE * RANGE {
                         Some((entity, coord, distance2))
@@ -310,13 +422,13 @@ impl World {
     fn repel(&mut self, entity: Entity) {
         const RANGE: u32 = 8;
         const PUSH_BACK: u32 = 4;
-        let &this_coord = self.spatial.coord(entity).unwrap();
+        let this_coord = self.spatial.coord(entity).unwrap();
         let mut to_push_back = self
             .components
             .npc
             .entities()
             .filter_map(|entity| {
-                if let Some(&coord) = self.spatial.coord(entity) {
+                if let Some(coord) = self.spatial.coord(entity) {
                     let distance2 = this_coord.distance2(coord);
                     if distance2 < RANGE * RANGE {
                         Some((entity, coord, distance2))
@@ -348,7 +460,7 @@ impl World {
         }
     }
 
-    pub fn apply_tech(&mut self, entity: Entity) -> Result<(), Error> {
+    pub fn apply_tech<R: Rng>(&mut self, entity: Entity, rng: &mut R) -> Result<(), Error> {
         use player::Tech::*;
         let player = self.components.player.get_mut(entity).unwrap();
         let mut result = Ok(());
@@ -387,13 +499,14 @@ impl World {
         }
         if result.is_ok() {
             self.components.player.get_mut(entity).unwrap().tech.pop();
+            self.wait(entity, rng);
         }
         result
     }
 
     pub fn character_fire_shotgun<R: Rng>(&mut self, character: Entity, target: Coord, rng: &mut R) {
         const NUM_BULLETS: usize = 12;
-        let &character_coord = self.spatial.coord(character).unwrap();
+        let character_coord = self.spatial.coord(character).unwrap();
         if character_coord == target {
             return;
         }
@@ -408,7 +521,7 @@ impl World {
     }
 
     pub fn character_fire_rocket(&mut self, character: Entity, target: Coord) {
-        let &character_coord = self.spatial.coord(character).unwrap();
+        let character_coord = self.spatial.coord(character).unwrap();
         if character_coord == target {
             return;
         }
@@ -421,7 +534,7 @@ impl World {
         external_events: &mut Vec<ExternalEvent>,
         rng: &mut R,
     ) {
-        if let Some(&current_coord) = self.spatial.coord(projectile_entity) {
+        if let Some(current_coord) = self.spatial.coord(projectile_entity) {
             if let Some(on_collision) = self.components.on_collision.get(projectile_entity).cloned() {
                 match on_collision {
                     OnCollision::Explode(explosion_spec) => {
@@ -455,7 +568,7 @@ impl World {
         external_events: &mut Vec<ExternalEvent>,
         rng: &mut R,
     ) {
-        if let Some(&current_coord) = self.spatial.coord(projectile_entity) {
+        if let Some(current_coord) = self.spatial.coord(projectile_entity) {
             let next_coord = current_coord + movement_direction.coord();
             let collides_with = self
                 .components
@@ -496,7 +609,7 @@ impl World {
     }
 
     fn divide<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
-        if let Some(&coord) = self.spatial.coord(entity) {
+        if let Some(coord) = self.spatial.coord(entity) {
             if let Some(hit_points) = self.components.hit_points.get_mut(entity) {
                 let new_hit_points = {
                     let mut hit_points = *hit_points;
@@ -546,7 +659,7 @@ impl World {
 
     pub fn damage_character<R: Rng>(&mut self, character: Entity, hit_points_to_lose: u32, rng: &mut R) {
         if let Some(hit_points) = self.components.hit_points.get_mut(character) {
-            let &coord = self.spatial.coord(character).unwrap();
+            let coord = self.spatial.coord(character).unwrap();
             match hit_points.current.checked_sub(hit_points_to_lose) {
                 None | Some(0) => {
                     hit_points.current = 0;
@@ -559,7 +672,7 @@ impl World {
             if let Some(on_damage) = self.components.on_damage.get(character) {
                 match on_damage {
                     OnDamage::Sludge => {
-                        if let Some(&coord) = self.spatial.coord(character) {
+                        if let Some(coord) = self.spatial.coord(character) {
                             self.change_floor_to_sludge(coord);
                         }
                     }
@@ -567,8 +680,8 @@ impl World {
                     OnDamage::Teleport => {
                         let maybe_player_entity = self.components.player.entities().next();
                         if let Some(player_entity) = maybe_player_entity {
-                            if let Some(&player_coord) = self.spatial.coord(player_entity) {
-                                if let Some(&victim_coord) = self.spatial.coord(character) {
+                            if let Some(player_coord) = self.spatial.coord(player_entity) {
+                                if let Some(victim_coord) = self.spatial.coord(character) {
                                     if player_coord.manhattan_distance(victim_coord) == 1 {
                                         self.teleport(player_entity, rng);
                                     }
@@ -580,8 +693,8 @@ impl World {
                     OnDamage::Swap => {
                         let maybe_player_entity = self.components.player.entities().next();
                         if let Some(player_entity) = maybe_player_entity {
-                            if let Some(&player_coord) = self.spatial.coord(player_entity) {
-                                if let Some(&victim_coord) = self.spatial.coord(character) {
+                            if let Some(player_coord) = self.spatial.coord(player_entity) {
+                                if let Some(victim_coord) = self.spatial.coord(character) {
                                     if player_coord.manhattan_distance(victim_coord) == 1 {
                                         self.spatial.remove(player_entity);
                                         self.spatial.update_coord(character, player_coord).unwrap();
@@ -645,7 +758,7 @@ impl World {
     }
 
     fn character_push_in_direction(&mut self, entity: Entity, direction: Direction) {
-        if let Some(&current_coord) = self.spatial.coord(entity) {
+        if let Some(current_coord) = self.spatial.coord(entity) {
             let target_coord = current_coord + direction.coord();
             if self.is_solid_feature_at_coord(target_coord) {
                 return;
@@ -695,13 +808,13 @@ impl World {
         const DAMAGE: u32 = 10;
         for entity in self
             .components
-            .character
+            .npc
             .entities()
             .filter(|&entity| {
                 if self.components.safe_on_sludge.contains(entity) {
                     return false;
                 }
-                if let Some(&coord) = self.spatial.coord(entity) {
+                if let Some(coord) = self.spatial.coord(entity) {
                     if let Some(cell) = self.spatial.get_cell(coord) {
                         if let Some(floor) = cell.floor {
                             if self.components.sludge.contains(floor) {
@@ -714,15 +827,7 @@ impl World {
             })
             .collect::<Vec<_>>()
         {
-            if let Some(player) = self.components.player.get_mut(entity) {
-                if let Some(defend) = player.defend.pop() {
-                    self.apply_defend(defend, entity, rng);
-                } else {
-                    self.character_die(entity);
-                }
-            } else {
-                self.damage_character(entity, DAMAGE, rng);
-            }
+            self.damage_character(entity, DAMAGE, rng);
         }
     }
 }

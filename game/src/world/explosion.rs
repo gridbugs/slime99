@@ -125,7 +125,7 @@ fn is_in_explosion_range(explosion_coord: Coord, mechanics: &spec::Mechanics, co
 
 fn apply_mechanics<R: Rng>(world: &mut World, explosion_coord: Coord, mechanics: &spec::Mechanics, rng: &mut R) {
     for character_entity in world.components.character.entities().collect::<Vec<_>>() {
-        if let Some(&character_coord) = world.spatial.coord(character_entity) {
+        if let Some(character_coord) = world.spatial.coord(character_entity) {
             if character_coord == explosion_coord {
                 apply_direct_hit(world, explosion_coord, mechanics, character_entity, rng);
             } else {

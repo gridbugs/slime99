@@ -2,7 +2,7 @@ use crate::{
     visibility::Light,
     world::{
         data::{
-            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Layer, Location, MoveHalfSpeed, Npc,
+            CollidesWith, Disposition, DoorState, EntityData, HitPoints, Item, Layer, Location, MoveHalfSpeed, Npc,
             OnCollision, OnDamage, Tile,
         },
         explosion, player,
@@ -16,22 +16,23 @@ use crate::{
 };
 use ecs::Entity;
 use grid_2d::Coord;
+use rand::Rng;
 use rational::Rational;
 use rgb24::Rgb24;
 use shadowcast::vision_distance::Circle;
 use std::time::Duration;
 
-pub fn make_player() -> EntityData {
+pub fn make_player<R: Rng>(rng: &mut R) -> EntityData {
     EntityData {
         tile: Some(Tile::Player),
         character: Some(()),
-        player: Some(player::Player::new()),
+        player: Some(player::Player::new(rng)),
         light: Some(Light {
             colour: Rgb24::new(200, 187, 150),
             vision_distance: Circle::new_squared(60),
             diminish: Rational {
                 numerator: 1,
-                denominator: 20,
+                denominator: 30,
             },
         }),
         ..Default::default()
@@ -501,7 +502,7 @@ impl World {
                     Flicker {
                         colour_hint: None,
                         light_colour: Some(UniformInclusiveRange {
-                            low: Rgb24::new(31, 17, 0),
+                            low: Rgb24::new(31, 127, 0),
                             high: Rgb24::new(63, 255, 0),
                         }),
                         tile: None,
@@ -530,6 +531,7 @@ impl World {
             )
             .unwrap();
         self.components.tile.insert(entity, Tile::Sludge0);
+        self.components.colour_hint.insert(entity, Rgb24::new(0, 255, 0));
         self.components.realtime.insert(entity, ());
         self.realtime_components.flicker.insert(
             entity,
@@ -572,7 +574,7 @@ impl World {
         entity
     }
 
-    pub fn spawn_slime_divide(&mut self, coord: Coord) -> Entity {
+    pub fn spawn_slime_divide<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
@@ -592,11 +594,13 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Divide);
-        self.components.hit_points.insert(entity, HitPoints::new_full(32));
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(rng.gen_range(20, 40)));
         entity
     }
 
-    pub fn spawn_slime_swap(&mut self, coord: Coord) -> Entity {
+    pub fn spawn_slime_swap<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
@@ -616,11 +620,13 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Swap);
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(rng.gen_range(10, 20)));
         entity
     }
 
-    pub fn spawn_slime_teleport(&mut self, coord: Coord) -> Entity {
+    pub fn spawn_slime_teleport<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
@@ -640,11 +646,13 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Teleport);
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(rng.gen_range(2, 8)));
         entity
     }
 
-    pub fn spawn_slime_goo(&mut self, coord: Coord) -> Entity {
+    pub fn spawn_slime_goo<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial
             .insert(
@@ -665,7 +673,9 @@ impl World {
         self.components.character.insert(entity, ());
         self.components.safe_on_sludge.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Sludge);
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(rng.gen_range(8, 16)));
         entity
     }
 
@@ -783,6 +793,54 @@ impl World {
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Curse);
         self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        entity
+    }
+
+    pub fn spawn_attack(&mut self, coord: Coord, special: bool) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Feature),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::AttackItem { special });
+        self.components.item.insert(entity, Item::Attack { special });
+        entity
+    }
+
+    pub fn spawn_defend(&mut self, coord: Coord, special: bool) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Feature),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::DefendItem { special });
+        self.components.item.insert(entity, Item::Defend { special });
+        entity
+    }
+
+    pub fn spawn_tech(&mut self, coord: Coord, special: bool) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Feature),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::TechItem { special });
+        self.components.item.insert(entity, Item::Tech { special });
         entity
     }
 }

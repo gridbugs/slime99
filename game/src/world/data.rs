@@ -35,6 +35,7 @@ ecs_components! {
         safe_on_sludge: (),
         on_damage: OnDamage,
         move_half_speed: MoveHalfSpeed,
+        item: Item,
     }
 }
 pub use components::Components;
@@ -59,6 +60,16 @@ pub enum Tile {
     SlimeAttackUpgrade,
     SlimeDefendUpgrade,
     SlimeTechUpgrade,
+    AttackItem { special: bool },
+    DefendItem { special: bool },
+    TechItem { special: bool },
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum Item {
+    Attack { special: bool },
+    Defend { special: bool },
+    Tech { special: bool },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

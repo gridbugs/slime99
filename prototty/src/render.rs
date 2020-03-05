@@ -291,6 +291,39 @@ impl Quad {
             ],
         }
     }
+    fn new_attack(foreground: Rgb24, special: bool) -> Self {
+        let base = ViewCell::new().with_foreground(foreground).with_bold(true);
+        Self {
+            cells: [
+                base.with_character('A'),
+                base.with_character('t'),
+                base.with_character('k'),
+                base.with_character(if special { '*' } else { ' ' }),
+            ],
+        }
+    }
+    fn new_defend(foreground: Rgb24, special: bool) -> Self {
+        let base = ViewCell::new().with_foreground(foreground).with_bold(true);
+        Self {
+            cells: [
+                base.with_character('D'),
+                base.with_character('e'),
+                base.with_character('f'),
+                base.with_character(if special { '*' } else { ' ' }),
+            ],
+        }
+    }
+    fn new_tech(foreground: Rgb24, special: bool) -> Self {
+        let base = ViewCell::new().with_foreground(foreground).with_bold(true);
+        Self {
+            cells: [
+                base.with_character('T'),
+                base.with_character('c'),
+                base.with_character('h'),
+                base.with_character(if special { '*' } else { ' ' }),
+            ],
+        }
+    }
     fn apply_lighting(&mut self, light_colour: Rgb24) {
         for view_cell in self.cells.iter_mut() {
             if let Some(foreground) = view_cell.style.foreground.as_mut() {
@@ -402,7 +435,9 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
             entity.hit_points.map(|hp| hp.current).unwrap_or(0),
             entity.next_action.unwrap_or(NpcAction::Wait),
         ),
-
+        Tile::AttackItem { special } => Quad::new_attack(Rgb24::new_grey(255), special),
+        Tile::DefendItem { special } => Quad::new_defend(Rgb24::new_grey(255), special),
+        Tile::TechItem { special } => Quad::new_tech(Rgb24::new_grey(255), special),
         Tile::SlimeCurse => Quad::new_slime(
             'c',
             Rgb24::new(187, 187, 187),
@@ -520,6 +555,12 @@ fn tile_str(tile: Tile) -> Option<&'static str> {
         Tile::SlimeDefendUpgrade => Some("a Defend Upgrade Slime"),
         Tile::SlimeTechUpgrade => Some("a Tech Upgrade Slime"),
         Tile::SlimeCurse => Some("a Curse Slime"),
+        Tile::AttackItem { special: false } => Some("an Attack"),
+        Tile::AttackItem { special: true } => Some("a Special Attack"),
+        Tile::DefendItem { special: false } => Some("a Defend"),
+        Tile::DefendItem { special: true } => Some("a Special Defend"),
+        Tile::TechItem { special: false } => Some("a Tech"),
+        Tile::TechItem { special: true } => Some("a Special Tech"),
     }
 }
 

@@ -506,6 +506,9 @@ impl DoorCandidates {
         let door_candidate_graph = self.graph();
         let mut mst = HashSet::new();
         let mut visited_room_ids = HashSet::new();
+        if self.candidates.is_empty() {
+            return mst;
+        }
         let mut to_visit = vec![rng.gen_range(0, self.candidates.len())];
         while !to_visit.is_empty() {
             let door_candidate_id = to_visit.swap_remove(rng.gen_range(0, to_visit.len()));

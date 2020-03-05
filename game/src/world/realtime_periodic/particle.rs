@@ -213,7 +213,7 @@ impl RealtimePeriodicState for ParticleEmitterState {
         _: &mut Vec<ExternalEvent>,
         _: &mut R,
     ) {
-        let coord = if let Some(&coord) = world.spatial.coord(entity) {
+        let coord = if let Some(coord) = world.spatial.coord(entity) {
             coord
         } else {
             return;

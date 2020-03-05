@@ -89,8 +89,10 @@ impl Game {
     pub fn new<R: Rng>(config: &Config, base_rng: &mut R) -> Self {
         let mut rng = Isaac64Rng::seed_from_u64(base_rng.gen());
         let animation_rng = Isaac64Rng::seed_from_u64(base_rng.gen());
-        //let Terrain { world, agents, player } = terrain::from_str(include_str!("terrain.txt"), make_player());
-        let Terrain { world, agents, player } = terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(), &mut rng);
+        let Terrain { world, agents, player } =
+            terrain::from_str(include_str!("terrain.txt"), make_player(&mut rng), &mut rng);
+        //let Terrain { world, agents, player } =
+        //    terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(&mut rng), &mut rng);
         let last_player_info = world.character_info(player).expect("couldn't get info for player");
         let events = vec![ExternalEvent::LoopMusic(Music::Fiberitron)];
         let mut game = Self {
@@ -147,7 +149,7 @@ impl Game {
                 self.generate_level(config);
                 self.generate_frame_countdown = None;
                 return Some(GameControlFlow::LevelChange(AbilityChoice(
-                    player::choose_ability_multi(&mut self.rng),
+                    self.world.ability_choice(self.player, &mut self.rng),
                 )));
             } else {
                 *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick) {
@@ -238,12 +240,16 @@ impl Game {
             Input::Walk(direction) => self
                 .world
                 .character_walk_in_direction(self.player, direction, &mut self.rng),
-            Input::Tech => self.world.apply_tech(self.player),
-            Input::TechWithCoord(coord) => self
-                .world
-                .apply_tech_with_coord(self.player, coord, &self.visibility_grid),
-            Input::Wait => Ok(()),
-            Input::Ability(n) => self.world.apply_ability(self.player, n),
+            Input::Tech => self.world.apply_tech(self.player, &mut self.rng),
+            Input::TechWithCoord(coord) => {
+                self.world
+                    .apply_tech_with_coord(self.player, coord, &self.visibility_grid, &mut self.rng)
+            }
+            Input::Wait => {
+                self.world.wait(self.player, &mut self.rng);
+                Ok(())
+            }
+            Input::Ability(n) => self.world.apply_ability(self.player, n, &mut self.rng),
             Input::GrantAbility(ability) => {
                 self.world.grant_ability(self.player, ability);
                 Ok(())

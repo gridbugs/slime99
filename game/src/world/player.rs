@@ -1,3 +1,4 @@
+use crate::world::data::Item;
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -9,8 +10,11 @@ pub enum Attack {
     Miss,
 }
 
+pub const EMPTY_ATTACK: Attack = Attack::Hit(4);
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Defend {
+    Armour(u32),
     Dodge,
     Teleport,
     Revenge,
@@ -28,17 +32,30 @@ pub enum Tech {
     Skip,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AbilityTarget {
     Attack,
     Defend,
     Tech,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Ability {
     Stash(AbilityTarget),
     SwapTop2(AbilityTarget),
+}
+
+impl Ability {
+    pub fn all() -> &'static [Ability] {
+        &[
+            Ability::Stash(AbilityTarget::Attack),
+            Ability::Stash(AbilityTarget::Defend),
+            Ability::Stash(AbilityTarget::Tech),
+            Ability::SwapTop2(AbilityTarget::Attack),
+            Ability::SwapTop2(AbilityTarget::Defend),
+            Ability::SwapTop2(AbilityTarget::Tech),
+        ]
+    }
 }
 
 impl Tech {
@@ -71,6 +88,9 @@ impl<T> Deck<T> {
     }
     pub fn len(&self) -> usize {
         self.items.len()
+    }
+    pub fn is_full(&self) -> bool {
+        self.len() == self.max_size
     }
     pub const fn max_size(&self) -> usize {
         self.max_size
@@ -158,60 +178,65 @@ fn rev<T>(mut vec: Vec<T>) -> Vec<T> {
     vec
 }
 
+fn shuf<T, R: Rng>(mut vec: Vec<T>, rng: &mut R) -> Vec<T> {
+    vec.shuffle(rng);
+    vec
+}
+
 impl Player {
-    pub fn new() -> Self {
+    pub fn new<R: Rng>(rng: &mut R) -> Self {
+        use Ability::*;
+        use Attack::*;
+        use Defend::*;
+        use Tech::*;
         Self {
             attack: Deck {
+                #[rustfmt::skip]
                 items: rev(vec![
-                    Attack::Hit(8),
-                    Attack::Hit(8),
-                    Attack::Hit(8),
-                    Attack::Hit(8),
-                    Attack::Skewer(12),
-                    Attack::Miss,
-                    Attack::Hit(8),
-                    Attack::Cleave(4),
-                    Attack::Hit(99),
-                    Attack::Skewer(4),
+                    Hit(rng.gen_range(4, 10)),
+                    Hit(rng.gen_range(4, 10)),
+                    Hit(rng.gen_range(4, 10)),
+                    Cleave(rng.gen_range(4, 10)),
+                    Hit(rng.gen_range(8, 20)),
+                    Hit(rng.gen_range(8, 20)),
+                    Hit(rng.gen_range(12, 30)),
+                    Hit(rng.gen_range(12, 30)),
                 ]),
                 max_size: 16,
             },
             defend: Deck {
+                #[rustfmt::skip]
                 items: rev(vec![
-                    Defend::Dodge,
-                    Defend::Dodge,
-                    Defend::Dodge,
-                    Defend::Teleport,
-                    Defend::Revenge,
-                    Defend::Dodge,
-                    Defend::Revenge,
-                    Defend::Dodge,
-                    Defend::Dodge,
-                    Defend::Teleport,
-                    Defend::Dodge,
+                    Armour(rng.gen_range(1, 2)),
+                    Armour(rng.gen_range(1, 2)),
+                    Armour(rng.gen_range(1, 2)),
+                    Dodge,
+                    Armour(rng.gen_range(1, 3)),
+                    Armour(rng.gen_range(1, 3)),
+                    Armour(rng.gen_range(1, 3)),
+                    Teleport,
+                    Armour(rng.gen_range(2, 5)),
+                    Armour(rng.gen_range(2, 5)),
                 ]),
                 max_size: 16,
             },
             tech: Deck {
-                items: rev(vec![
-                    Tech::Skip,
-                    Tech::Blink,
-                    Tech::Attract,
-                    Tech::Repel,
-                    Tech::MissNext,
-                    Tech::Blink,
-                    Tech::CritNext,
-                    Tech::TeleportNext,
-                ]),
+                #[rustfmt::skip]
+                items: shuf(vec![
+                   Attract,
+                    Repel,
+                    Repel,
+                    Blink,
+                    Blink,
+                    Blink,
+                ], rng),
                 max_size: 8,
             },
             ability: AbilityTable {
+                #[rustfmt::skip]
                 abilities: vec![
-                    Ability::SwapTop2(AbilityTarget::Attack),
-                    Ability::Stash(AbilityTarget::Defend),
-                    Ability::Stash(AbilityTarget::Attack),
-                    Ability::SwapTop2(AbilityTarget::Defend),
-                    Ability::Stash(AbilityTarget::Tech),
+                    Stash(AbilityTarget::Attack),
+                    Stash(AbilityTarget::Defend),
                 ],
                 max_size: 8,
             },
@@ -224,6 +249,60 @@ pub enum Outcome {
     Attack(Attack),
     Defend(Defend),
     Tech(Tech),
+}
+
+pub fn choose_attack<R: Rng>(level: u32, special: bool, rng: &mut R) -> Attack {
+    if special {
+        match rng.gen_range(0, 3) {
+            0 => Attack::Hit(99),
+            1 => Attack::Cleave(rng.gen_range((level + 1) * 6, (level + 1) * 9)),
+            2 => Attack::Skewer(rng.gen_range((level + 1) * 6, (level + 1) * 9)),
+            _ => unreachable!(),
+        }
+    } else {
+        match rng.gen_range(0, 3) {
+            0 => Attack::Hit(rng.gen_range((level + 1) * 4, (level + 1) * 7)),
+            1 => Attack::Cleave(rng.gen_range((level + 1) * 3, (level + 1) * 6)),
+            2 => Attack::Skewer(rng.gen_range((level + 1) * 3, (level + 1) * 6)),
+            _ => unreachable!(),
+        }
+    }
+}
+
+pub fn choose_defend<R: Rng>(level: u32, special: bool, rng: &mut R) -> Defend {
+    if special {
+        match rng.gen_range(0, 2) {
+            0 => Defend::Revenge,
+            1 => Defend::Armour(rng.gen_range((level + 1) * 2, (level + 1) * 3)),
+            _ => unreachable!(),
+        }
+    } else {
+        match rng.gen_range(0, 4) {
+            0 => Defend::Teleport,
+            1 => Defend::Dodge,
+            2 => Defend::Armour(level + 1),
+            3 => Defend::Armour(rng.gen_range(level + 1, (level + 1) * 2)),
+            _ => unreachable!(),
+        }
+    }
+}
+
+pub fn choose_tech<R: Rng>(level: u32, special: bool, rng: &mut R) -> Tech {
+    if special {
+        Tech::Blink
+    } else {
+        (&[
+            Tech::Blink,
+            Tech::Blink,
+            Tech::Blink,
+            Tech::Repel,
+            Tech::Repel,
+            Tech::Attract,
+        ])
+            .choose(rng)
+            .unwrap()
+            .clone()
+    }
 }
 
 pub fn choose_attack_upgrade<R: Rng>(level: u32, rng: &mut R) -> Attack {
@@ -268,18 +347,4 @@ pub fn choose_curse<R: Rng>(rng: &mut R) -> Outcome {
         .choose(rng)
         .unwrap()
         .clone()
-}
-
-pub fn choose_ability_multi<R: Rng>(rng: &mut R) -> Vec<Ability> {
-    (&[
-        Ability::Stash(AbilityTarget::Attack),
-        Ability::Stash(AbilityTarget::Defend),
-        Ability::Stash(AbilityTarget::Tech),
-        Ability::SwapTop2(AbilityTarget::Attack),
-        Ability::SwapTop2(AbilityTarget::Defend),
-        Ability::SwapTop2(AbilityTarget::Tech),
-    ])
-        .choose_multiple(rng, 3)
-        .cloned()
-        .collect()
 }

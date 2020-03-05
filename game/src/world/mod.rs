@@ -1,9 +1,13 @@
 use crate::{visibility::Light, ExternalEvent};
 use ecs::{Entity, EntityAllocator};
 use grid_2d::{Coord, Size};
-use rand::Rng;
+use rand::{
+    seq::{IteratorRandom, SliceRandom},
+    Rng,
+};
 use rgb24::Rgb24;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 mod spatial;
 use spatial::Spatial;
@@ -31,6 +35,7 @@ pub use spawn::make_player;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct World {
+    pub level: u32,
     pub entity_allocator: EntityAllocator,
     pub components: Components,
     pub realtime_components: RealtimeComponents,
@@ -38,7 +43,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(size: Size) -> Self {
+    pub fn new(size: Size, level: u32) -> Self {
         let entity_allocator = EntityAllocator::default();
         let components = Components::default();
         let realtime_components = RealtimeComponents::default();
@@ -48,6 +53,7 @@ impl World {
             components,
             realtime_components,
             spatial,
+            level,
         }
     }
 }
@@ -91,16 +97,21 @@ impl World {
         self.components
             .light
             .iter()
-            .filter_map(move |(entity, light)| self.spatial.coord(entity).map(|&coord| (coord, light)))
+            .filter_map(move |(entity, light)| self.spatial.coord(entity).map(|coord| (coord, light)))
     }
 
     pub fn character_info(&self, entity: Entity) -> Option<CharacterInfo> {
-        let &coord = self.spatial.coord(entity)?;
+        let coord = self.spatial.coord(entity)?;
         Some(CharacterInfo { coord })
     }
 
     pub fn cleanup(&mut self) -> Option<PlayerDied> {
         let mut ret = None;
+        for (entity, hp) in self.components.hit_points.iter() {
+            if hp.current == 0 {
+                self.components.to_remove.insert(entity, ());
+            }
+        }
         for entity in self.components.to_remove.entities().collect::<Vec<_>>() {
             if self.components.player.contains(entity) {
                 let player_data = self.components.remove_entity_data(entity);
@@ -119,7 +130,7 @@ pub struct PlayerDied(pub EntityData);
 
 impl World {
     pub fn entity_coord(&self, entity: Entity) -> Option<Coord> {
-        self.spatial.coord(entity).cloned()
+        self.spatial.coord(entity)
     }
     pub fn entity_player(&self, entity: Entity) -> Option<&player::Player> {
         self.components.player.get(entity)
@@ -152,6 +163,17 @@ impl World {
     }
     pub fn clone_entity_data(&self, entity: Entity) -> EntityData {
         self.components.clone_entity_data(entity)
+    }
+    pub fn ability_choice<R: Rng>(&self, player: Entity, rng: &mut R) -> Vec<player::Ability> {
+        let player = self.components.player.get(player).unwrap();
+        let current_abilities = player.ability.iter().cloned().collect::<HashSet<_>>();
+        let mut choices = player::Ability::all()
+            .iter()
+            .filter(|a| !current_abilities.contains(a))
+            .cloned()
+            .choose_multiple(rng, 3);
+        choices.shuffle(rng);
+        choices
     }
 }
 
