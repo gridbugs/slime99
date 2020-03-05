@@ -376,13 +376,13 @@ impl Quad {
     }
 }
 
-fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game) -> Quad {
+fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game, game_over: bool) -> Quad {
     match entity.tile {
         Tile::Player => Quad::new_player(Rgb24::new(255, 255, 255)),
         Tile::Floor => Quad::new_floor(Rgb24::new(0, 187, 187), Rgb24::new(0, 127, 127)),
         Tile::Wall => {
             let below = entity.coord + Coord::new(0, 1);
-            if game.contains_wall(below) && !game.visibility_grid().is_coord_never_visible(below) {
+            if game.contains_wall(below) && (game_over || !game.visibility_grid().is_coord_never_visible(below)) {
                 Quad::new_wall_top(Rgb24::new(255, 0, 255))
             } else {
                 Quad::new_wall_front(Rgb24::new(127, 0, 127), Rgb24::new(255, 0, 255))
@@ -551,7 +551,7 @@ fn render_quad<F: Frame, C: ColModify>(coord: Coord, depth: i8, quad: &Quad, con
 fn render_entity<F: Frame, C: ColModify>(entity: &ToRenderEntity, game: &Game, context: ViewContext<C>, frame: &mut F) {
     match game.visibility_grid().cell_visibility(entity.coord) {
         CellVisibility::CurrentlyVisibleWithLightColour(Some(light_colour)) => {
-            let mut quad = entity_to_quad_visible(entity, game);
+            let mut quad = entity_to_quad_visible(entity, game, false);
             let depth = layer_depth(entity.layer);
             quad.apply_lighting(light_colour);
             render_quad(entity.coord, depth, &quad, context, frame);
@@ -572,7 +572,7 @@ fn render_entity_game_over<F: Frame, C: ColModify>(
     context: ViewContext<C>,
     frame: &mut F,
 ) {
-    let mut quad = entity_to_quad_visible(entity, game);
+    let mut quad = entity_to_quad_visible(entity, game, true);
     let depth = layer_depth(entity.layer);
     quad.apply_lighting(Rgb24::new(255, 87, 31));
     render_quad(entity.coord, depth, &quad, context, frame);
