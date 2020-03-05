@@ -15,3 +15,4 @@ and **ELIMINATE THE SOURCE OF SLIME!**
 - [MacOS (app)](https://files.gridbugs.org/Slime99-master.dmg)
 - [MacOS (binaries)](https://files.gridbugs.org/slime99-macos-x86_64-master.zip)
 - [Linux](https://files.gridbugs.org/slime99-linux-x86_64-master.zip)
+
