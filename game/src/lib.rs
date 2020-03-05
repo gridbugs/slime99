@@ -91,10 +91,10 @@ impl Game {
     pub fn new<R: Rng>(config: &Config, base_rng: &mut R) -> Self {
         let mut rng = Isaac64Rng::seed_from_u64(base_rng.gen());
         let animation_rng = Isaac64Rng::seed_from_u64(base_rng.gen());
-        let Terrain { world, agents, player } =
-            terrain::from_str(include_str!("terrain.txt"), make_player(&mut rng), &mut rng);
         //let Terrain { world, agents, player } =
-        //    terrain::sewer(SewerSpec { size: MAP_SIZE }, make_player(&mut rng), &mut rng);
+        //    terrain::from_str(include_str!("terrain.txt"), make_player(&mut rng), &mut rng);
+        let Terrain { world, agents, player } =
+            terrain::sewer(0, SewerSpec { size: MAP_SIZE }, make_player(&mut rng), &mut rng);
         let last_player_info = world.character_info(player).expect("couldn't get info for player");
         let events = vec![ExternalEvent::LoopMusic(Music::Fiberitron)];
         let mut game = Self {
@@ -328,6 +328,7 @@ impl Game {
     fn generate_level(&mut self, config: &Config) {
         let player_data = self.world.clone_entity_data(self.player);
         let Terrain { world, agents, player } = terrain::sewer(
+            self.world.level + 1,
             SewerSpec {
                 size: self.world.size(),
             },
@@ -403,5 +404,8 @@ impl Game {
     }
     pub fn player_coord(&self) -> Coord {
         self.last_player_info.coord
+    }
+    pub fn current_level(&self) -> u32 {
+        self.world.level
     }
 }

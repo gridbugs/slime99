@@ -64,6 +64,22 @@ impl World {
         entity
     }
 
+    pub fn spawn_invisible_wall(&mut self, coord: Coord) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Feature),
+                },
+            )
+            .unwrap();
+        self.components.solid.insert(entity, ());
+        self.components.opacity.insert(entity, 255);
+        entity
+    }
+
     pub fn spawn_former_human(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial

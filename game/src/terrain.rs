@@ -5,6 +5,7 @@ use crate::{
     World,
 };
 use ecs::{ComponentTable, Entity};
+use grid_2d::CoordIter;
 use grid_2d::{Coord, Size};
 use procgen::{Sewer, SewerCell, SewerSpec};
 use rand::{
@@ -174,8 +175,54 @@ impl Item {
 
 const ALL_ITEMS: &[Item] = &[Item::Attack, Item::Defend, Item::Tech];
 
-pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
+fn sewer_mini<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
+    const MINI_SIZE: Size = Size::new_u16(8, 8);
+    let offset = (spec.size.to_coord().unwrap() - MINI_SIZE.to_coord().unwrap()) / 2;
     let mut world = World::new(spec.size, 0);
+    let agents = ComponentTable::default();
+    let mini_spec = SewerSpec { size: MINI_SIZE };
+    let sewer = Sewer::generate(mini_spec, rng);
+    for (coord, cell) in sewer.map.enumerate() {
+        let coord = coord + offset;
+        match cell {
+            SewerCell::Wall => {
+                world.spawn_wall(coord);
+            }
+            SewerCell::Floor => {
+                world.spawn_floor(coord);
+            }
+            SewerCell::Door => {
+                world.spawn_floor(coord);
+                world.spawn_door(coord);
+            }
+            SewerCell::Pool => {
+                world.spawn_sludge(coord);
+            }
+            SewerCell::Bridge => {
+                world.spawn_bridge(coord);
+            }
+        }
+    }
+    for coord in CoordIter::new(spec.size) {
+        let &cell = world.spatial.get_cell_checked(coord);
+        if cell.floor.is_none() && cell.feature.is_none() {
+            world.spawn_invisible_wall(coord);
+        }
+    }
+    let player_location = Location {
+        coord: sewer.start + offset,
+        layer: Some(Layer::Character),
+    };
+    for light in sewer.lights.iter() {
+        world.spawn_sludge_light(light.coord + offset);
+    }
+    let player = world.insert_entity_data(player_location, player_data);
+    world.spawn_stairs(sewer.goal + offset);
+    Terrain { world, player, agents }
+}
+
+fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
+    let mut world = World::new(spec.size, level);
     let mut agents = ComponentTable::default();
     let sewer = Sewer::generate(spec, rng);
     let mut npc_candidates = Vec::new();
@@ -251,4 +298,12 @@ pub fn sewer<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> T
         item.spawn(&mut world, coord, true);
     }
     Terrain { world, player, agents }
+}
+
+pub fn sewer<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
+    if level == 0 {
+        sewer_mini(spec, player_data, rng)
+    } else {
+        sewer_normal(level, spec, player_data, rng)
+    }
 }
