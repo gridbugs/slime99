@@ -10,6 +10,7 @@ pub enum AppInput {
     Tech,
     Wait,
     Ability(u8),
+    Examine,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -25,6 +26,7 @@ impl Controls {
             KeyboardInput::Up => AppInput::Move(CardinalDirection::North),
             KeyboardInput::Down => AppInput::Move(CardinalDirection::South),
             KeyboardInput::Char('t') => AppInput::Tech,
+            KeyboardInput::Char('x') => AppInput::Examine,
             KeyboardInput::Char(' ') => AppInput::Wait,
             KeyboardInput::Char('1') => AppInput::Ability(0),
             KeyboardInput::Char('2') => AppInput::Ability(1),

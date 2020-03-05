@@ -2,8 +2,8 @@ use crate::controls::Controls;
 use crate::depth;
 use crate::frontend::Frontend;
 use crate::game::{
-    AbilityChoice, AimEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn, GameStatus,
-    InjectedInput, ScreenCoord,
+    AbilityChoice, AimEventRoutine, ExamineEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn,
+    GameStatus, InjectedInput, ScreenCoord,
 };
 pub use crate::game::{GameConfig, Omniscient, RngSeed};
 use crate::render::{GameToRender, GameView, Mode};
@@ -859,11 +859,8 @@ fn game_over<S: Storage, A: AudioPlayer>(
 fn aim<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = Option<Coord>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     make_either!(Ei = A | B);
-    SideEffectThen::new_with_view(|data: &mut AppData<S, A>, view: &AppView| {
-        let game_relative_mouse_coord = ScreenCoord(
-            view.game
-                .absolute_coord_to_game_relative_screen_coord(data.last_mouse_coord),
-        );
+    SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _view: &AppView| {
+        let game_relative_mouse_coord = ScreenCoord(data.last_mouse_coord);
         if let Ok(initial_aim_coord) = data.game.initial_aim_coord(game_relative_mouse_coord) {
             Ei::A(
                 AimEventRoutine::new(initial_aim_coord)
@@ -876,6 +873,23 @@ fn aim<S: Storage, A: AudioPlayer>(
     })
 }
 
+fn examine<S: Storage, A: AudioPlayer>(
+) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
+    make_either!(Ei = A | B);
+    SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _view: &AppView| {
+        let game_relative_mouse_coord = ScreenCoord(data.last_mouse_coord);
+        if let Ok(initial_aim_coord) = data.game.initial_aim_coord(game_relative_mouse_coord) {
+            Ei::A(
+                ExamineEventRoutine::new(initial_aim_coord.0)
+                    .select(SelectGame::new())
+                    .decorated(DecorateGame::new()),
+            )
+        } else {
+            Ei::B(Value::new(()))
+        }
+    })
+}
+
 enum GameLoopBreak {
     GameOver,
     Pause,
@@ -883,7 +897,7 @@ enum GameLoopBreak {
 
 fn game_loop<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
-    make_either!(Ei = A | B | C);
+    make_either!(Ei = A | B | C | D);
     SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| data.game.pre_game_loop())
         .then(|| {
             Ei::A(game())
@@ -897,6 +911,7 @@ fn game_loop<S: Storage, A: AudioPlayer>(
                             }
                         })))
                     }
+                    GameReturn::Examine => Handled::Continue(Ei::D(examine().and_then(|()| game()))),
                     GameReturn::Pause => Handled::Return(GameLoopBreak::Pause),
                     GameReturn::GameOver => Handled::Return(GameLoopBreak::GameOver),
                     GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_coord| {

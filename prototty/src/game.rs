@@ -21,7 +21,6 @@ const CONFIG_KEY: &str = "config.json";
 const GAME_MUSIC_VOLUME: f32 = 0.05;
 const MENU_MUSIC_VOLUME: f32 = 0.02;
 
-const PLAYER_OFFSET: Coord = Coord::new(30, 18);
 const STORAGE_FORMAT: format::Bincode = format::Bincode;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -142,17 +141,6 @@ struct PlayerCoord(Coord);
 impl GameCoord {
     fn of_player(player_info: &CharacterInfo) -> Self {
         Self(player_info.coord)
-    }
-}
-
-struct GameCoordToScreenCoord {
-    game_coord: GameCoord,
-    player_coord: GameCoord,
-}
-
-impl GameCoordToScreenCoord {
-    fn compute(self) -> ScreenCoord {
-        ScreenCoord(self.game_coord.0 - self.player_coord.0 + PLAYER_OFFSET)
     }
 }
 
@@ -349,12 +337,7 @@ impl<S: Storage, A: AudioPlayer> GameData<S, A> {
                 Ok(screen_coord_of_mouse)
             } else {
                 let player_coord = GameCoord::of_player(instance.game.player_info());
-                let screen_coord = GameCoordToScreenCoord {
-                    game_coord: player_coord,
-                    player_coord,
-                }
-                .compute();
-                Ok(screen_coord)
+                Ok(ScreenCoord(player_coord.0 * 2))
             }
         } else {
             Err(NoGameInstance)
@@ -363,6 +346,145 @@ impl<S: Storage, A: AudioPlayer> GameData<S, A> {
 }
 
 pub struct NoGameInstance;
+
+pub struct ExamineEventRoutine<S: Storage, A: AudioPlayer> {
+    s: PhantomData<S>,
+    a: PhantomData<A>,
+    screen_coord: Coord,
+}
+
+impl<S: Storage, A: AudioPlayer> ExamineEventRoutine<S, A> {
+    pub fn new(screen_coord: Coord) -> Self {
+        Self {
+            s: PhantomData,
+            a: PhantomData,
+            screen_coord,
+        }
+    }
+}
+
+impl<S: Storage, A: AudioPlayer> EventRoutine for ExamineEventRoutine<S, A> {
+    type Return = ();
+    type Data = GameData<S, A>;
+    type View = GameView;
+    type Event = CommonEvent;
+
+    fn handle<EP>(self, data: &mut Self::Data, view: &Self::View, event_or_peek: EP) -> Handled<Self::Return, Self>
+    where
+        EP: EventOrPeek<Event = Self::Event>,
+    {
+        enum Examine {
+            Frame(Duration),
+            Ignore,
+            Cancel,
+            Mouse { coord: Coord, press: bool },
+            KeyboardDirection(CardinalDirection),
+        }
+        let last_aim_with_mouse = &mut data.last_aim_with_mouse;
+        let controls = &data.controls;
+        let audio_player = &data.audio_player;
+        let audio_table = &data.audio_table;
+        let game_config = &data.game_config;
+        let current_music_handle = &mut data.music_handle;
+        let config = &data.config;
+        if let Some(instance) = data.instance.as_mut() {
+            event_or_peek_with_handled(event_or_peek, self, |mut s, event| {
+                let examine = match event {
+                    CommonEvent::Input(input) => match input {
+                        Input::Keyboard(keyboard_input) => {
+                            if let Some(app_input) = controls.get(keyboard_input) {
+                                match app_input {
+                                    AppInput::Move(direction) => Examine::KeyboardDirection(direction),
+                                    AppInput::Examine => Examine::Cancel,
+                                    AppInput::Wait | AppInput::Tech | AppInput::Ability(_) => Examine::Ignore,
+                                }
+                            } else {
+                                match keyboard_input {
+                                    keys::ESCAPE => Examine::Cancel,
+                                    _ => Examine::Ignore,
+                                }
+                            }
+                        }
+                        Input::Mouse(mouse_input) => match mouse_input {
+                            MouseInput::MouseMove { coord, .. } => Examine::Mouse { coord, press: false },
+                            MouseInput::MousePress {
+                                coord,
+                                button: MouseButton::Left,
+                            } => Examine::Mouse { coord, press: true },
+                            MouseInput::MousePress {
+                                button: MouseButton::Right,
+                                ..
+                            } => Examine::Cancel,
+                            _ => Examine::Ignore,
+                        },
+                    },
+                    CommonEvent::Frame(since_last) => Examine::Frame(since_last),
+                };
+                match examine {
+                    Examine::KeyboardDirection(direction) => {
+                        *last_aim_with_mouse = false;
+                        s.screen_coord += direction.coord() * 2;
+                        Handled::Continue(s)
+                    }
+                    Examine::Mouse { coord, press } => {
+                        s.screen_coord = view.absolute_coord_to_game_relative_screen_coord(coord);
+                        *last_aim_with_mouse = true;
+                        if press {
+                            Handled::Return(())
+                        } else {
+                            Handled::Continue(s)
+                        }
+                    }
+                    Examine::Cancel => Handled::Return(()),
+                    Examine::Ignore => Handled::Continue(s),
+                    Examine::Frame(since_last) => {
+                        let game_control_flow = instance.game.handle_tick(since_last, game_config);
+                        assert!(game_control_flow.is_none(), "meaningful event while aiming");
+                        let mut event_context = EffectContext {
+                            rng: &mut instance.rng,
+                            screen_shake: &mut instance.screen_shake,
+                            current_music: &mut instance.current_music,
+                            current_music_handle,
+                            audio_player,
+                            audio_table,
+                            player_coord: GameCoord::of_player(instance.game.player_info()),
+                            config,
+                        };
+                        event_context.next_frame();
+                        for event in instance.game.events() {
+                            event_context.handle_event(event);
+                        }
+                        Handled::Continue(s)
+                    }
+                }
+            })
+        } else {
+            Handled::Return(())
+        }
+    }
+
+    fn view<F, C>(&self, data: &Self::Data, view: &mut Self::View, context: ViewContext<C>, frame: &mut F)
+    where
+        F: Frame,
+        C: ColModify,
+    {
+        if let Some(instance) = data.instance.as_ref() {
+            view.view(
+                GameToRender {
+                    game: &instance.game,
+                    status: GameStatus::Playing,
+                    mouse_coord: Some(self.screen_coord),
+                    mode: Mode::Examine {
+                        target: self.screen_coord,
+                    },
+                    action_error: None,
+                },
+                context,
+                frame,
+            );
+        }
+    }
+}
 
 pub struct AimEventRoutine<S: Storage, A: AudioPlayer> {
     s: PhantomData<S>,
@@ -409,14 +531,15 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
         let config = &data.config;
         if let Some(instance) = data.instance.as_mut() {
             event_or_peek_with_handled(event_or_peek, self, |mut s, event| {
-                *last_aim_with_mouse = false;
                 let aim = match event {
                     CommonEvent::Input(input) => match input {
                         Input::Keyboard(keyboard_input) => {
                             if let Some(app_input) = controls.get(keyboard_input) {
                                 match app_input {
                                     AppInput::Move(direction) => Aim::KeyboardDirection(direction),
-                                    AppInput::Wait | AppInput::Tech | AppInput::Ability(_) => Aim::Ignore,
+                                    AppInput::Wait | AppInput::Tech | AppInput::Ability(_) | AppInput::Examine => {
+                                        Aim::Ignore
+                                    }
                                 }
                             } else {
                                 match keyboard_input {
@@ -442,15 +565,19 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for AimEventRoutine<S, A> {
                     CommonEvent::Frame(since_last) => Aim::Frame(since_last),
                 };
                 match aim {
-                    Aim::KeyboardFinalise => Handled::Return(Some(s.screen_coord.0 / 2)),
+                    Aim::KeyboardFinalise => {
+                        *last_aim_with_mouse = false;
+                        Handled::Return(Some(s.screen_coord.0 / 2))
+                    }
                     Aim::KeyboardDirection(direction) => {
+                        *last_aim_with_mouse = false;
                         s.screen_coord.0 += direction.coord() * 2;
                         Handled::Continue(s)
                     }
                     Aim::Mouse { coord, press } => {
                         s.screen_coord = ScreenCoord(view.absolute_coord_to_game_relative_screen_coord(coord));
+                        *last_aim_with_mouse = true;
                         if press {
-                            *last_aim_with_mouse = true;
                             Handled::Return(Some(s.screen_coord.0 / 2))
                         } else {
                             Handled::Continue(s)
@@ -513,7 +640,7 @@ pub struct GameEventRoutine<S: Storage, A: AudioPlayer> {
     s: PhantomData<S>,
     a: PhantomData<A>,
     injected_inputs: Vec<InjectedInput>,
-    mouse_coord: Coord,
+    mouse_coord: Option<Coord>,
     action_error: Option<ActionError>,
 }
 
@@ -526,7 +653,7 @@ impl<S: Storage, A: AudioPlayer> GameEventRoutine<S, A> {
             s: PhantomData,
             a: PhantomData,
             injected_inputs,
-            mouse_coord: Coord::new(-1, -1),
+            mouse_coord: None,
             action_error: None,
         }
     }
@@ -537,6 +664,7 @@ pub enum GameReturn {
     Aim,
     GameOver,
     LevelChange(AbilityChoice),
+    Examine,
 }
 
 impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
@@ -625,6 +753,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                                         AppInput::Ability(n) => {
                                             instance.game.handle_input(GameInput::Ability(n), game_config)
                                         }
+                                        AppInput::Examine => return Handled::Return(GameReturn::Examine),
                                     };
                                     match game_control_flow {
                                         Err(error) => s.action_error = Some(error),
@@ -642,7 +771,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                         }
                         Input::Mouse(mouse_input) => match mouse_input {
                             MouseInput::MouseMove { coord, .. } => {
-                                s.mouse_coord = coord;
+                                s.mouse_coord = Some(coord);
                             }
                             _ => (),
                         },
@@ -693,7 +822,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                 GameToRender {
                     game: &instance.game,
                     status: GameStatus::Playing,
-                    mouse_coord: Some(self.mouse_coord),
+                    mouse_coord: self.mouse_coord,
                     mode: Mode::Normal,
                     action_error: self.action_error,
                 },

@@ -10,6 +10,7 @@ use std::time::Duration;
 pub enum Mode {
     Normal,
     Aim { blink_duration: Duration, target: Coord },
+    Examine { target: Coord },
 }
 
 pub struct GameToRender<'a> {
@@ -159,6 +160,45 @@ impl GameView {
                             context,
                         );
                     }
+                }
+            }
+            Mode::Examine { target } => {
+                let game_coord = target / 2;
+                if game_coord.is_valid(MAP_SIZE) {
+                    for &offset in &quad::OFFSETS {
+                        let alpha = 127;
+                        let output_coord = game_coord * 2 + offset;
+                        frame.blend_cell_background_relative(
+                            output_coord,
+                            depth::GAME_MAX,
+                            Rgb24::new(255, 255, 0),
+                            alpha,
+                            blend_mode::LinearInterpolate,
+                            context,
+                        );
+                    }
+                }
+                StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(127))).view(
+                    "Examining (escape to return to game)",
+                    context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2 + 1)),
+                    frame,
+                );
+            }
+        }
+        if let Some(mouse_coord) = game_to_render.mouse_coord {
+            let game_coord = mouse_coord / 2;
+            if game_coord.is_valid(MAP_SIZE) {
+                for &offset in &quad::OFFSETS {
+                    let alpha = 63;
+                    let output_coord = game_coord * 2 + offset;
+                    frame.blend_cell_background_relative(
+                        output_coord,
+                        depth::GAME_MAX,
+                        Rgb24::new(255, 255, 0),
+                        alpha,
+                        blend_mode::LinearInterpolate,
+                        context,
+                    );
                 }
             }
         }
