@@ -92,6 +92,20 @@ impl GameView {
                             frame,
                         );
                     }
+                } else {
+                    if game_to_render.game.current_level() == 0 {
+                        StringView::new(Style::new().with_foreground(Rgb24::new_grey(255)), wrap::Word::new()).view(
+                        "COMMANDER: Recon says the source of the slime is on floor 6 of the sewer. Get moving soldier!",
+                        context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
+                        frame,
+                    );
+                    } else {
+                        StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view(
+                            format!("Floor {}/6", game_to_render.game.current_level()),
+                            context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
+                            frame,
+                        );
+                    }
                 }
             }
             GameStatus::Over => {
