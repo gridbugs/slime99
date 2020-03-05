@@ -147,7 +147,7 @@ for:
 
           rustup target add $TARGET
 
-          cargo install wasm-bindgen-cli --force --version 0.2.58 # this has to match the version in Cargo.lock
+          cargo install wasm-bindgen-cli --force --version 0.2.59 # this has to match the version in Cargo.lock
 
           rustc -V
 
