@@ -826,8 +826,8 @@ impl World {
                                 }
                                 _ => unreachable!(),
                             },
-                            DropItemOnDeath::RandomNormal => match rng.gen_range(0, 5) {
-                                0 => match rng.gen_range(0, 7) {
+                            DropItemOnDeath::RandomNormal => match rng.gen_range(0, 2) {
+                                0 => match rng.gen_range(0, 5) {
                                     0 => {
                                         self.spawn_defend(spawn_coord, false);
                                     }
