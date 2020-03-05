@@ -28,6 +28,7 @@ pub struct Config {
     pub music: bool,
     pub sfx: bool,
     pub fullscreen: bool,
+    pub first_run: bool,
 }
 
 impl Default for Config {
@@ -36,6 +37,7 @@ impl Default for Config {
             music: true,
             sfx: true,
             fullscreen: false,
+            first_run: true,
         }
     }
 }

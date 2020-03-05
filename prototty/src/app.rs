@@ -36,6 +36,7 @@ enum MainMenuEntry {
     SaveQuit,
     Clear,
     Options,
+    Story,
 }
 
 impl MainMenuEntry {
@@ -43,10 +44,13 @@ impl MainMenuEntry {
         use MainMenuEntry::*;
         let (items, hotkeys) = match frontend {
             Frontend::Graphical | Frontend::AnsiTerminal => (
-                vec![NewGame, Options, Quit],
-                hashmap!['n' => NewGame, 'o' => Options, 'q' => Quit],
+                vec![NewGame, Options, Story, Quit],
+                hashmap!['n' => NewGame, 'o' => Options, 'b' => Story,'q' => Quit],
             ),
-            Frontend::Web => (vec![NewGame, Options], hashmap!['n' => NewGame, 'o' => Options]),
+            Frontend::Web => (
+                vec![NewGame, Options, Story],
+                hashmap!['n' => NewGame, 'o' => Options, 'b' => Story],
+            ),
         };
         menu::MenuInstanceBuilder {
             items,
@@ -60,12 +64,12 @@ impl MainMenuEntry {
         use MainMenuEntry::*;
         let (items, hotkeys) = match frontend {
             Frontend::Graphical | Frontend::AnsiTerminal => (
-                vec![Resume, SaveQuit, NewGame, Options, Clear],
-                hashmap!['r' => Resume, 'q' => SaveQuit, 'o' => Options, 'n' => NewGame, 'c' => Clear],
+                vec![Resume, SaveQuit, NewGame, Options, Story, Clear],
+                hashmap!['r' => Resume, 'q' => SaveQuit, 'o' => Options, 'b'=> Story, 'n' => NewGame, 'c' => Clear],
             ),
             Frontend::Web => (
-                vec![Resume, Save, NewGame, Options, Clear],
-                hashmap!['r' => Resume, 's' => Save, 'o' => Options, 'n' => NewGame, 'c' => Clear],
+                vec![Resume, Save, NewGame, Options, Story, Clear],
+                hashmap!['r' => Resume, 's' => Save, 'o' => Options, 'b' => Story, 'n' => NewGame, 'c' => Clear],
             ),
         };
         menu::MenuInstanceBuilder {
@@ -303,6 +307,94 @@ where
             frame,
         );
         self.0.view(app_data, context.add_offset(Coord::new(1, 3)), frame);
+    }
+}
+
+struct TextOverlay<S, A> {
+    s: PhantomData<S>,
+    a: PhantomData<A>,
+    text: Vec<text::RichTextPartOwned>,
+}
+impl<S: Storage, A: AudioPlayer> TextOverlay<S, A> {
+    fn new(text: Vec<text::RichTextPartOwned>) -> Self {
+        Self {
+            s: PhantomData,
+            a: PhantomData,
+            text,
+        }
+    }
+}
+impl<S: Storage, A: AudioPlayer> EventRoutine for TextOverlay<S, A> {
+    type Return = ();
+    type Data = AppData<S, A>;
+    type View = AppView;
+    type Event = CommonEvent;
+    fn handle<EP>(self, _data: &mut Self::Data, _view: &Self::View, event_or_peek: EP) -> Handled<Self::Return, Self>
+    where
+        EP: EventOrPeek<Event = Self::Event>,
+    {
+        event_or_peek_with_handled(event_or_peek, self, |s, event| match event {
+            CommonEvent::Input(input) => match input {
+                Input::Keyboard(_) => Handled::Return(()),
+                Input::Mouse(_) => Handled::Continue(s),
+            },
+            CommonEvent::Frame(_) => Handled::Continue(s),
+        })
+    }
+    fn view<F, C>(&self, data: &Self::Data, view: &mut Self::View, context: ViewContext<C>, frame: &mut F)
+    where
+        F: Frame,
+        C: ColModify,
+    {
+        if let Some(instance) = data.game.instance() {
+            AlignView {
+                alignment: Alignment::centre(),
+                view: FillBackgroundView {
+                    rgb24: Rgb24::new_grey(0),
+                    view: BorderView {
+                        style: &BorderStyle {
+                            padding: BorderPadding::all(1),
+                            ..Default::default()
+                        },
+                        view: BoundView {
+                            size: Size::new(40, 16),
+                            view: text::RichTextView::new(text::wrap::Word::new()),
+                        },
+                    },
+                },
+            }
+            .view(
+                self.text.iter().map(|t| t.as_rich_text_part()),
+                context.add_depth(depth::GAME_MAX + 1),
+                frame,
+            );
+            view.game.view(
+                GameToRender {
+                    game: instance.game(),
+                    status: GameStatus::Playing,
+                    mouse_coord: None,
+                    mode: Mode::Normal,
+                    action_error: None,
+                },
+                context.compose_col_modify(
+                    ColModifyDefaultForeground(Rgb24::new_grey(255))
+                        .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
+                ),
+                frame,
+            );
+        } else {
+            AlignView {
+                alignment: Alignment::centre(),
+                view: FillBackgroundView {
+                    rgb24: Rgb24::new_grey(0),
+                    view: BoundView {
+                        size: Size::new(50, 20),
+                        view: text::RichTextView::new(text::wrap::Word::new()),
+                    },
+                },
+            }
+            .view(self.text.iter().map(|t| t.as_rich_text_part()), context, frame);
+        }
     }
 }
 
@@ -781,17 +873,29 @@ fn options_menu_cycle<S: Storage, A: AudioPlayer>(
 #[derive(Clone, Copy)]
 pub struct AutoPlay;
 
+#[derive(Clone, Copy)]
+pub struct FirstRun;
+
 fn main_menu<S: Storage, A: AudioPlayer>(
     auto_play: Option<AutoPlay>,
+    first_run: Option<FirstRun>,
 ) -> impl EventRoutine<Return = Result<MainMenuEntry, menu::Escape>, Data = AppData<S, A>, View = AppView, Event = CommonEvent>
 {
-    make_either!(Ei = A | B);
+    make_either!(Ei = A | B | C | D);
     SideEffectThen::new_with_view(move |data: &mut AppData<S, A>, _: &_| {
         if auto_play.is_some() {
-            if data.game.has_instance() {
-                Ei::A(Value::new(Ok(MainMenuEntry::Resume)))
+            if first_run.is_some() {
+                if data.game.has_instance() {
+                    Ei::D(story().map(|()| Ok(MainMenuEntry::Resume)))
+                } else {
+                    Ei::C(story().map(|()| Ok(MainMenuEntry::NewGame)))
+                }
             } else {
-                Ei::A(Value::new(Ok(MainMenuEntry::NewGame)))
+                if data.game.has_instance() {
+                    Ei::A(Value::new(Ok(MainMenuEntry::Resume)))
+                } else {
+                    Ei::A(Value::new(Ok(MainMenuEntry::NewGame)))
+                }
             }
         } else {
             if data.game.has_instance() {
@@ -823,6 +927,7 @@ fn main_menu<S: Storage, A: AudioPlayer>(
                             MainMenuEntry::Save => "(s) Save",
                             MainMenuEntry::Clear => "(c) Clear",
                             MainMenuEntry::Options => "(o) Options",
+                            MainMenuEntry::Story => "(b) Back Story",
                         };
                         write!(buf, "{}", s).unwrap();
                     },
@@ -854,6 +959,39 @@ fn game_over<S: Storage, A: AudioPlayer>(
     GameOverEventRoutine::new()
         .select(SelectGame::new())
         .decorated(DecorateGame::new())
+}
+
+fn win<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {
+    TextOverlay::new(vec![text::RichTextPartOwned::new(
+        "You win.\n\nPress any key...".to_string(),
+        Style::new().with_foreground(Rgb24::new_grey(255)),
+    )])
+}
+
+fn story<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {
+    let bold = Style::new().with_foreground(Rgb24::new(0, 255, 255)).with_bold(true);
+    let normal = Style::new().with_foreground(Rgb24::new_grey(255));
+    let faint = Style::new().with_foreground(Rgb24::new_grey(127));
+    TextOverlay::new(vec![
+        text::RichTextPartOwned::new("In the not-too-distant future, ".to_string(), normal),
+        text::RichTextPartOwned::new("THE YEAR 1999,".to_string(), bold),
+        text::RichTextPartOwned::new(" fallout from ".to_string(), normal),
+        text::RichTextPartOwned::new("THE WAR".to_string(), bold),
+        text::RichTextPartOwned::new(" has caused ".to_string(), normal),
+        text::RichTextPartOwned::new("ADIOACTIVE MUTANT SLIMES".to_string(), bold),
+        text::RichTextPartOwned::new(" to appear in the sewers of ".to_string(), normal),
+        text::RichTextPartOwned::new("THE CITY.".to_string(), bold),
+        text::RichTextPartOwned::new(" You are a ".to_string(), normal),
+        text::RichTextPartOwned::new("GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER,".to_string(), bold),
+        text::RichTextPartOwned::new(
+            " whose free-will was in-part traded for the power to ".to_string(),
+            normal,
+        ),
+        text::RichTextPartOwned::new("PREDICT THE OUTCOME OF COMBAT ENCOUNTERS.".to_string(), bold),
+        text::RichTextPartOwned::new(" Go into the sewers and ".to_string(), normal),
+        text::RichTextPartOwned::new("ELIMINATE THE SOURCE OF SLIME!".to_string(), bold),
+        text::RichTextPartOwned::new("\n\n\n\n\n\nPress any key...".to_string(), faint),
+    ])
 }
 
 fn aim<S: Storage, A: AudioPlayer>(
@@ -928,8 +1066,10 @@ fn game_loop<S: Storage, A: AudioPlayer>(
                 .and_then(|game_loop_break| {
                     make_either!(Ei = A | B | C);
                     match game_loop_break {
-                        GameLoopBreak::Win => Ei::C(SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {
-                            data.game.clear_instance();
+                        GameLoopBreak::Win => Ei::C(win().and_then(|()| {
+                            SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {
+                                data.game.clear_instance();
+                            })
                         })),
                         GameLoopBreak::Pause => Ei::A(Value::new(())),
                         GameLoopBreak::GameOver => Ei::B(game_over().and_then(|()| {
@@ -945,9 +1085,10 @@ fn game_loop<S: Storage, A: AudioPlayer>(
 
 fn main_menu_cycle<S: Storage, A: AudioPlayer>(
     auto_play: Option<AutoPlay>,
+    first_run: Option<FirstRun>,
 ) -> impl EventRoutine<Return = Option<Quit>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
-    make_either!(Ei = A | B | C | D | E | F | G);
-    main_menu(auto_play).and_then(|entry| match entry {
+    make_either!(Ei = A | B | C | D | E | F | G | H);
+    main_menu(auto_play, first_run).and_then(|entry| match entry {
         Ok(MainMenuEntry::Quit) => Ei::A(Value::new(Some(Quit))),
         Ok(MainMenuEntry::SaveQuit) => Ei::D(SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {
             data.game.save_instance();
@@ -982,26 +1123,32 @@ fn main_menu_cycle<S: Storage, A: AudioPlayer>(
             game_loop().map(|()| None)
         })),
         Ok(MainMenuEntry::Options) => Ei::G(options_menu_cycle().map(|_| None)),
+        Ok(MainMenuEntry::Story) => Ei::H(story().map(|()| None)),
     })
 }
 
 fn event_routine<S: Storage, A: AudioPlayer>(
     initial_auto_play: Option<AutoPlay>,
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
-    MouseTracker::new(
-        main_menu_cycle(initial_auto_play)
+    MouseTracker::new(SideEffectThen::new_with_view(move |data: &mut AppData<S, A>, _: &_| {
+        let mut config = data.game.config();
+        let first_run = config.first_run;
+        config.first_run = false;
+        data.game.set_config(config);
+        let first_run = if first_run { Some(FirstRun) } else { None };
+        main_menu_cycle(initial_auto_play, first_run)
             .repeat(|maybe_quit| {
                 if let Some(Quit) = maybe_quit {
                     Handled::Return(())
                 } else {
-                    Handled::Continue(main_menu_cycle(None))
+                    Handled::Continue(main_menu_cycle(None, None))
                 }
             })
             .return_on_exit(|data| {
                 data.game.save_instance();
                 ()
-            }),
-    )
+            })
+    }))
 }
 
 pub trait Env {
