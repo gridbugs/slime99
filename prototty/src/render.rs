@@ -468,6 +468,13 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game, game_over: bool)
             entity.hit_points.map(|hp| hp.current).unwrap_or(0),
             entity.next_action.unwrap_or(NpcAction::Wait),
         ),
+        Tile::SlimeBoss => Quad::new_slime(
+            '?',
+            Rgb24::new(127, 127, 127),
+            Rgb24::new(0, 0, 0),
+            entity.hit_points.map(|hp| hp.current).unwrap_or(0),
+            entity.next_action.unwrap_or(NpcAction::Wait),
+        ),
         Tile::SlimeAttackUpgrade => Quad::new_slime(
             'A',
             Rgb24::new(255, 255, 255),
@@ -605,6 +612,7 @@ fn tile_str(tile: Tile) -> Option<&'static str> {
         Tile::SlimeSwap => Some("a Swap Slime"),
         Tile::SlimeTeleport => Some("a Teleport Slime"),
         Tile::SlimeGoo => Some("a Goo Slime"),
+        Tile::SlimeBoss => Some("the Source of Slime"),
         Tile::SlimeAttackUpgrade => Some("an Attack Upgrade Slime"),
         Tile::SlimeDefendUpgrade => Some("a Defend Upgrade Slime"),
         Tile::SlimeTechUpgrade => Some("a Tech Upgrade Slime"),

@@ -61,6 +61,7 @@ pub enum Tile {
     SlimeAttackUpgrade,
     SlimeDefendUpgrade,
     SlimeTechUpgrade,
+    SlimeBoss,
     AttackItem { special: bool },
     DefendItem { special: bool },
     TechItem { special: bool },

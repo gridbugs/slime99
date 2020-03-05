@@ -663,6 +663,7 @@ pub enum GameReturn {
     Pause,
     Aim,
     GameOver,
+    Win,
     LevelChange(AbilityChoice),
     Examine,
 }
@@ -694,6 +695,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                             Err(error) => self.action_error = Some(error),
                             Ok(None) => self.action_error = None,
                             Ok(Some(game_control_flow)) => match game_control_flow {
+                                GameControlFlow::Win => return Handled::Return(GameReturn::Win),
                                 GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
                                 GameControlFlow::LevelChange(ability_choice) => {
                                     instance.level_change = Some(ability_choice.clone());
@@ -711,6 +713,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                             Err(error) => self.action_error = Some(error),
                             Ok(None) => self.action_error = None,
                             Ok(Some(game_control_flow)) => match game_control_flow {
+                                GameControlFlow::Win => return Handled::Return(GameReturn::Win),
                                 GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
                                 GameControlFlow::LevelChange(ability_choice) => {
                                     instance.level_change = Some(ability_choice.clone());
@@ -759,6 +762,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                                         Err(error) => s.action_error = Some(error),
                                         Ok(None) => s.action_error = None,
                                         Ok(Some(game_control_flow)) => match game_control_flow {
+                                            GameControlFlow::Win => return Handled::Return(GameReturn::Win),
                                             GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
                                             GameControlFlow::LevelChange(ability_choice) => {
                                                 instance.level_change = Some(ability_choice.clone());
@@ -796,6 +800,7 @@ impl<S: Storage, A: AudioPlayer> EventRoutine for GameEventRoutine<S, A> {
                     }
                     if let Some(game_control_flow) = maybe_control_flow {
                         match game_control_flow {
+                            GameControlFlow::Win => return Handled::Return(GameReturn::Win),
                             GameControlFlow::GameOver => return Handled::Return(GameReturn::GameOver),
                             GameControlFlow::LevelChange(ability_choice) => {
                                 instance.level_change = Some(ability_choice.clone());

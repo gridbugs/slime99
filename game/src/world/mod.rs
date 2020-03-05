@@ -1,4 +1,4 @@
-use crate::{visibility::Light, ExternalEvent};
+use crate::{terrain, visibility::Light, ExternalEvent};
 use ecs::{Entity, EntityAllocator};
 use grid_2d::{Coord, Size};
 use rand::{
@@ -174,6 +174,9 @@ impl World {
             .choose_multiple(rng, 3);
         choices.shuffle(rng);
         choices
+    }
+    pub fn is_won(&self) -> bool {
+        self.level == terrain::FINAL_LEVEL && self.components.npc.is_empty()
     }
 }
 

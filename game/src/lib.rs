@@ -46,6 +46,7 @@ pub struct AbilityChoice(pub Vec<player::Ability>);
 
 pub enum GameControlFlow {
     GameOver,
+    Win,
     LevelChange(AbilityChoice),
 }
 
@@ -213,6 +214,8 @@ impl Game {
         self.update_last_player_info();
         if self.is_game_over() {
             Some(GameControlFlow::GameOver)
+        } else if self.is_game_won() {
+            Some(GameControlFlow::Win)
         } else {
             None
         }
@@ -234,6 +237,8 @@ impl Game {
         }
         if self.is_game_over() {
             Ok(Some(GameControlFlow::GameOver))
+        } else if self.is_game_won() {
+            Ok(Some(GameControlFlow::Win))
         } else {
             Ok(None)
         }
@@ -394,6 +399,9 @@ impl Game {
     }
     fn is_game_over(&self) -> bool {
         self.dead_player.is_some()
+    }
+    fn is_game_won(&self) -> bool {
+        self.world.is_won()
     }
     pub fn player(&self) -> &player::Player {
         if let Some(player) = self.world.entity_player(self.player) {

@@ -814,19 +814,19 @@ impl World {
                     };
                     if let Some(spawn_coord) = spawn_coord {
                         match drop_item_on_death {
-                            DropItemOnDeath::GuaranteeSpecial => match rng.gen_range(0, 7) {
+                            DropItemOnDeath::GuaranteeSpecial => match rng.gen_range(0, 5) {
                                 0 => {
                                     self.spawn_defend(spawn_coord, true);
                                 }
                                 1 => {
                                     self.spawn_tech(spawn_coord, true);
                                 }
-                                2..=6 => {
+                                2..=4 => {
                                     self.spawn_attack(spawn_coord, true);
                                 }
                                 _ => unreachable!(),
                             },
-                            DropItemOnDeath::RandomNormal => match rng.gen_range(0, 2) {
+                            DropItemOnDeath::RandomNormal => match rng.gen_range(0, 5) {
                                 0 => match rng.gen_range(0, 7) {
                                     0 => {
                                         self.spawn_defend(spawn_coord, false);
@@ -834,7 +834,7 @@ impl World {
                                     1 => {
                                         self.spawn_tech(spawn_coord, false);
                                     }
-                                    2..=6 => {
+                                    2..=4 => {
                                         self.spawn_attack(spawn_coord, false);
                                     }
                                     _ => unreachable!(),

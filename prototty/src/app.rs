@@ -892,6 +892,7 @@ fn examine<S: Storage, A: AudioPlayer>(
 
 enum GameLoopBreak {
     GameOver,
+    Win,
     Pause,
 }
 
@@ -914,6 +915,7 @@ fn game_loop<S: Storage, A: AudioPlayer>(
                     GameReturn::Examine => Handled::Continue(Ei::D(examine().and_then(|()| game()))),
                     GameReturn::Pause => Handled::Return(GameLoopBreak::Pause),
                     GameReturn::GameOver => Handled::Return(GameLoopBreak::GameOver),
+                    GameReturn::Win => Handled::Return(GameLoopBreak::Win),
                     GameReturn::Aim => Handled::Continue(Ei::B(aim().and_then(|maybe_coord| {
                         make_either!(Ei = A | B);
                         if let Some(coord) = maybe_coord {
@@ -924,8 +926,11 @@ fn game_loop<S: Storage, A: AudioPlayer>(
                     }))),
                 })
                 .and_then(|game_loop_break| {
-                    make_either!(Ei = A | B);
+                    make_either!(Ei = A | B | C);
                     match game_loop_break {
+                        GameLoopBreak::Win => Ei::C(SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {
+                            data.game.clear_instance();
+                        })),
                         GameLoopBreak::Pause => Ei::A(Value::new(())),
                         GameLoopBreak::GameOver => Ei::B(game_over().and_then(|()| {
                             SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {

@@ -174,16 +174,7 @@ impl Item {
 }
 
 const ALL_ITEMS: &[Item] = &[Item::Attack, Item::Defend, Item::Tech];
-const BALANCED_ITEMS: &[Item] = &[
-    Item::Attack,
-    Item::Attack,
-    Item::Attack,
-    Item::Attack,
-    Item::Attack,
-    Item::Attack,
-    Item::Defend,
-    Item::Tech,
-];
+const BALANCED_ITEMS: &[Item] = &[Item::Attack, Item::Attack, Item::Defend, Item::Tech];
 
 fn sewer_mini<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
     const MINI_SIZE: Size = Size::new_u16(8, 8);
@@ -278,7 +269,7 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
         })
         .collect::<Vec<_>>();
     let num_npcs = level as usize * 2 + 2;
-    let num_items = 8;
+    let num_items = 6;
     empty_coords.shuffle(rng);
     for &coord in empty_coords.iter().take(num_npcs) {
         let npc_type = ENEMY_TYPES.choose(rng).unwrap().clone();
@@ -286,6 +277,87 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
         agents.insert(entity, Agent::new(spec.size));
     }
     for &coord in empty_coords.iter().skip(num_npcs).take(num_items) {
+        let item = BALANCED_ITEMS.choose(rng).unwrap();
+        item.spawn(&mut world, coord, false);
+    }
+    let num_special_items = 3;
+    let special_item_coords = sewer
+        .map
+        .enumerate()
+        .filter_map(
+            |(coord, &cell)| {
+                if cell == SewerCell::Pool {
+                    Some(coord)
+                } else {
+                    None
+                }
+            },
+        )
+        .choose_multiple(rng, num_special_items);
+    for (i, &coord) in special_item_coords.iter().enumerate() {
+        let item = ALL_ITEMS[i % ALL_ITEMS.len()];
+        item.spawn(&mut world, coord, true);
+    }
+    Terrain { world, player, agents }
+}
+
+pub const FINAL_LEVEL: u32 = 6;
+
+fn sewer_final<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
+    let mut world = World::new(spec.size, FINAL_LEVEL);
+    let mut agents = ComponentTable::default();
+    let sewer = Sewer::generate(spec, rng);
+    let mut npc_candidates = Vec::new();
+    for (coord, cell) in sewer.map.enumerate() {
+        match cell {
+            SewerCell::Wall => {
+                world.spawn_wall(coord);
+            }
+            SewerCell::Floor => {
+                world.spawn_floor(coord);
+                npc_candidates.push(coord);
+            }
+            SewerCell::Door => {
+                world.spawn_floor(coord);
+                world.spawn_door(coord);
+            }
+            SewerCell::Pool => {
+                world.spawn_sludge(coord);
+            }
+            SewerCell::Bridge => {
+                world.spawn_bridge(coord);
+            }
+        }
+    }
+    for light in sewer.lights.iter() {
+        world.spawn_sludge_light(light.coord);
+    }
+    let player_location = Location {
+        coord: sewer.start,
+        layer: Some(Layer::Character),
+    };
+    let player = world.insert_entity_data(player_location, player_data);
+    let mut empty_coords = sewer
+        .map
+        .enumerate()
+        .filter_map(|(coord, &cell)| {
+            if (cell == SewerCell::Bridge || cell == SewerCell::Floor) && coord != sewer.start && coord != sewer.goal {
+                Some(coord)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    empty_coords.sort_by_key(|&c| c.distance2(sewer.start));
+    let num_npcs = 1;
+    for _ in 0..num_npcs {
+        let coord = empty_coords.pop().unwrap();
+        let entity = world.spawn_slime_boss(coord, rng);
+        agents.insert(entity, Agent::new(spec.size));
+    }
+    let num_items = 8;
+    empty_coords.shuffle(rng);
+    for &coord in empty_coords.iter().take(num_items) {
         let item = BALANCED_ITEMS.choose(rng).unwrap();
         item.spawn(&mut world, coord, false);
     }
@@ -313,6 +385,9 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
 pub fn sewer<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
     if level == 0 {
         sewer_mini(spec, player_data, rng)
+    } else if level == 1 {
+        //FINAL_LEVEL {
+        sewer_final(spec, player_data, rng)
     } else {
         sewer_normal(level, spec, player_data, rng)
     }

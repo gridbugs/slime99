@@ -707,6 +707,34 @@ impl World {
         entity
     }
 
+    pub fn spawn_slime_boss<R: Rng>(&mut self, coord: Coord, _rng: &mut R) -> Entity {
+        let entity = self.entity_allocator.alloc();
+        self.spatial
+            .insert(
+                entity,
+                Location {
+                    coord,
+                    layer: Some(Layer::Character),
+                },
+            )
+            .unwrap();
+        self.components.tile.insert(entity, Tile::SlimeBoss);
+        self.components.npc.insert(
+            entity,
+            Npc {
+                disposition: Disposition::Hostile,
+            },
+        );
+        self.components.character.insert(entity, ());
+        self.components.safe_on_sludge.insert(entity, ());
+        self.components.on_damage.insert(entity, OnDamage::Divide);
+        self.components
+            .drop_item_on_death
+            .insert(entity, DropItemOnDeath::GuaranteeSpecial);
+        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        entity
+    }
+
     pub fn spawn_slime_attack_upgrade(&mut self, coord: Coord, level: u32) -> Entity {
         let entity = self.entity_allocator.alloc();
         self.spatial
