@@ -969,10 +969,34 @@ fn win<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
         data.game.loop_music(Audio::EndText, 0.5);
-        TextOverlay::new(vec![text::RichTextPartOwned::new(
-            "You win.\n\nPress any key...".to_string(),
-            Style::new().with_foreground(Rgb24::new_grey(255)),
-        )])
+        let bold = Style::new().with_foreground(Rgb24::new(255, 0, 0)).with_bold(true);
+        let normal = Style::new().with_foreground(Rgb24::new_grey(255));
+        let faint = Style::new().with_foreground(Rgb24::new_grey(127));
+        TextOverlay::new(vec![
+            text::RichTextPartOwned::new("The murky remains  of the ".to_string(), normal),
+            text::RichTextPartOwned::new("SOURCE OF SLIME".to_string(), bold),
+            text::RichTextPartOwned::new(" drain into the stygian depths below. ".to_string(), normal),
+            text::RichTextPartOwned::new("YOU HAVE WON.".to_string(), bold),
+            text::RichTextPartOwned::new(" You emerge from the sewers into ".to_string(), normal),
+            text::RichTextPartOwned::new("THE CITY ABOVE.".to_string(), bold),
+            text::RichTextPartOwned::new("\n\nThe city which you saved. Repairs to a ".to_string(), normal),
+            text::RichTextPartOwned::new("WAR-TORN WORLD".to_string(), bold),
+            text::RichTextPartOwned::new(" are progressing smoothly, and a ".to_string(), normal),
+            text::RichTextPartOwned::new("NEW MILLENNIUM".to_string(), bold),
+            text::RichTextPartOwned::new(
+                " is just around the corner. Things are finally looking up.".to_string(),
+                normal,
+            ),
+            text::RichTextPartOwned::new("\n\nExcept for you. After all, what's a ".to_string(), normal),
+            text::RichTextPartOwned::new("GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER".to_string(), bold),
+            text::RichTextPartOwned::new(
+                " to do during peace time. You long for the day when more ".to_string(),
+                normal,
+            ),
+            text::RichTextPartOwned::new("RADIOACTIVE MUTANT SLIMES".to_string(), bold),
+            text::RichTextPartOwned::new(" appear in the sewers...".to_string(), normal),
+            text::RichTextPartOwned::new("\n\n\n\n\n\nPress any key...".to_string(), faint),
+        ])
     })
 }
 
