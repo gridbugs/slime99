@@ -320,8 +320,10 @@ impl<S: Storage, A: AudioPlayer> GameData<S, A> {
         }
     }
     pub fn post_game_loop(&mut self) {
-        if let Some(music_handle) = self.music_handle.as_ref() {
-            music_handle.set_volume(MENU_MUSIC_VOLUME);
+        if self.instance.is_some() {
+            if let Some(music_handle) = self.music_handle.as_ref() {
+                music_handle.set_volume(MENU_MUSIC_VOLUME);
+            }
         }
     }
     pub fn has_instance(&self) -> bool {

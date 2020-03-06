@@ -965,11 +965,15 @@ fn game_over<S: Storage, A: AudioPlayer>(
         .decorated(DecorateGame::new())
 }
 
-fn win<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {
-    TextOverlay::new(vec![text::RichTextPartOwned::new(
-        "You win.\n\nPress any key...".to_string(),
-        Style::new().with_foreground(Rgb24::new_grey(255)),
-    )])
+fn win<S: Storage, A: AudioPlayer>(
+) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
+    SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
+        data.game.loop_music(Audio::EndText, 0.5);
+        TextOverlay::new(vec![text::RichTextPartOwned::new(
+            "You win.\n\nPress any key...".to_string(),
+            Style::new().with_foreground(Rgb24::new_grey(255)),
+        )])
+    })
 }
 
 fn story<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {

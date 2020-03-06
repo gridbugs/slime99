@@ -385,7 +385,8 @@ fn sewer_final<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) ->
 pub fn sewer<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
     if level == 0 {
         sewer_mini(spec, player_data, rng)
-    } else if level == FINAL_LEVEL {
+    } else if level == 1 {
+        //FINAL_LEVEL {
         sewer_final(spec, player_data, rng)
     } else {
         sewer_normal(level, spec, player_data, rng)
