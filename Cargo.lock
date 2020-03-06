@@ -1757,7 +1757,7 @@ dependencies = [
 [[package]]
 name = "prototty"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "prototty_app",
  "prototty_decorator",
@@ -1771,7 +1771,7 @@ dependencies = [
 [[package]]
 name = "prototty_ansi_terminal"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "libc",
  "prototty_app",
@@ -1783,7 +1783,7 @@ dependencies = [
 [[package]]
 name = "prototty_app"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "prototty_input",
  "prototty_render",
@@ -1792,12 +1792,12 @@ dependencies = [
 [[package]]
 name = "prototty_audio"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 
 [[package]]
 name = "prototty_decorator"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "prototty_render",
  "serde",
@@ -1806,7 +1806,7 @@ dependencies = [
 [[package]]
 name = "prototty_event_routine"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "log",
  "prototty_app",
@@ -1817,7 +1817,7 @@ dependencies = [
 [[package]]
 name = "prototty_file_storage"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "prototty_storage",
 ]
@@ -1825,7 +1825,7 @@ dependencies = [
 [[package]]
 name = "prototty_graphical"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "grid_2d",
  "log",
@@ -1842,12 +1842,12 @@ dependencies = [
 [[package]]
 name = "prototty_graphical_common"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 
 [[package]]
 name = "prototty_graphical_gfx"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "gfx",
  "gfx_device_gl",
@@ -1864,7 +1864,7 @@ dependencies = [
 [[package]]
 name = "prototty_input"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "coord_2d",
  "serde",
@@ -1873,7 +1873,7 @@ dependencies = [
 [[package]]
 name = "prototty_menu"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "prototty_event_routine",
  "prototty_input",
@@ -1885,7 +1885,7 @@ dependencies = [
 [[package]]
 name = "prototty_native_audio"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "log",
  "prototty_audio",
@@ -1895,7 +1895,7 @@ dependencies = [
 [[package]]
 name = "prototty_render"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "coord_2d",
  "grid_2d",
@@ -1906,7 +1906,7 @@ dependencies = [
 [[package]]
 name = "prototty_storage"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "bincode",
  "serde",
@@ -1916,7 +1916,7 @@ dependencies = [
 [[package]]
 name = "prototty_text"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "prototty_render",
  "serde",
@@ -1925,7 +1925,7 @@ dependencies = [
 [[package]]
 name = "prototty_web"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
+source = "git+https://github.com/stevebob/prototty#77abd991d29ad35deeb6709b3e31ee155d34b0da"
 dependencies = [
  "base64",
  "grid_2d",
