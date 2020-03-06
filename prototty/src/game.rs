@@ -113,7 +113,10 @@ fn loop_music<A: AudioPlayer>(
     music: Music,
 ) -> A::Handle {
     let audio = match music {
-        Music::Fiberitron => Audio::Fiberitron,
+        Music::Gameplay0 => Audio::Gameplay0,
+        Music::Gameplay1 => Audio::Gameplay1,
+        Music::Gameplay2 => Audio::Gameplay2,
+        Music::Boss => Audio::Boss,
     };
     let volume = GAME_MUSIC_VOLUME;
     log::info!("Looping audio {:?} at volume {:?}", audio, volume);
@@ -280,6 +283,19 @@ impl<S: Storage, A: AudioPlayer> GameData<S, A> {
             music_handle,
             config,
         }
+    }
+    pub fn is_music_playing(&self) -> bool {
+        self.music_handle.is_some()
+    }
+    pub fn loop_music(&mut self, audio: Audio, volume: f32) {
+        log::info!("Looping audio {:?} at volume {:?}", audio, volume);
+        let sound = self.audio_table.get(audio);
+        let handle = self.audio_player.play_loop(&sound);
+        handle.set_volume(volume);
+        if !self.config.music {
+            handle.pause();
+        }
+        self.music_handle = Some(handle);
     }
     pub fn config(&self) -> Config {
         self.config

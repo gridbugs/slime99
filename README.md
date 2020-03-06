@@ -1,4 +1,4 @@
-# Slime99
+# slime99
 
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/gitlab/stevebob/slime99?branch=master&svg=true)](https://ci.appveyor.com/project/stevebob/slime99)
 
@@ -15,3 +15,8 @@ and **ELIMINATE THE SOURCE OF SLIME!**
 - [MacOS (app)](https://files.gridbugs.org/Slime99-master.dmg)
 - [MacOS (binaries)](https://files.gridbugs.org/slime99-macos-x86_64-master.zip)
 - [Linux](https://files.gridbugs.org/slime99-linux-x86_64-master.zip)
+
+## Music
+
+All music is taken from http://www.nihilore.com and used under a
+[Creative Commons Attribution 4.0 license](https://creativecommons.org/licenses/by/4.0/legalcode).

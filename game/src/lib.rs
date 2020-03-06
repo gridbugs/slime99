@@ -1,6 +1,6 @@
 pub use direction::CardinalDirection;
 pub use grid_2d::{Coord, Grid, Size};
-use rand::{Rng, SeedableRng};
+use rand::{seq::SliceRandom, Rng, SeedableRng};
 use rand_isaac::Isaac64Rng;
 use serde::{Deserialize, Serialize};
 use shadowcast::Context as ShadowcastContext;
@@ -30,7 +30,10 @@ pub struct Config {
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
 pub enum Music {
-    Fiberitron,
+    Gameplay0,
+    Gameplay1,
+    Gameplay2,
+    Boss,
 }
 
 /// Events which the game can report back to the io layer so it can
@@ -86,6 +89,7 @@ pub struct Game {
     before_npc_turn_cooldown: Option<Duration>,
     dead_player: Option<EntityData>,
     turn_during_animation: Option<Turn>,
+    gameplay_music: Vec<Music>,
 }
 
 impl Game {
@@ -97,7 +101,9 @@ impl Game {
         let Terrain { world, agents, player } =
             terrain::sewer(0, SewerSpec { size: MAP_SIZE }, make_player(&mut rng), &mut rng);
         let last_player_info = world.character_info(player).expect("couldn't get info for player");
-        let events = vec![ExternalEvent::LoopMusic(Music::Fiberitron)];
+        let mut gameplay_music = vec![Music::Gameplay0, Music::Gameplay1, Music::Gameplay2];
+        gameplay_music.shuffle(&mut rng);
+        let events = vec![ExternalEvent::LoopMusic(gameplay_music[0])];
         let mut game = Self {
             visibility_grid: VisibilityGrid::new(world.size()),
             player,
@@ -117,6 +123,7 @@ impl Game {
             before_npc_turn_cooldown: None,
             dead_player: None,
             turn_during_animation: None,
+            gameplay_music,
         };
         game.update_visibility(config);
         game.prime_npcs();
@@ -347,7 +354,13 @@ impl Game {
         self.update_last_player_info();
         self.update_visibility(config);
         self.prime_npcs();
-        self.events.push(ExternalEvent::LoopMusic(Music::Fiberitron));
+        if self.world.level == terrain::FINAL_LEVEL {
+            self.events.push(ExternalEvent::LoopMusic(Music::Boss));
+        } else if self.world.level != 1 {
+            self.events.push(ExternalEvent::LoopMusic(
+                self.gameplay_music[self.world.level as usize % self.gameplay_music.len()],
+            ));
+        }
     }
     fn after_turn(&mut self) {
         self.cleanup();

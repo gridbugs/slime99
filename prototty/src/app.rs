@@ -1,3 +1,4 @@
+use crate::audio::Audio;
 use crate::controls::Controls;
 use crate::depth;
 use crate::frontend::Frontend;
@@ -907,6 +908,9 @@ fn main_menu<S: Storage, A: AudioPlayer>(
                     MainMenuType::Pause => (),
                 }
             } else {
+                if !data.game.is_music_playing() {
+                    data.game.loop_music(Audio::Menu, 0.1);
+                }
                 match data.main_menu_type {
                     MainMenuType::Init => (),
                     MainMenuType::Pause => {
@@ -1066,11 +1070,12 @@ fn game_loop<S: Storage, A: AudioPlayer>(
                 .and_then(|game_loop_break| {
                     make_either!(Ei = A | B | C);
                     match game_loop_break {
-                        GameLoopBreak::Win => Ei::C(win().and_then(|()| {
-                            SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {
+                        GameLoopBreak::Win => {
+                            Ei::C(SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
                                 data.game.clear_instance();
-                            })
-                        })),
+                                win()
+                            }))
+                        }
                         GameLoopBreak::Pause => Ei::A(Value::new(())),
                         GameLoopBreak::GameOver => Ei::B(game_over().and_then(|()| {
                             SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {
