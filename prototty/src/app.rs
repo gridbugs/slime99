@@ -986,7 +986,7 @@ fn story<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {
         text::RichTextPartOwned::new(" fallout from ".to_string(), normal),
         text::RichTextPartOwned::new("THE WAR".to_string(), bold),
         text::RichTextPartOwned::new(" has caused ".to_string(), normal),
-        text::RichTextPartOwned::new("ADIOACTIVE MUTANT SLIMES".to_string(), bold),
+        text::RichTextPartOwned::new("RADIOACTIVE MUTANT SLIMES".to_string(), bold),
         text::RichTextPartOwned::new(" to appear in the sewers of ".to_string(), normal),
         text::RichTextPartOwned::new("THE CITY.".to_string(), bold),
         text::RichTextPartOwned::new(" You are a ".to_string(), normal),
