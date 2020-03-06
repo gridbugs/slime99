@@ -3,6 +3,7 @@ use crate::{
         data::{DoorState, DropItemOnDeath, Item, OnCollision, OnDamage, ProjectileDamage, Tile},
         explosion, player,
         realtime_periodic::{core::ScheduledRealtimePeriodicState, movement},
+        spatial::Spatial,
         spatial::{Layer, Location, OccupiedBy},
         ExternalEvent, World,
     },
@@ -616,6 +617,38 @@ impl World {
         }
     }
 
+    fn nearest_spawn_candidate<R: Rng>(spatial: &Spatial, start: Coord, rng: &mut R) -> Option<Coord> {
+        if let Some(cell) = spatial.get_cell(start) {
+            if cell.feature.is_none() {
+                if cell.character.is_none() {
+                    return Some(start);
+                }
+            }
+        }
+        let mut queue = VecDeque::new();
+        let mut seen = HashSet::new();
+        let mut directions = CardinalDirection::all().collect::<Vec<_>>();
+        queue.push_front(start);
+        seen.insert(start);
+        while let Some(coord) = queue.pop_back() {
+            directions.shuffle(rng);
+            for &direction in directions.iter() {
+                let neighbour_coord = coord + direction.coord();
+                if seen.insert(neighbour_coord) {
+                    if let Some(cell) = spatial.get_cell(neighbour_coord) {
+                        if cell.feature.is_none() {
+                            if cell.character.is_none() {
+                                return Some(neighbour_coord);
+                            }
+                            queue.push_front(neighbour_coord);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
     fn divide<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
         if let Some(coord) = self.spatial.coord(entity) {
             if let Some(hit_points) = self.components.hit_points.get_mut(entity) {
@@ -626,29 +659,7 @@ impl World {
                 };
                 if new_hit_points.current > 0 {
                     *hit_points = new_hit_points;
-                    let mut spawn_coord = None;
-                    let mut queue = VecDeque::new();
-                    let mut seen = HashSet::new();
-                    let mut directions = CardinalDirection::all().collect::<Vec<_>>();
-                    queue.push_front(coord);
-                    seen.insert(coord);
-                    while let Some(coord) = queue.pop_back() {
-                        directions.shuffle(rng);
-                        for &direction in directions.iter() {
-                            let neighbour_coord = coord + direction.coord();
-                            if seen.insert(neighbour_coord) {
-                                if let Some(cell) = self.spatial.get_cell(neighbour_coord) {
-                                    if cell.feature.is_none() {
-                                        if cell.character.is_none() {
-                                            spawn_coord = Some(neighbour_coord);
-                                            break;
-                                        }
-                                        queue.push_front(neighbour_coord);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    let spawn_coord = Self::nearest_spawn_candidate(&self.spatial, coord, rng);
                     if let Some(spawn_coord) = spawn_coord {
                         let mut new_entity_data = self.components.clone_entity_data(entity);
                         new_entity_data.next_action = None;
@@ -660,6 +671,29 @@ impl World {
                             new_entity_data,
                         );
                     }
+                }
+            }
+        }
+    }
+
+    fn divide_and_spawn<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
+        self.divide(entity, rng);
+        if let Some(coord) = self.spatial.coord(entity) {
+            if let Some(spawn_coord) = Self::nearest_spawn_candidate(&self.spatial, coord, rng) {
+                match rng.gen_range(0, 4) {
+                    0 => {
+                        self.spawn_slime_goo(spawn_coord, rng);
+                    }
+                    1 => {
+                        self.spawn_slime_divide(spawn_coord, rng);
+                    }
+                    2 => {
+                        self.spawn_slime_swap(spawn_coord, rng);
+                    }
+                    3 => {
+                        self.spawn_slime_teleport(spawn_coord, rng);
+                    }
+                    _ => (),
                 }
             }
         }
@@ -685,6 +719,7 @@ impl World {
                         }
                     }
                     OnDamage::Divide => self.divide(character, rng),
+                    OnDamage::DivideAndSpawn => self.divide_and_spawn(character, rng),
                     OnDamage::Teleport => {
                         let maybe_player_entity = self.components.player.entities().next();
                         if let Some(player_entity) = maybe_player_entity {

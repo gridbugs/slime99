@@ -727,11 +727,8 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.safe_on_sludge.insert(entity, ());
-        self.components.on_damage.insert(entity, OnDamage::Divide);
-        self.components
-            .drop_item_on_death
-            .insert(entity, DropItemOnDeath::GuaranteeSpecial);
-        self.components.hit_points.insert(entity, HitPoints::new_full(1));
+        self.components.on_damage.insert(entity, OnDamage::DivideAndSpawn);
+        self.components.hit_points.insert(entity, HitPoints::new_full(99));
         entity
     }
 

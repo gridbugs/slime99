@@ -1584,7 +1584,7 @@ dependencies = [
 [[package]]
 name = "prototty"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "prototty_app 0.29.0 (git+https://github.com/stevebob/prototty)",
  "prototty_decorator 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1598,7 +1598,7 @@ dependencies = [
 [[package]]
 name = "prototty_ansi_terminal"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "libc 0.2.67 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_app 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1610,7 +1610,7 @@ dependencies = [
 [[package]]
 name = "prototty_app"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "prototty_input 0.29.0 (git+https://github.com/stevebob/prototty)",
  "prototty_render 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1619,12 +1619,12 @@ dependencies = [
 [[package]]
 name = "prototty_audio"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 
 [[package]]
 name = "prototty_decorator"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "prototty_render 0.29.0 (git+https://github.com/stevebob/prototty)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1633,7 +1633,7 @@ dependencies = [
 [[package]]
 name = "prototty_event_routine"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_app 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1644,7 +1644,7 @@ dependencies = [
 [[package]]
 name = "prototty_file_storage"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "prototty_storage 0.29.0 (git+https://github.com/stevebob/prototty)",
 ]
@@ -1652,7 +1652,7 @@ dependencies = [
 [[package]]
 name = "prototty_graphical"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1669,12 +1669,12 @@ dependencies = [
 [[package]]
 name = "prototty_graphical_common"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 
 [[package]]
 name = "prototty_graphical_gfx"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "gfx 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.16.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1691,7 +1691,7 @@ dependencies = [
 [[package]]
 name = "prototty_input"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "coord_2d 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1700,7 +1700,7 @@ dependencies = [
 [[package]]
 name = "prototty_menu"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "prototty_event_routine 0.29.0 (git+https://github.com/stevebob/prototty)",
  "prototty_input 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1712,7 +1712,7 @@ dependencies = [
 [[package]]
 name = "prototty_native_audio"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "prototty_audio 0.29.0 (git+https://github.com/stevebob/prototty)",
@@ -1722,7 +1722,7 @@ dependencies = [
 [[package]]
 name = "prototty_render"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "coord_2d 0.2.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1733,7 +1733,7 @@ dependencies = [
 [[package]]
 name = "prototty_storage"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "bincode 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1743,7 +1743,7 @@ dependencies = [
 [[package]]
 name = "prototty_text"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "prototty_render 0.29.0 (git+https://github.com/stevebob/prototty)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1752,7 +1752,7 @@ dependencies = [
 [[package]]
 name = "prototty_web"
 version = "0.29.0"
-source = "git+https://github.com/stevebob/prototty#a46f9e6a24b9db74b4039b1a28b856981f890c19"
+source = "git+https://github.com/stevebob/prototty#ff7997f1681b10dd9b56b2d1df951d2f2558e7d6"
 dependencies = [
  "base64 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid_2d 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",

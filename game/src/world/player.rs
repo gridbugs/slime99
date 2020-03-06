@@ -54,6 +54,9 @@ impl Ability {
             Ability::SwapTop2(AbilityTarget::Attack),
             Ability::SwapTop2(AbilityTarget::Defend),
             Ability::SwapTop2(AbilityTarget::Tech),
+            Ability::Discard(AbilityTarget::Attack),
+            Ability::Discard(AbilityTarget::Defend),
+            Ability::Discard(AbilityTarget::Tech),
         ]
     }
 }

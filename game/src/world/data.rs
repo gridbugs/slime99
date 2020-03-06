@@ -141,6 +141,7 @@ pub enum NpcAction {
 pub enum OnDamage {
     Sludge,
     Divide,
+    DivideAndSpawn,
     Teleport,
     Swap,
     Upgrade { level: u32, ability_target: AbilityTarget },

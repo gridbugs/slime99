@@ -14,12 +14,13 @@ use decorator::*;
 use event_routine::*;
 use game::player::Ability;
 use maplit::hashmap;
-use menu::{fade_spec, FadeMenuInstanceView, MenuEntryStringFn, MenuInstanceChoose};
+use menu::{fade_spec, FadeMenuInstanceView, MenuEntryStringFn, MenuEntryToRender, MenuInstanceChoose};
 use prototty::input::*;
 use prototty::*;
 use prototty_audio::AudioPlayer;
 use prototty_storage::Storage;
 use render::{ColModifyDefaultForeground, ColModifyMap, Coord, Rgb24, Style};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 #[derive(Clone, Copy)]
@@ -649,16 +650,24 @@ fn level_change_menu<S: Storage, A: AudioPlayer>(
     SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
         data.level_change_menu = Some(
             menu::MenuInstanceBuilder {
+                hotkeys: Some(
+                    choices
+                        .iter()
+                        .enumerate()
+                        .map(|(i, choice)| (std::char::from_digit(i as u32 + 1, 10).unwrap(), choice.clone()))
+                        .collect::<HashMap<_, _>>(),
+                ),
                 items: choices,
                 selected_index: 0,
-                hotkeys: None,
             }
             .build()
             .unwrap()
             .into_choose_or_escape(),
         );
-        let menu_entry_string = MenuEntryStringFn::new(move |entry: &Ability, _maybe_selected, buf: &mut String| {
-            ui::write_abiilty(*entry, buf);
+        let menu_entry_string = MenuEntryStringFn::new(move |entry: MenuEntryToRender<Ability>, buf: &mut String| {
+            use std::fmt::Write;
+            write!(buf, "({}) ", entry.index + 1).unwrap();
+            ui::write_abiilty(*entry.entry, buf);
         });
         menu::FadeMenuInstanceRoutine::new(menu_entry_string)
             .select(SelectLevelChangeMenu::new())
@@ -813,11 +822,11 @@ fn options_menu<S: Storage, A: AudioPlayer>() -> impl EventRoutine<
         let fullscreen = data.env.fullscreen();
         let fullscreen_requires_restart = data.env.fullscreen_requires_restart();
         let menu_entry_string = MenuEntryStringFn::new(
-            move |entry: &OrBack<OptionsMenuEntry>, _maybe_selected, buf: &mut String| {
+            move |entry: MenuEntryToRender<OrBack<OptionsMenuEntry>>, buf: &mut String| {
                 use std::fmt::Write;
                 use OptionsMenuEntry::*;
                 use OrBack::*;
-                match entry {
+                match entry.entry {
                     Back => write!(buf, "back").unwrap(),
                     Selection(entry) => match entry {
                         ToggleMusic => {
@@ -921,9 +930,9 @@ fn main_menu<S: Storage, A: AudioPlayer>(
             }
             Ei::B(
                 menu::FadeMenuInstanceRoutine::new(MenuEntryStringFn::new(
-                    |entry: &MainMenuEntry, _maybe_selected, buf: &mut String| {
+                    |entry: MenuEntryToRender<MainMenuEntry>, buf: &mut String| {
                         use std::fmt::Write;
-                        let s = match entry {
+                        let s = match entry.entry {
                             MainMenuEntry::NewGame => "(n) New Game",
                             MainMenuEntry::Resume => "(r) Resume",
                             MainMenuEntry::Quit => "(q) Quit",
