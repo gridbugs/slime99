@@ -968,12 +968,12 @@ fn game_over<S: Storage, A: AudioPlayer>(
 fn win<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
-        data.game.loop_music(Audio::EndText, 0.5);
+        data.game.loop_music(Audio::EndText, 0.2);
         let bold = Style::new().with_foreground(Rgb24::new(255, 0, 0)).with_bold(true);
         let normal = Style::new().with_foreground(Rgb24::new_grey(255));
         let faint = Style::new().with_foreground(Rgb24::new_grey(127));
         TextOverlay::new(vec![
-            text::RichTextPartOwned::new("The murky remains  of the ".to_string(), normal),
+            text::RichTextPartOwned::new("The murky remains of the ".to_string(), normal),
             text::RichTextPartOwned::new("SOURCE OF SLIME".to_string(), bold),
             text::RichTextPartOwned::new(" drain into the stygian depths below. ".to_string(), normal),
             text::RichTextPartOwned::new("YOU HAVE WON.".to_string(), bold),
