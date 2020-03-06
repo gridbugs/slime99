@@ -128,7 +128,6 @@ pub fn from_str<R: Rng>(s: &str, player_data: EntityData, rng: &mut R) -> Terrai
 #[derive(Clone, Copy)]
 enum NpcType {
     Divide,
-    Swap,
     Teleport,
     Goo,
 }
@@ -136,7 +135,6 @@ enum NpcType {
 fn spawn_npc<R: Rng>(world: &mut World, npc_type: NpcType, coord: Coord, rng: &mut R) -> Entity {
     match npc_type {
         NpcType::Divide => world.spawn_slime_divide(coord, rng),
-        NpcType::Swap => world.spawn_slime_swap(coord, rng),
         NpcType::Teleport => world.spawn_slime_teleport(coord, rng),
         NpcType::Goo => world.spawn_slime_goo(coord, rng),
     }
@@ -147,12 +145,12 @@ const ENEMY_TYPES: &[NpcType] = &[
     NpcType::Divide,
     NpcType::Divide,
     NpcType::Divide,
+    NpcType::Divide,
     NpcType::Goo,
     NpcType::Goo,
     NpcType::Goo,
     NpcType::Goo,
-    NpcType::Swap,
-    NpcType::Swap,
+    NpcType::Goo,
     NpcType::Teleport,
 ];
 
@@ -174,7 +172,7 @@ impl Item {
 }
 
 const ALL_ITEMS: &[Item] = &[Item::Attack, Item::Defend, Item::Tech];
-const BALANCED_ITEMS: &[Item] = &[Item::Attack, Item::Attack, Item::Defend, Item::Tech];
+const BALANCED_ITEMS: &[Item] = &[Item::Attack, Item::Defend, Item::Tech];
 
 fn sewer_mini<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
     const MINI_SIZE: Size = Size::new_u16(8, 8);
@@ -269,7 +267,7 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
         })
         .collect::<Vec<_>>();
     let num_npcs = level as usize * 2 + 2;
-    let num_items = 6;
+    let num_items = 4;
     empty_coords.shuffle(rng);
     for &coord in empty_coords.iter().take(num_npcs) {
         let npc_type = ENEMY_TYPES.choose(rng).unwrap().clone();
@@ -349,19 +347,19 @@ fn sewer_final<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) ->
         })
         .collect::<Vec<_>>();
     empty_coords.sort_by_key(|&c| c.distance2(sewer.start));
-    let num_npcs = 1;
+    let num_npcs = 2;
     for _ in 0..num_npcs {
         let coord = empty_coords.pop().unwrap();
         let entity = world.spawn_slime_boss(coord, rng);
         agents.insert(entity, Agent::new(spec.size));
     }
-    let num_items = 8;
+    let num_items = 5;
     empty_coords.shuffle(rng);
     for &coord in empty_coords.iter().take(num_items) {
         let item = BALANCED_ITEMS.choose(rng).unwrap();
         item.spawn(&mut world, coord, false);
     }
-    let num_special_items = 4;
+    let num_special_items = 3;
     let special_item_coords = sewer
         .map
         .enumerate()
@@ -385,8 +383,7 @@ fn sewer_final<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) ->
 pub fn sewer<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
     if level == 0 {
         sewer_mini(spec, player_data, rng)
-    } else if level == 1 {
-        //FINAL_LEVEL {
+    } else if level == FINAL_LEVEL {
         sewer_final(spec, player_data, rng)
     } else {
         sewer_normal(level, spec, player_data, rng)

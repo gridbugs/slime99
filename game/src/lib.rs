@@ -16,6 +16,7 @@ use ecs::ComponentTable;
 pub use ecs::Entity;
 use procgen::SewerSpec;
 use terrain::Terrain;
+pub use terrain::FINAL_LEVEL;
 pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
 pub use world::{
@@ -356,7 +357,7 @@ impl Game {
         self.prime_npcs();
         if self.world.level == terrain::FINAL_LEVEL {
             self.events.push(ExternalEvent::LoopMusic(Music::Boss));
-        } else if self.world.level != 1 {
+        } else {
             self.events.push(ExternalEvent::LoopMusic(
                 self.gameplay_music[self.world.level as usize % self.gameplay_music.len()],
             ));

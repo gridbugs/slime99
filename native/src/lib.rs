@@ -43,7 +43,7 @@ impl NativeCommon {
                 controls_file = opt::<String>("c", "controls-file", "controls file", "PATH");
                 delete_save = flag("", "delete-save", "delete save game file");
                 omniscient = flag("", "omniscient", "enable omniscience").some_if(Omniscient);
-                mute = flag("m", "mute", "mute audio");
+                audio = flag("a", "audio", "enable audio (may crash the game after a few minutes)");
             } in {{
                 let controls_file = if let Some(controls_file) = controls_file {
                     controls_file.into()
@@ -62,15 +62,17 @@ impl NativeCommon {
                         log::warn!("couldn't find save file to delete");
                     }
                 }
-                let audio_player = if mute {
-                    None
-                } else {match NativeAudioPlayer::try_new_default_device() {
-                    Ok(audio_player) => Some(audio_player),
-                    Err(NativeAudioError::NoOutputDevice) => {
-                        log::warn!("no output audio device - continuing without audio");
-                        None
+                let audio_player = if audio {
+                    match NativeAudioPlayer::try_new_default_device() {
+                        Ok(audio_player) => Some(audio_player),
+                        Err(NativeAudioError::NoOutputDevice) => {
+                            log::warn!("no output audio device - continuing without audio");
+                            None
+                        }
                     }
-                }};
+                } else {
+                    None
+                };
                 let game_config = GameConfig { omniscient };
                 Self {
                     rng_seed,

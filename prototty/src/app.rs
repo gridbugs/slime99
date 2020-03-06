@@ -39,6 +39,8 @@ enum MainMenuEntry {
     Clear,
     Options,
     Story,
+    Keybindings,
+    EndText,
 }
 
 impl MainMenuEntry {
@@ -46,12 +48,32 @@ impl MainMenuEntry {
         use MainMenuEntry::*;
         let (items, hotkeys) = match frontend {
             Frontend::Graphical | Frontend::AnsiTerminal => (
-                vec![NewGame, Options, Story, Quit],
-                hashmap!['n' => NewGame, 'o' => Options, 'b' => Story,'q' => Quit],
+                vec![NewGame, Options, Keybindings, Story, Quit],
+                hashmap!['n' => NewGame, 'o' => Options, 'k' => Keybindings, 'b' => Story, 'q' => Quit],
             ),
             Frontend::Web => (
-                vec![NewGame, Options, Story],
-                hashmap!['n' => NewGame, 'o' => Options, 'b' => Story],
+                vec![NewGame, Options, Keybindings, Story],
+                hashmap!['n' => NewGame, 'o' => Options, 'k' => Keybindings, 'b' => Story],
+            ),
+        };
+        menu::MenuInstanceBuilder {
+            items,
+            selected_index: 0,
+            hotkeys: Some(hotkeys),
+        }
+        .build()
+        .unwrap()
+    }
+    fn won(frontend: Frontend) -> menu::MenuInstance<Self> {
+        use MainMenuEntry::*;
+        let (items, hotkeys) = match frontend {
+            Frontend::Graphical | Frontend::AnsiTerminal => (
+                vec![NewGame, Options, Keybindings, Story, EndText, Quit],
+                hashmap!['n' => NewGame, 'o' => Options, 'k' => Keybindings, 'b' => Story, 'e' => EndText, 'q' => Quit],
+            ),
+            Frontend::Web => (
+                vec![NewGame, Options, Keybindings, Story, EndText],
+                hashmap!['n' => NewGame, 'o' => Options, 'k' => Keybindings, 'b' => Story, 'e' => EndText],
             ),
         };
         menu::MenuInstanceBuilder {
@@ -66,12 +88,12 @@ impl MainMenuEntry {
         use MainMenuEntry::*;
         let (items, hotkeys) = match frontend {
             Frontend::Graphical | Frontend::AnsiTerminal => (
-                vec![Resume, SaveQuit, NewGame, Options, Story, Clear],
-                hashmap!['r' => Resume, 'q' => SaveQuit, 'o' => Options, 'b'=> Story, 'n' => NewGame, 'c' => Clear],
+                vec![Resume, SaveQuit, NewGame, Options, Keybindings, Story, Clear],
+                hashmap!['r' => Resume, 'q' => SaveQuit, 'o' => Options, 'k' => Keybindings, 'b'=> Story, 'n' => NewGame, 'c' => Clear],
             ),
             Frontend::Web => (
                 vec![Resume, Save, NewGame, Options, Story, Clear],
-                hashmap!['r' => Resume, 's' => Save, 'o' => Options, 'b' => Story, 'n' => NewGame, 'c' => Clear],
+                hashmap!['r' => Resume, 's' => Save, 'o' => Options, 'k' => Keybindings, 'b' => Story, 'n' => NewGame, 'c' => Clear],
             ),
         };
         menu::MenuInstanceBuilder {
@@ -93,6 +115,7 @@ struct AppData<S: Storage, A: AudioPlayer> {
     level_change_menu: Option<menu::MenuInstanceChooseOrEscape<Ability>>,
     last_mouse_coord: Coord,
     env: Box<dyn Env>,
+    won: bool,
 }
 
 struct AppView {
@@ -140,6 +163,7 @@ impl<S: Storage, A: AudioPlayer> AppData<S, A> {
             main_menu_type: MainMenuType::Init,
             last_mouse_coord: Coord::new(0, 0),
             env,
+            won: false,
         }
     }
 }
@@ -303,7 +327,7 @@ where
     E: EventRoutine<View = AppView, Data = AppData<S, A>>,
 {
     fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData<S, A>, context: ViewContext<C>, frame: &mut F) {
-        text::StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true)).view(
+        text::StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new(0, 255, 0)).with_bold(true)).view(
             "slime99",
             context.add_offset(Coord::new(1, 1)),
             frame,
@@ -917,14 +941,19 @@ fn main_menu<S: Storage, A: AudioPlayer>(
                     MainMenuType::Pause => (),
                 }
             } else {
-                if !data.game.is_music_playing() {
-                    data.game.loop_music(Audio::Menu, 0.1);
-                }
-                match data.main_menu_type {
-                    MainMenuType::Init => (),
-                    MainMenuType::Pause => {
-                        data.main_menu = MainMenuEntry::init(data.frontend).into_choose_or_escape();
-                        data.main_menu_type = MainMenuType::Init;
+                if data.won {
+                    data.main_menu = MainMenuEntry::won(data.frontend).into_choose_or_escape();
+                    data.main_menu_type = MainMenuType::Init;
+                } else {
+                    if !data.game.is_music_playing() {
+                        data.game.loop_music(Audio::Menu, 0.2);
+                    }
+                    match data.main_menu_type {
+                        MainMenuType::Init => (),
+                        MainMenuType::Pause => {
+                            data.main_menu = MainMenuEntry::init(data.frontend).into_choose_or_escape();
+                            data.main_menu_type = MainMenuType::Init;
+                        }
                     }
                 }
             }
@@ -941,6 +970,8 @@ fn main_menu<S: Storage, A: AudioPlayer>(
                             MainMenuEntry::Clear => "(c) Clear",
                             MainMenuEntry::Options => "(o) Options",
                             MainMenuEntry::Story => "(b) Back Story",
+                            MainMenuEntry::Keybindings => "(k) Keybindings",
+                            MainMenuEntry::EndText => "(e) End Text",
                         };
                         write!(buf, "{}", s).unwrap();
                     },
@@ -974,38 +1005,43 @@ fn game_over<S: Storage, A: AudioPlayer>(
         .decorated(DecorateGame::new())
 }
 
+fn win_text<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {
+    let bold = Style::new().with_foreground(Rgb24::new(255, 0, 0)).with_bold(true);
+    let normal = Style::new().with_foreground(Rgb24::new_grey(255));
+    let faint = Style::new().with_foreground(Rgb24::new_grey(127));
+    TextOverlay::new(vec![
+        text::RichTextPartOwned::new("The murky remains of the ".to_string(), normal),
+        text::RichTextPartOwned::new("SOURCE OF SLIME".to_string(), bold),
+        text::RichTextPartOwned::new(" drain into the stygian depths below. ".to_string(), normal),
+        text::RichTextPartOwned::new("YOU HAVE WON.".to_string(), bold),
+        text::RichTextPartOwned::new(" You emerge from the sewers into ".to_string(), normal),
+        text::RichTextPartOwned::new("THE CITY ABOVE.".to_string(), bold),
+        text::RichTextPartOwned::new("\n\nThe city which you saved. Repairs to a ".to_string(), normal),
+        text::RichTextPartOwned::new("WAR-TORN WORLD".to_string(), bold),
+        text::RichTextPartOwned::new(" are progressing smoothly, and a ".to_string(), normal),
+        text::RichTextPartOwned::new("NEW MILLENNIUM".to_string(), bold),
+        text::RichTextPartOwned::new(
+            " is just around the corner. Things are finally looking up.".to_string(),
+            normal,
+        ),
+        text::RichTextPartOwned::new("\n\nExcept for you. After all, what's a ".to_string(), normal),
+        text::RichTextPartOwned::new("GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER".to_string(), bold),
+        text::RichTextPartOwned::new(
+            " to do during peace time. You long for the day when more ".to_string(),
+            normal,
+        ),
+        text::RichTextPartOwned::new("RADIOACTIVE MUTANT SLIMES".to_string(), bold),
+        text::RichTextPartOwned::new(" appear in the sewers...".to_string(), normal),
+        text::RichTextPartOwned::new("\n\n\n\n\n\nPress any key...".to_string(), faint),
+    ])
+}
+
 fn win<S: Storage, A: AudioPlayer>(
 ) -> impl EventRoutine<Return = (), Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
     SideEffectThen::new_with_view(|data: &mut AppData<S, A>, _: &_| {
         data.game.loop_music(Audio::EndText, 0.2);
-        let bold = Style::new().with_foreground(Rgb24::new(255, 0, 0)).with_bold(true);
-        let normal = Style::new().with_foreground(Rgb24::new_grey(255));
-        let faint = Style::new().with_foreground(Rgb24::new_grey(127));
-        TextOverlay::new(vec![
-            text::RichTextPartOwned::new("The murky remains of the ".to_string(), normal),
-            text::RichTextPartOwned::new("SOURCE OF SLIME".to_string(), bold),
-            text::RichTextPartOwned::new(" drain into the stygian depths below. ".to_string(), normal),
-            text::RichTextPartOwned::new("YOU HAVE WON.".to_string(), bold),
-            text::RichTextPartOwned::new(" You emerge from the sewers into ".to_string(), normal),
-            text::RichTextPartOwned::new("THE CITY ABOVE.".to_string(), bold),
-            text::RichTextPartOwned::new("\n\nThe city which you saved. Repairs to a ".to_string(), normal),
-            text::RichTextPartOwned::new("WAR-TORN WORLD".to_string(), bold),
-            text::RichTextPartOwned::new(" are progressing smoothly, and a ".to_string(), normal),
-            text::RichTextPartOwned::new("NEW MILLENNIUM".to_string(), bold),
-            text::RichTextPartOwned::new(
-                " is just around the corner. Things are finally looking up.".to_string(),
-                normal,
-            ),
-            text::RichTextPartOwned::new("\n\nExcept for you. After all, what's a ".to_string(), normal),
-            text::RichTextPartOwned::new("GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER".to_string(), bold),
-            text::RichTextPartOwned::new(
-                " to do during peace time. You long for the day when more ".to_string(),
-                normal,
-            ),
-            text::RichTextPartOwned::new("RADIOACTIVE MUTANT SLIMES".to_string(), bold),
-            text::RichTextPartOwned::new(" appear in the sewers...".to_string(), normal),
-            text::RichTextPartOwned::new("\n\n\n\n\n\nPress any key...".to_string(), faint),
-        ])
+        data.won = true;
+        win_text()
     })
 }
 
@@ -1032,6 +1068,19 @@ fn story<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {
         text::RichTextPartOwned::new(" Go into the sewers and ".to_string(), normal),
         text::RichTextPartOwned::new("ELIMINATE THE SOURCE OF SLIME!".to_string(), bold),
         text::RichTextPartOwned::new("\n\n\n\n\n\nPress any key...".to_string(), faint),
+    ])
+}
+
+fn keybindings<S: Storage, A: AudioPlayer>() -> TextOverlay<S, A> {
+    let normal = Style::new().with_foreground(Rgb24::new_grey(255));
+    let faint = Style::new().with_foreground(Rgb24::new_grey(127));
+    TextOverlay::new(vec![
+        text::RichTextPartOwned::new("Movement/Aim: arrows/VI keys/WASD\n\n".to_string(), normal),
+        text::RichTextPartOwned::new("Cancel Aim: escape\n\n".to_string(), normal),
+        text::RichTextPartOwned::new("Wait: space\n\n".to_string(), normal),
+        text::RichTextPartOwned::new("Use Tech: t\n\n".to_string(), normal),
+        text::RichTextPartOwned::new("Examine: x\n\n".to_string(), normal),
+        text::RichTextPartOwned::new("\n\n\n\n\nPress any key...".to_string(), faint),
     ])
 }
 
@@ -1129,7 +1178,7 @@ fn main_menu_cycle<S: Storage, A: AudioPlayer>(
     auto_play: Option<AutoPlay>,
     first_run: Option<FirstRun>,
 ) -> impl EventRoutine<Return = Option<Quit>, Data = AppData<S, A>, View = AppView, Event = CommonEvent> {
-    make_either!(Ei = A | B | C | D | E | F | G | H);
+    make_either!(Ei = A | B | C | D | E | F | G | H | I | J);
     main_menu(auto_play, first_run).and_then(|entry| match entry {
         Ok(MainMenuEntry::Quit) => Ei::A(Value::new(Some(Quit))),
         Ok(MainMenuEntry::SaveQuit) => Ei::D(SideEffect::new_with_view(|data: &mut AppData<S, A>, _: &_| {
@@ -1166,6 +1215,8 @@ fn main_menu_cycle<S: Storage, A: AudioPlayer>(
         })),
         Ok(MainMenuEntry::Options) => Ei::G(options_menu_cycle().map(|_| None)),
         Ok(MainMenuEntry::Story) => Ei::H(story().map(|()| None)),
+        Ok(MainMenuEntry::Keybindings) => Ei::I(keybindings().map(|()| None)),
+        Ok(MainMenuEntry::EndText) => Ei::J(win_text().map(|()| None)),
     })
 }
 

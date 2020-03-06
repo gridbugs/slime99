@@ -646,13 +646,14 @@ fn all_floor_adjacent_floor_coords(grid: &Grid<SewerCell>) -> Vec<Coord> {
         .collect()
 }
 
-fn pool_light_coords(grid: &Grid<SewerCell>) -> Vec<Coord> {
+fn pool_light_coords<R: Rng>(grid: &Grid<SewerCell>, rng: &mut R) -> Vec<Coord> {
     let mut coords = Vec::new();
     for (coord, cell) in grid.enumerate() {
         if let SewerCell::Pool = cell {
-            if CardinalDirection::all()
-                .map(|d| grid.get(coord + d.coord()).cloned())
-                .any(|maybe_cell| maybe_cell == Some(SewerCell::Floor) || maybe_cell.is_none())
+            if rng.gen_range(0, 20) == 0
+                || CardinalDirection::all()
+                    .map(|d| grid.get(coord + d.coord()).cloned())
+                    .any(|maybe_cell| maybe_cell == Some(SewerCell::Floor) || maybe_cell.is_none())
             {
                 coords.push(coord)
             }
@@ -730,7 +731,7 @@ impl Sewer {
         if !map.iter().any(|&cell| cell == SewerCell::Pool) {
             return None;
         }
-        let lights = pool_light_coords(&map)
+        let lights = pool_light_coords(&map, rng)
             .into_iter()
             .map(|coord| SewerLight {
                 coord,

@@ -176,6 +176,7 @@ impl World {
         let player = self.components.player.get_mut(attacker).unwrap();
         let attack = player.attack.pop().unwrap_or(player::EMPTY_ATTACK);
         self.apply_attack(attack, attacker, victim, direction, rng);
+        self.wait(attacker, rng);
     }
 
     fn npc_melee_attack<R: Rng>(&mut self, _attacker: Entity, victim: Entity, rng: &mut R) {
@@ -388,7 +389,7 @@ impl World {
     }
 
     fn attract(&mut self, entity: Entity) {
-        const RANGE: u32 = 8;
+        const RANGE: u32 = 12;
         const ATTRACT_BY: u32 = 4;
         let this_coord = self.spatial.coord(entity).unwrap();
         let mut to_push_back = self
@@ -429,7 +430,7 @@ impl World {
     }
 
     fn repel(&mut self, entity: Entity) {
-        const RANGE: u32 = 8;
+        const RANGE: u32 = 12;
         const PUSH_BACK: u32 = 4;
         let this_coord = self.spatial.coord(entity).unwrap();
         let mut to_push_back = self
@@ -598,7 +599,9 @@ impl World {
                     }
                 }
                 if let Some(entity_in_cell) = spatial_cell.feature.or(spatial_cell.character) {
-                    if (collides_with.solid && self.components.solid.contains(entity_in_cell))
+                    if (collides_with.solid
+                        && (self.components.solid.contains(entity_in_cell)
+                            || self.components.stairs.contains(entity_in_cell)))
                         || (collides_with.character && self.components.character.contains(entity_in_cell))
                     {
                         self.projectile_stop(projectile_entity, external_events, rng);
@@ -680,7 +683,7 @@ impl World {
         self.divide(entity, rng);
         if let Some(coord) = self.spatial.coord(entity) {
             if let Some(spawn_coord) = Self::nearest_spawn_candidate(&self.spatial, coord, rng) {
-                match rng.gen_range(0, 4) {
+                match rng.gen_range(0, 3) {
                     0 => {
                         self.spawn_slime_goo(spawn_coord, rng);
                     }
@@ -688,9 +691,6 @@ impl World {
                         self.spawn_slime_divide(spawn_coord, rng);
                     }
                     2 => {
-                        self.spawn_slime_swap(spawn_coord, rng);
-                    }
-                    3 => {
                         self.spawn_slime_teleport(spawn_coord, rng);
                     }
                     _ => (),
@@ -702,15 +702,16 @@ impl World {
     pub fn damage_character<R: Rng>(&mut self, character: Entity, hit_points_to_lose: u32, rng: &mut R) {
         if let Some(hit_points) = self.components.hit_points.get_mut(character) {
             let coord = self.spatial.coord(character).unwrap();
-            match hit_points.current.checked_sub(hit_points_to_lose) {
+            let dies = match hit_points.current.checked_sub(hit_points_to_lose) {
                 None | Some(0) => {
                     hit_points.current = 0;
-                    self.character_die(character, rng);
+                    true
                 }
                 Some(non_zero_remaining_hit_points) => {
                     hit_points.current = non_zero_remaining_hit_points;
+                    false
                 }
-            }
+            };
             if let Some(on_damage) = self.components.on_damage.get(character) {
                 match on_damage {
                     OnDamage::Sludge => {
@@ -795,6 +796,9 @@ impl World {
                 }
             }
             self.add_blood_stain_to_floor(coord);
+            if dies {
+                self.character_die(character, rng);
+            }
         } else {
             log::warn!("attempt to damage entity without hit_points component");
         }
@@ -811,11 +815,18 @@ impl World {
     }
 
     fn change_floor_to_sludge(&mut self, coord: Coord) {
-        if let Some(cell) = self.spatial.get_cell(coord) {
+        if let Some(&cell) = self.spatial.get_cell(coord) {
             if let Some(floor_entity) = cell.floor {
                 self.spatial.remove(floor_entity);
                 self.components.remove_entity(floor_entity);
                 self.realtime_components.remove_entity(floor_entity);
+            }
+            if let Some(feature_entity) = cell.feature {
+                if self.components.door_state.contains(feature_entity) {
+                    self.spatial.remove(feature_entity);
+                    self.components.remove_entity(feature_entity);
+                    self.realtime_components.remove_entity(feature_entity);
+                }
             }
         }
         self.spawn_sludge(coord);
@@ -915,7 +926,7 @@ impl World {
     }
 
     pub fn sludge_damage<R: Rng>(&mut self, rng: &mut R) {
-        const DAMAGE: u32 = 10;
+        const DAMAGE: u32 = 4;
         for entity in self
             .components
             .npc

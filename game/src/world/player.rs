@@ -196,14 +196,14 @@ impl Player {
             attack: Deck {
                 #[rustfmt::skip]
                 items: rev(vec![
-                    Hit(rng.gen_range(4, 10)),
-                    Hit(rng.gen_range(4, 10)),
-                    Hit(rng.gen_range(4, 10)),
-                    Cleave(rng.gen_range(4, 10)),
+                    Hit(rng.gen_range(4, 8)),
+                    Hit(rng.gen_range(4, 8)),
+                    Hit(rng.gen_range(4, 8)),
+                    Cleave(rng.gen_range(3, 7)),
+                    Hit(rng.gen_range(6, 12)),
+                    Hit(rng.gen_range(6, 12)),
                     Hit(rng.gen_range(8, 20)),
                     Hit(rng.gen_range(8, 20)),
-                    Hit(rng.gen_range(12, 30)),
-                    Hit(rng.gen_range(12, 30)),
                 ]),
                 max_size: 16,
             },
@@ -213,7 +213,6 @@ impl Player {
                     Armour(rng.gen_range(1, 2)),
                     Armour(rng.gen_range(1, 2)),
                     Armour(rng.gen_range(1, 2)),
-                    Dodge,
                     Armour(rng.gen_range(1, 3)),
                     Armour(rng.gen_range(1, 3)),
                     Armour(rng.gen_range(1, 3)),
@@ -257,16 +256,16 @@ pub enum Outcome {
 pub fn choose_attack<R: Rng>(level: u32, special: bool, rng: &mut R) -> Attack {
     if special {
         match rng.gen_range(0, 3) {
-            0 => Attack::Hit(99),
-            1 => Attack::Cleave(rng.gen_range((level + 1) * 6, (level + 1) * 9)),
-            2 => Attack::Skewer(rng.gen_range((level + 1) * 6, (level + 1) * 9)),
+            0 => Attack::Hit(rng.gen_range(10 + level * 2, 20 + level * 8)),
+            1 => Attack::Cleave(rng.gen_range(10 + level * 2, 20 + level * 3)),
+            2 => Attack::Skewer(rng.gen_range(10 + level * 2, 20 + level * 3)),
             _ => unreachable!(),
         }
     } else {
         match rng.gen_range(0, 3) {
-            0 => Attack::Hit(rng.gen_range((level + 1) * 4, (level + 1) * 7)),
-            1 => Attack::Cleave(rng.gen_range((level + 1) * 3, (level + 1) * 6)),
-            2 => Attack::Skewer(rng.gen_range((level + 1) * 3, (level + 1) * 6)),
+            0 => Attack::Hit(rng.gen_range(5 + level * 2, 10 + level * 8)),
+            1 => Attack::Cleave(rng.gen_range(5 + level * 2, 10 + level * 3)),
+            2 => Attack::Skewer(rng.gen_range(5 + level * 2, 10 + level * 3)),
             _ => unreachable!(),
         }
     }
@@ -274,17 +273,12 @@ pub fn choose_attack<R: Rng>(level: u32, special: bool, rng: &mut R) -> Attack {
 
 pub fn choose_defend<R: Rng>(level: u32, special: bool, rng: &mut R) -> Defend {
     if special {
-        match rng.gen_range(0, 2) {
-            0 => Defend::Revenge,
-            1 => Defend::Armour(rng.gen_range((level + 1) * 2, (level + 1) * 3)),
-            _ => unreachable!(),
-        }
+        Defend::Armour(rng.gen_range(2 + level, 3 + level))
     } else {
-        match rng.gen_range(0, 4) {
+        match rng.gen_range(0, 3) {
             0 => Defend::Teleport,
-            1 => Defend::Dodge,
-            2 => Defend::Armour(level + 1),
-            3 => Defend::Armour(rng.gen_range(level + 1, (level + 1) * 2)),
+            1 => Defend::Revenge,
+            2 => Defend::Armour(rng.gen_range(1 + level / 3, 2 + level / 2)),
             _ => unreachable!(),
         }
     }
@@ -321,7 +315,7 @@ pub fn choose_attack_upgrade<R: Rng>(level: u32, rng: &mut R) -> Attack {
 pub fn choose_defend_upgrade<R: Rng>(level: u32, rng: &mut R) -> Defend {
     use Defend::*;
     match level {
-        _ => &[Dodge, Teleport, Revenge],
+        _ => &[Teleport, Revenge],
     }
     .choose(rng)
     .unwrap()

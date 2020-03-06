@@ -93,18 +93,38 @@ impl GameView {
                         );
                     }
                 } else {
-                    if game_to_render.game.current_level() == 0 {
-                        StringView::new(Style::new().with_foreground(Rgb24::new_grey(255)), wrap::Word::new()).view(
-                        "COMMANDER: Recon says the source of the slime is on floor 6 of the sewer. Get moving soldier!",
-                        context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
-                        frame,
-                    );
-                    } else {
-                        StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view(
-                            format!("Floor {}/6", game_to_render.game.current_level()),
+                    let current_level = game_to_render.game.current_level();
+                    if current_level == 0 {
+                        StringView::new(
+                            Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true),
+                            wrap::Word::new(),
+                        )
+                        .view(
+                            format!(
+                                "COMMANDER: The source of the slime is on the {}th floor.",
+                                game::FINAL_LEVEL
+                            ),
                             context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
                             frame,
                         );
+                    } else {
+                        if current_level == game::FINAL_LEVEL {
+                            StringView::new(
+                                Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true),
+                                wrap::Word::new(),
+                            )
+                            .view(
+                                "FINAL FLOOR".to_string(),
+                                context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
+                                frame,
+                            );
+                        } else {
+                            StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view(
+                                format!("Floor {}/{}", current_level, game::FINAL_LEVEL),
+                                context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
+                                frame,
+                            );
+                        }
                     }
                 }
             }
