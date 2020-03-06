@@ -2,6 +2,10 @@ version: '{build}'
 clone_depth: 10
 environment:
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: macOS
+      HOST: x86_64-apple-darwin
+      TARGET: x86_64-apple-darwin
+      MODE: release
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       HOST: x86_64-unknown-linux-gnu
       TARGET: wasm32-unknown-unknown
@@ -15,10 +19,6 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
       HOST: x86_64-unknown-linux-gnu
       TARGET: x86_64-unknown-linux-gnu
-      MODE: release
-    - APPVEYOR_BUILD_WORKER_IMAGE: macOS
-      HOST: x86_64-apple-darwin
-      TARGET: x86_64-apple-darwin
       MODE: release
 
 for:
