@@ -1,6 +1,7 @@
 # slime99
 
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/gitlab/stevebob/slime99?branch=master&svg=true)](https://ci.appveyor.com/project/stevebob/slime99)
+[![dependency status](https://deps.rs/repo/github/stevebob/slime99/status.svg)](https://deps.rs/repo/github/stevebob/slime99)
 
 In the not-too-distant future, the year 1999, fallout from **THE WAR** has caused
 **RADIOACTIVE MUTANT SLIMES** to appear in the sewers of **THE CITY**. You are a
