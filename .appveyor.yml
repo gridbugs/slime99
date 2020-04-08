@@ -86,7 +86,7 @@ for:
       - sh: >-
           sudo apt-get update
 
-          sudo apt-get install libasound2-dev
+          sudo apt-get -y install libasound2-dev
 
           curl -sSf https://sh.rustup.rs | sh -s -- --quiet --default-host $HOST --default-toolchain stable --profile minimal -y
 
