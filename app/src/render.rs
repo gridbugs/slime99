@@ -2,8 +2,8 @@ use crate::{blink::Blink, depth, game::GameStatus, ui};
 use direction::CardinalDirection;
 use game::{ActionError, CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
 use line_2d::{Config as LineConfig, LineSegment};
-use prototty::render::{blend_mode, ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
-use prototty::text::{wrap, StringView, StringViewSingleLine};
+use chargrid::render::{blend_mode, ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
+use chargrid::text::{wrap, StringView, StringViewSingleLine};
 use std::time::Duration;
 
 #[derive(Clone, Copy)]

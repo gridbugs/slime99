@@ -1,6 +1,6 @@
 use game::player::{Ability, AbilityTable, AbilityTarget, Attack, Deck, Defend, Player, Tech, EMPTY_ATTACK};
-use prototty::render::{ColModify, Coord, Frame, Rgb24, Style, View, ViewContext};
-use prototty::text::StringViewSingleLine;
+use chargrid::render::{ColModify, Coord, Frame, Rgb24, Style, View, ViewContext};
+use chargrid::text::StringViewSingleLine;
 
 fn write_attack(attack: Attack, s: &mut String) {
     use std::fmt::Write;

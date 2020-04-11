@@ -7,7 +7,7 @@ members = [
     "procgen",
     "rand-range",
     "game",
-    "prototty",
+    "app",
     "native",
     "graphical",
     "ansi-terminal",
@@ -18,19 +18,15 @@ members = [
 lto = true
 
 [patch.crates-io]
-prototty_audio = { git = "https://github.com/stevebob/prototty" }
-prototty_native_audio = { git = "https://github.com/stevebob/prototty" }
-prototty_render = { git = "https://github.com/stevebob/prototty" }
-prototty_input = { git = "https://github.com/stevebob/prototty" }
-prototty_app = { git = "https://github.com/stevebob/prototty" }
-prototty_graphical = { git = "https://github.com/stevebob/prototty" }
-prototty_graphical_gfx = { git = "https://github.com/stevebob/prototty" }
-prototty_ansi_terminal = { git = "https://github.com/stevebob/prototty" }
-prototty_web = { git = "https://github.com/stevebob/prototty" }
-prototty_storage = { git = "https://github.com/stevebob/prototty" }
-prototty_file_storage = { git = "https://github.com/stevebob/prototty" }
-prototty_event_routine = { git = "https://github.com/stevebob/prototty" }
-prototty_decorator = { git = "https://github.com/stevebob/prototty" }
-prototty_text = { git = "https://github.com/stevebob/prototty" }
-prototty = { git = "https://github.com/stevebob/prototty" }
-wgpu = { git = "https://github.com/gfx-rs/wgpu-rs", rev = "c176e5d6e415a4d7769c7dd02c0f63cd747ca2db" }
+chargrid_render = { git = "https://github.com/stevebob/chargrid" }
+chargrid_input = { git = "https://github.com/stevebob/chargrid" }
+chargrid_app = { git = "https://github.com/stevebob/chargrid" }
+chargrid_graphical = { git = "https://github.com/stevebob/chargrid" }
+chargrid_graphical_gfx = { git = "https://github.com/stevebob/chargrid" }
+chargrid_ansi_terminal = { git = "https://github.com/stevebob/chargrid" }
+chargrid_web = { git = "https://github.com/stevebob/chargrid" }
+chargrid_event_routine = { git = "https://github.com/stevebob/chargrid" }
+chargrid_decorator = { git = "https://github.com/stevebob/chargrid" }
+chargrid_text = { git = "https://github.com/stevebob/chargrid" }
+chargrid = { git = "https://github.com/stevebob/chargrid" }
+wgpu_glyph = { git = "https://github.com/hecrj/wgpu_glyph", rev = "5fc683fabaaacf924abaf5fa0da08ab3b91a03ed" }

@@ -1,5 +1,5 @@
 [package]
-name = "slime99_prototty"
+name = "slime99_app"
 version = "0.1.0"
 authors = ["Stephen Sherratt <stephen@sherra.tt>"]
 edition = "2018"
@@ -8,11 +8,11 @@ edition = "2018"
 wasm = ["rand/wasm-bindgen"]
 
 [dependencies]
-log = "0.4"
-prototty = { version = "0.29", features = ["serialize"] }
-prototty_storage = { version = "0.29", features = ["bincode", "json"] }
-prototty_audio = { version = "0.29" }
 game = { path = "../game" }
+log = "0.4"
+chargrid = { version = "0.1", features = ["serialize"] }
+general_storage = { version = "0.1", features = ["bincode", "json"] }
+general_audio = "0.1"
 serde = { version = "1.0", features = ["serde_derive"] }
 rand = "0.7"
 rand_isaac = { version = "0.2", features = ["serde1"] }

@@ -5,13 +5,13 @@ authors = ["Stephen Sherratt <stephen@sherra.tt>"]
 edition = "2018"
 
 [features]
-default = ["prototty_graphical"]
-force_vulkan = ["prototty_graphical/force_vulkan"]
+default = ["chargrid_graphical"]
+force_vulkan = ["chargrid_graphical/force_vulkan"]
 force_dedicated_audio_thread = ["slime99_native/force_dedicated_audio_thread"]
 
 [dependencies]
-env_logger = "0.7"
-prototty_graphical = { version = "0.29", optional = true }
-prototty_graphical_gfx = { version = "0.29", optional = true }
-slime99_prototty = { path = "../prototty" }
+slime99_app = { path = "../app" }
 slime99_native = { path = "../native" }
+env_logger = "0.7"
+chargrid_graphical = { version = "0.1", optional = true }
+chargrid_graphical_gfx = { version = "0.1", optional = true }

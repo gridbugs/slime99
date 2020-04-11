@@ -1,9 +1,9 @@
-use prototty_file_storage::IfDirectoryMissing;
-pub use prototty_file_storage::{FileStorage, Storage};
-use prototty_native_audio::{Error as NativeAudioError, NativeAudioPlayer};
+use general_audio_native::{Error as NativeAudioError, NativeAudioPlayer};
+use general_storage_file::IfDirectoryMissing;
+pub use general_storage_file::{FileStorage, Storage};
 pub use simon;
 use simon::*;
-use slime99_prototty::{Controls, GameConfig, Omniscient, RngSeed};
+use slime99_app::{Controls, GameConfig, Omniscient, RngSeed};
 use std::env;
 use std::fs::File;
 use std::io::Read;

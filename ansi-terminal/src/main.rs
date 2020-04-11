@@ -1,7 +1,7 @@
-use prototty_ansi_terminal::{col_encode, Context};
+use chargrid_ansi_terminal::{col_encode, Context};
 use rand::Rng;
+use slime99_app::{app, AutoPlay, EnvNull, Frontend, RngSeed};
 use slime99_native::{simon::*, NativeCommon};
-use slime99_prototty::{app, AutoPlay, EnvNull, Frontend, RngSeed};
 
 #[derive(Clone)]
 enum ColEncodeChoice {

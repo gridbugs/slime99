@@ -63,7 +63,7 @@ for:
 
           copy target\%TARGET_DIR%\slime99_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%.exe
 
-          cargo build %RELEASE_FLAG% --manifest-path=graphical/Cargo.toml --no-default-features --features=prototty_graphical_gfx
+          cargo build %RELEASE_FLAG% --manifest-path=graphical/Cargo.toml --no-default-features --features=chargrid_graphical_gfx
 
           copy target\%TARGET_DIR%\slime99_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%-opengl.exe
 
@@ -108,7 +108,7 @@ for:
             NAME_SUFFIX="-debug"
           fi
 
-          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=prototty_graphical_gfx
+          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=chargrid_graphical_gfx
 
           mv -v target/$TARGET_DIR/slime99_graphical{,_opengl}
 
@@ -216,7 +216,7 @@ for:
             NAME_SUFFIX="-debug"
           fi
 
-          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=prototty_graphical_gfx
+          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=chargrid_graphical_gfx
 
           mv -v target/$TARGET_DIR/slime99_graphical{,_opengl}
 
