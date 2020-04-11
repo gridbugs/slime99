@@ -17,7 +17,7 @@ const CELL_SIZE: f64 = 16.;
 #[cfg(target_os = "windows")]
 mod graphical_env {
     use super::graphical::WindowHandle;
-    use slime99_chargrid::Env;
+    use slime99_app::Env;
     use std::cell::RefCell;
     pub struct GraphicalEnv {
         window_handle: WindowHandle,
