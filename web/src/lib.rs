@@ -1,6 +1,6 @@
 use chargrid_web::{Context, Size};
 use general_audio_static::{backend::WebAudioPlayer, StaticAudioPlayer};
-use general_storage_web::LocalStorage;
+use general_storage_static::{backend::LocalStorage, StaticStorage};
 use slime99_app::{app, AutoPlay, Controls, EnvNull, Frontend, GameConfig, RngSeed};
 use wasm_bindgen::prelude::*;
 
@@ -11,7 +11,7 @@ pub fn run() -> Result<(), JsValue> {
     wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
     console_error_panic_hook::set_once();
     let audio_player = Some(StaticAudioPlayer::new(WebAudioPlayer::new_with_mime("video/ogg")));
-    let storage = LocalStorage::new();
+    let storage = StaticStorage::new(LocalStorage::new());
     let context = Context::new(Size::new(60, 40), "content");
     let app = app(
         GameConfig { omniscient: None },

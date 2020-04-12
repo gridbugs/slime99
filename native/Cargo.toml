@@ -12,5 +12,5 @@ slime99_app = { path = "../app", features = ["native"] }
 log = "0.4"
 simon = "0.3"
 serde_json = "1.0"
-general_storage_file = "0.1"
+general_storage_static = { version = "0.1", features = ["file"] }
 general_audio_static = { version = "0.1", features = ["native"] }

@@ -2,8 +2,8 @@ use general_audio_static::{
     backend::{Error as NativeAudioError, NativeAudioPlayer},
     StaticAudioPlayer,
 };
-use general_storage_file::IfDirectoryMissing;
-pub use general_storage_file::{FileStorage, Storage};
+use general_storage_static::backend::{FileStorage, IfDirectoryMissing};
+pub use general_storage_static::StaticStorage;
 pub use simon;
 use simon::*;
 use slime99_app::{AppAudioPlayer, Controls, GameConfig, Omniscient, RngSeed};
@@ -19,7 +19,7 @@ const DEFAULT_NEXT_TO_EXE_CONTROLS_FILE: &str = "controls.json";
 pub struct NativeCommon {
     pub rng_seed: RngSeed,
     pub save_file: String,
-    pub file_storage: FileStorage,
+    pub file_storage: StaticStorage,
     pub controls: Controls,
     pub audio_player: AppAudioPlayer,
     pub game_config: GameConfig,
@@ -55,10 +55,10 @@ impl NativeCommon {
                         .to_path_buf()
                 };
                 let controls = read_controls_file(&controls_file).unwrap_or_else(Controls::default);
-                let mut file_storage = FileStorage::next_to_exe(
+                let mut file_storage = StaticStorage::new(FileStorage::next_to_exe(
                     &save_dir,
                     IfDirectoryMissing::Create,
-                ).expect("failed to open directory");
+                ).expect("failed to open directory"));
                 if delete_save {
                     let result = file_storage.remove(&save_file);
                     if result.is_err() {

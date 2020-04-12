@@ -919,9 +919,9 @@ dependencies = [
 
 [[package]]
 name = "general_audio_static"
-version = "0.1.4"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df7cd5a26b6cd68d2ef05d20efd575520bb1db749b63b7f81a309debace69640"
+checksum = "753caac318d2e459dbd9d147318f8c21dadd3b4d2b04a098aa76cc60e2146d74"
 dependencies = [
  "general_audio",
  "general_audio_native",
@@ -958,6 +958,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebd9dd22447da4f568a45dd1e347cec8320b68e6ecf3b2e9e1ba8b92537a20f0"
 dependencies = [
  "general_storage",
+]
+
+[[package]]
+name = "general_storage_static"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47179369d137e7e4c7e4f36da3e733ae1cb22937a1b856126f86b0305f38941d"
+dependencies = [
+ "general_storage",
+ "general_storage_file",
+ "general_storage_web",
 ]
 
 [[package]]
@@ -2451,7 +2462,7 @@ dependencies = [
  "direction",
  "game",
  "general_audio_static",
- "general_storage",
+ "general_storage_static",
  "line_2d",
  "log",
  "maplit",
@@ -2476,7 +2487,7 @@ name = "slime99_native"
 version = "0.1.0"
 dependencies = [
  "general_audio_static",
- "general_storage_file",
+ "general_storage_static",
  "log",
  "serde_json",
  "simon",
@@ -2490,7 +2501,7 @@ dependencies = [
  "chargrid_web",
  "console_error_panic_hook",
  "general_audio_static",
- "general_storage_web",
+ "general_storage_static",
  "log",
  "slime99_app",
  "wasm-bindgen",

@@ -9,11 +9,10 @@ use direction::{CardinalDirection, Direction};
 use game::{player::Ability, ActionError, CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
 pub use game::{AbilityChoice, Config as GameConfig, Input as GameInput, Omniscient};
 use general_audio_static::{AudioHandle, AudioPlayer};
-use general_storage::{format, Storage};
+use general_storage_static::{format, StaticStorage};
 use rand::{Rng, SeedableRng};
 use rand_isaac::Isaac64Rng;
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 use std::time::Duration;
 
 const CONFIG_KEY: &str = "config.json";
@@ -180,12 +179,12 @@ impl GameInstance {
     }
 }
 
-pub struct GameData<S: Storage> {
+pub struct GameData {
     instance: Option<GameInstance>,
     controls: Controls,
     rng_seed_source: RngSeedSource,
     last_aim_with_mouse: bool,
-    storage_wrapper: StorageWrapper<S>,
+    storage_wrapper: StorageWrapper,
     audio_player: AppAudioPlayer,
     audio_table: AudioTable,
     game_config: GameConfig,
@@ -194,12 +193,12 @@ pub struct GameData<S: Storage> {
     config: Config,
 }
 
-struct StorageWrapper<S: Storage> {
-    storage: S,
+struct StorageWrapper {
+    storage: StaticStorage,
     save_key: String,
 }
 
-impl<S: Storage> StorageWrapper<S> {
+impl StorageWrapper {
     pub fn save_instance(&mut self, instance: &GameInstance) {
         self.storage
             .store(&self.save_key, instance, STORAGE_FORMAT)
@@ -231,11 +230,11 @@ impl RngSeedSource {
     }
 }
 
-impl<S: Storage> GameData<S> {
+impl GameData {
     pub fn new(
         game_config: GameConfig,
         controls: Controls,
-        storage: S,
+        storage: StaticStorage,
         save_key: String,
         audio_player: AppAudioPlayer,
         rng_seed: RngSeed,
@@ -362,23 +361,19 @@ impl<S: Storage> GameData<S> {
 
 pub struct NoGameInstance;
 
-pub struct ExamineEventRoutine<S: Storage> {
-    s: PhantomData<S>,
+pub struct ExamineEventRoutine {
     screen_coord: Coord,
 }
 
-impl<S: Storage> ExamineEventRoutine<S> {
+impl ExamineEventRoutine {
     pub fn new(screen_coord: Coord) -> Self {
-        Self {
-            s: PhantomData,
-            screen_coord,
-        }
+        Self { screen_coord }
     }
 }
 
-impl<S: Storage> EventRoutine for ExamineEventRoutine<S> {
+impl EventRoutine for ExamineEventRoutine {
     type Return = ();
-    type Data = GameData<S>;
+    type Data = GameData;
     type View = GameView;
     type Event = CommonEvent;
 
@@ -499,25 +494,23 @@ impl<S: Storage> EventRoutine for ExamineEventRoutine<S> {
     }
 }
 
-pub struct AimEventRoutine<S: Storage> {
-    s: PhantomData<S>,
+pub struct AimEventRoutine {
     screen_coord: ScreenCoord,
     duration: Duration,
 }
 
-impl<S: Storage> AimEventRoutine<S> {
+impl AimEventRoutine {
     pub fn new(screen_coord: ScreenCoord) -> Self {
         Self {
-            s: PhantomData,
             screen_coord,
             duration: Duration::from_millis(0),
         }
     }
 }
 
-impl<S: Storage> EventRoutine for AimEventRoutine<S> {
+impl EventRoutine for AimEventRoutine {
     type Return = Option<Coord>;
-    type Data = GameData<S>;
+    type Data = GameData;
     type View = GameView;
     type Event = CommonEvent;
 
@@ -647,20 +640,18 @@ impl<S: Storage> EventRoutine for AimEventRoutine<S> {
     }
 }
 
-pub struct GameEventRoutine<S: Storage> {
-    s: PhantomData<S>,
+pub struct GameEventRoutine {
     injected_inputs: Vec<InjectedInput>,
     mouse_coord: Option<Coord>,
     action_error: Option<ActionError>,
 }
 
-impl<S: Storage> GameEventRoutine<S> {
+impl GameEventRoutine {
     pub fn new() -> Self {
         Self::new_injecting_inputs(Vec::new())
     }
     pub fn new_injecting_inputs(injected_inputs: Vec<InjectedInput>) -> Self {
         Self {
-            s: PhantomData,
             injected_inputs,
             mouse_coord: None,
             action_error: None,
@@ -677,9 +668,9 @@ pub enum GameReturn {
     Examine,
 }
 
-impl<S: Storage> EventRoutine for GameEventRoutine<S> {
+impl EventRoutine for GameEventRoutine {
     type Return = GameReturn;
-    type Data = GameData<S>;
+    type Data = GameData;
     type View = GameView;
     type Event = CommonEvent;
 
@@ -847,23 +838,21 @@ impl<S: Storage> EventRoutine for GameEventRoutine<S> {
     }
 }
 
-pub struct GameOverEventRoutine<S: Storage> {
-    s: PhantomData<S>,
+pub struct GameOverEventRoutine {
     duration: Duration,
 }
 
-impl<S: Storage> GameOverEventRoutine<S> {
+impl GameOverEventRoutine {
     pub fn new() -> Self {
         Self {
-            s: PhantomData,
             duration: Duration::from_millis(0),
         }
     }
 }
 
-impl<S: Storage> EventRoutine for GameOverEventRoutine<S> {
+impl EventRoutine for GameOverEventRoutine {
     type Return = ();
-    type Data = GameData<S>;
+    type Data = GameData;
     type View = GameView;
     type Event = CommonEvent;
 
