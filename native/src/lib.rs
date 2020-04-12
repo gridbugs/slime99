@@ -1,9 +1,12 @@
-use general_audio_native::{Error as NativeAudioError, NativeAudioPlayer};
+use general_audio_static::{
+    backend::{Error as NativeAudioError, NativeAudioPlayer},
+    StaticAudioPlayer,
+};
 use general_storage_file::IfDirectoryMissing;
 pub use general_storage_file::{FileStorage, Storage};
 pub use simon;
 use simon::*;
-use slime99_app::{Controls, GameConfig, Omniscient, RngSeed};
+use slime99_app::{AppAudioPlayer, Controls, GameConfig, Omniscient, RngSeed};
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -18,7 +21,7 @@ pub struct NativeCommon {
     pub save_file: String,
     pub file_storage: FileStorage,
     pub controls: Controls,
-    pub audio_player: Option<NativeAudioPlayer>,
+    pub audio_player: AppAudioPlayer,
     pub game_config: GameConfig,
 }
 
@@ -64,7 +67,7 @@ impl NativeCommon {
                 }
                 let audio_player = if audio {
                     match NativeAudioPlayer::try_new_default_device() {
-                        Ok(audio_player) => Some(audio_player),
+                        Ok(audio_player) => Some(StaticAudioPlayer::new(audio_player)),
                         Err(NativeAudioError::NoOutputDevice) => {
                             log::warn!("no output audio device - continuing without audio");
                             None

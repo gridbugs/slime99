@@ -1,6 +1,10 @@
-use general_audio::AudioPlayer;
+use general_audio_static::{AudioPlayer, StaticAudioPlayer, StaticHandle, StaticSound};
 use maplit::hashmap;
 use std::collections::HashMap;
+
+pub type AppAudioPlayer = Option<StaticAudioPlayer>;
+pub type AppSound = Option<StaticSound>;
+pub type AppHandle = Option<StaticHandle>;
 
 const GAMEPLAY0: &[u8] = include_bytes!("./audio/Terminant.ogg");
 const GAMEPLAY1: &[u8] = include_bytes!("./audio/Disconnected.ogg");
@@ -21,12 +25,12 @@ pub enum Audio {
     Explosion,
 }
 
-pub struct AudioTable<A: AudioPlayer> {
-    map: HashMap<Audio, A::Sound>,
+pub struct AudioTable {
+    map: HashMap<Audio, AppSound>,
 }
 
-impl<A: AudioPlayer> AudioTable<A> {
-    pub fn new(audio_player: &A) -> Self {
+impl AudioTable {
+    pub fn new(audio_player: &AppAudioPlayer) -> Self {
         let map = hashmap![
             Audio::Gameplay0 => audio_player.load_sound(GAMEPLAY0),
             Audio::Gameplay1 => audio_player.load_sound(GAMEPLAY1),
@@ -38,7 +42,7 @@ impl<A: AudioPlayer> AudioTable<A> {
         ];
         Self { map }
     }
-    pub fn get(&self, audio: Audio) -> &A::Sound {
+    pub fn get(&self, audio: Audio) -> &AppSound {
         self.map.get(&audio).unwrap()
     }
 }

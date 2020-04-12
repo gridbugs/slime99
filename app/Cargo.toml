@@ -5,14 +5,15 @@ authors = ["Stephen Sherratt <stephen@sherra.tt>"]
 edition = "2018"
 
 [features]
-wasm = ["rand/wasm-bindgen"]
+native = ["general_audio_static/native"]
+web = ["general_audio_static/web", "rand/wasm-bindgen"]
 
 [dependencies]
 game = { path = "../game" }
 log = "0.4"
 chargrid = { version = "0.1", features = ["serialize"] }
 general_storage = { version = "0.1", features = ["bincode", "json"] }
-general_audio = "0.1"
+general_audio_static = "0.1"
 serde = { version = "1.0", features = ["serde_derive"] }
 rand = "0.7"
 rand_isaac = { version = "0.2", features = ["serde1"] }
