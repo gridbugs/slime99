@@ -257,7 +257,8 @@ dependencies = [
 [[package]]
 name = "chargrid"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fdbfa129fd29c0cee2d0749be0889ea541a09326f660ac795bed12f792f622e"
 dependencies = [
  "chargrid_app",
  "chargrid_decorator",
@@ -271,7 +272,8 @@ dependencies = [
 [[package]]
 name = "chargrid_ansi_terminal"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60c114f43753e7d8db4dc67a9abc7c422538f13364bfa193f18ddd5628ff5f53"
 dependencies = [
  "chargrid_app",
  "chargrid_input",
@@ -283,7 +285,8 @@ dependencies = [
 [[package]]
 name = "chargrid_app"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30ddaf0904ce378ff4c0bc4d6f5e8c0c7f2786382c89a829b551a1c0f53b2be3"
 dependencies = [
  "chargrid_input",
  "chargrid_render",
@@ -292,7 +295,8 @@ dependencies = [
 [[package]]
 name = "chargrid_decorator"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a554ff7b471c33d8601afe4c3f50a23ffe9bdf95e2fa88ec7c9187bec5e0f02"
 dependencies = [
  "chargrid_render",
  "serde",
@@ -301,7 +305,8 @@ dependencies = [
 [[package]]
 name = "chargrid_event_routine"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b2a86a74f3aca719e3e496650558956cd7a18536afa94ee9994321adf41841"
 dependencies = [
  "chargrid_app",
  "chargrid_input",
@@ -312,7 +317,8 @@ dependencies = [
 [[package]]
 name = "chargrid_graphical"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52c9e8313703f0c03e825fbe188d96b709afd1115a8de40520e62d4d0a5e9310"
 dependencies = [
  "chargrid_app",
  "chargrid_graphical_common",
@@ -330,12 +336,14 @@ dependencies = [
 [[package]]
 name = "chargrid_graphical_common"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90bb5dbfccafe2512439abd449aae4e189fb323220e3a54823856e1900aa607c"
 
 [[package]]
 name = "chargrid_graphical_gfx"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "feadfcff8b64b93b9b96a39f8eee064695d7b434c3510feb1392ea7e89cbc6c8"
 dependencies = [
  "chargrid_app",
  "chargrid_graphical_common",
@@ -352,7 +360,8 @@ dependencies = [
 [[package]]
 name = "chargrid_input"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdf5ac4349e0484ef8635225d620d0e787884d3266b8fff69d8d6271a2e23d0b"
 dependencies = [
  "coord_2d",
  "serde",
@@ -361,7 +370,8 @@ dependencies = [
 [[package]]
 name = "chargrid_menu"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d323bc832fb1e7540c1b6eea53f3c4181784eb31004f028da70c73a4ed716cfa"
 dependencies = [
  "chargrid_event_routine",
  "chargrid_input",
@@ -373,7 +383,8 @@ dependencies = [
 [[package]]
 name = "chargrid_render"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c0f540f652c5083de8b5864783f9131e08c8acf96ab41d08ce85e2e6f665912"
 dependencies = [
  "coord_2d",
  "grid_2d",
@@ -384,7 +395,8 @@ dependencies = [
 [[package]]
 name = "chargrid_text"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea15a83575bf3d60627bfcb37d53fa50fe8e6b6bb71ad9e7089f654958f75069"
 dependencies = [
  "chargrid_render",
  "serde",
@@ -393,7 +405,8 @@ dependencies = [
 [[package]]
 name = "chargrid_web"
 version = "0.1.0"
-source = "git+https://github.com/stevebob/chargrid#58b2590fac71bd5b32e8caa909a7fcde043bfd1a"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aa7c0f0464d1faf8adf3a99a25235624b96636312c1805f910ed81244865794"
 dependencies = [
  "chargrid_app",
  "chargrid_input",
@@ -3028,7 +3041,8 @@ dependencies = [
 [[package]]
 name = "wgpu_glyph"
 version = "0.8.0"
-source = "git+https://github.com/hecrj/wgpu_glyph?rev=5fc683fabaaacf924abaf5fa0da08ab3b91a03ed#5fc683fabaaacf924abaf5fa0da08ab3b91a03ed"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fabe70968bf2cadd4055d2f36c38233936c3344db4597c542ec185df05dd97a"
 dependencies = [
  "glyph_brush",
  "log",
