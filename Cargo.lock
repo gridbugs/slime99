@@ -2431,9 +2431,9 @@ checksum = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 
 [[package]]
 name = "simon"
-version = "0.3.7"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfa1eef1f84dda8445131708b9fa393d9d1ca4f843972ec4fdd182d28f1a9fea"
+checksum = "b2386cddce383b3e6b1cc51033bf078cce0afd0ab0afbb012988676f553fba23"
 dependencies = [
  "getopts",
 ]
