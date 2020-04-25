@@ -13,7 +13,7 @@ game = { path = "../game" }
 log = "0.4"
 chargrid = { version = "0.1", features = ["serialize"] }
 general_storage_static = { version = "0.1", features = ["bincode", "json"] }
-general_audio_static = "0.1"
+general_audio_static = "0.2"
 serde = { version = "1.0", features = ["serde_derive"] }
 rand = "0.7"
 rand_isaac = { version = "0.2", features = ["serde1"] }
