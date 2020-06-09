@@ -28,7 +28,9 @@ module.exports = async (env, argv) => {
         TextDecoder: ['text-encoding', 'TextDecoder'],
         TextEncoder: ['text-encoding', 'TextEncoder']
       }),
-      new CopyWebpackPlugin([{ from: "static_web" }]),
+      new CopyWebpackPlugin({
+        patterns: [{ from: "static_web" }],
+      }),
     ],
     devServer: {
       disableHostCheck: true,
