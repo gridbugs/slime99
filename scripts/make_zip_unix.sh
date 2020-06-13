@@ -8,9 +8,6 @@ TMP=$(mktemp -d)
 mkdir $TMP/$ZIP_NAME
 cp -v target/$MODE/slime99_graphical $TMP/$ZIP_NAME/slime99-graphical
 cp -v target/$MODE/slime99_ansi_terminal $TMP/$ZIP_NAME/slime99-terminal
-if [ -f target/$MODE/slime99_graphical_opengl ]; then
-  cp -v target/$MODE/slime99_graphical_opengl $TMP/$ZIP_NAME/slime99-graphical-opengl
-fi
 
 cp -v extras/unix/* $TMP/$ZIP_NAME
 

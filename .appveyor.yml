@@ -59,13 +59,7 @@ for:
 
           cargo build %RELEASE_FLAG% --manifest-path=graphical/Cargo.toml
 
-          echo copy target\%TARGET_DIR%\slime99_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%.exe
-
           copy target\%TARGET_DIR%\slime99_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%.exe
-
-          cargo build %RELEASE_FLAG% --manifest-path=graphical/Cargo.toml --no-default-features --features=chargrid_graphical_gfx
-
-          copy target\%TARGET_DIR%\slime99_graphical.exe tmp\%FULL_NAME%\%BIN_NAME%-opengl.exe
 
           powershell.exe -nologo -noprofile -command "& { Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::CreateFromDirectory('tmp', '%FULL_NAME%.zip'); }"
 
@@ -108,15 +102,9 @@ for:
             NAME_SUFFIX="-debug"
           fi
 
-          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=chargrid_graphical_gfx
-
-          mv -v target/$TARGET_DIR/slime99_graphical{,_opengl}
-
           cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml
 
           cargo build $RELEASE_FLAG --manifest-path=ansi-terminal/Cargo.toml
-
-          strip -v target/$TARGET_DIR/slime99_graphical_opengl
 
           strip -v target/$TARGET_DIR/slime99_graphical
 
@@ -216,15 +204,9 @@ for:
             NAME_SUFFIX="-debug"
           fi
 
-          cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml --no-default-features --features=chargrid_graphical_gfx
-
-          mv -v target/$TARGET_DIR/slime99_graphical{,_opengl}
-
           cargo build $RELEASE_FLAG --manifest-path=graphical/Cargo.toml
 
           cargo build $RELEASE_FLAG --manifest-path=ansi-terminal/Cargo.toml
-
-          strip -v target/$TARGET_DIR/slime99_graphical_opengl
 
           strip -v target/$TARGET_DIR/slime99_graphical
 
