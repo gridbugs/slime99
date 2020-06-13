@@ -1,16 +1,9 @@
 #![windows_subsystem = "windows"]
-#[cfg(feature = "chargrid_graphical")]
 use chargrid_graphical as graphical;
-#[cfg(feature = "chargrid_graphical_gfx")]
-use chargrid_graphical_gfx as graphical;
 use slime99_app::{app, AutoPlay, Frontend, Fullscreen};
 use slime99_native::{simon::*, NativeCommon};
 
-#[cfg(feature = "chargrid_graphical")]
 const FULLSCREEN_SUPPORTED: bool = true;
-
-#[cfg(feature = "chargrid_graphical_gfx")]
-const FULLSCREEN_SUPPORTED: bool = false;
 
 const CELL_SIZE: f64 = 16.;
 
