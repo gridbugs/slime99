@@ -760,27 +760,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "game"
-version = "0.1.0"
-dependencies = [
- "direction",
- "ecs",
- "grid_2d",
- "grid_search_cardinal",
- "line_2d",
- "log",
- "procgen",
- "rand",
- "rand_isaac",
- "rand_range",
- "rational",
- "rgb24",
- "serde",
- "shadowcast",
- "vector",
-]
-
-[[package]]
 name = "general_audio"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2139,7 +2118,6 @@ version = "0.1.0"
 dependencies = [
  "chargrid",
  "direction",
- "game",
  "general_audio_static",
  "general_storage_static",
  "line_2d",
@@ -2148,6 +2126,28 @@ dependencies = [
  "rand",
  "rand_isaac",
  "serde",
+ "slime99_game",
+]
+
+[[package]]
+name = "slime99_game"
+version = "0.1.0"
+dependencies = [
+ "direction",
+ "ecs",
+ "grid_2d",
+ "grid_search_cardinal",
+ "line_2d",
+ "log",
+ "procgen",
+ "rand",
+ "rand_isaac",
+ "rand_range",
+ "rational",
+ "rgb24",
+ "serde",
+ "shadowcast",
+ "vector",
 ]
 
 [[package]]

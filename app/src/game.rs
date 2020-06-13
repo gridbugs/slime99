@@ -6,13 +6,13 @@ use chargrid::event_routine::common_event::*;
 use chargrid::event_routine::*;
 use chargrid::input::*;
 use direction::{CardinalDirection, Direction};
-use game::{player::Ability, ActionError, CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
-pub use game::{AbilityChoice, Config as GameConfig, Input as GameInput, Omniscient};
 use general_audio_static::{AudioHandle, AudioPlayer};
 use general_storage_static::{format, StaticStorage};
 use rand::{Rng, SeedableRng};
 use rand_isaac::Isaac64Rng;
 use serde::{Deserialize, Serialize};
+use slime99_game::{player::Ability, ActionError, CharacterInfo, ExternalEvent, Game, GameControlFlow, Music};
+pub use slime99_game::{AbilityChoice, Config as GameConfig, Input as GameInput, Omniscient};
 use std::time::Duration;
 
 const CONFIG_KEY: &str = "config.json";

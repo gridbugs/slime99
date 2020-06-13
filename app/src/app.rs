@@ -14,11 +14,11 @@ use chargrid::*;
 use common_event::*;
 use decorator::*;
 use event_routine::*;
-use game::player::Ability;
 use general_storage_static::StaticStorage;
 use maplit::hashmap;
 use menu::{fade_spec, FadeMenuInstanceView, MenuEntryStringFn, MenuEntryToRender, MenuInstanceChoose};
 use render::{ColModifyDefaultForeground, ColModifyMap, Coord, Rgb24, Style};
+use slime99_game::player::Ability;
 use std::collections::HashMap;
 
 #[derive(Clone, Copy)]

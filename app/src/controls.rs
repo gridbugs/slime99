@@ -1,6 +1,6 @@
-use game::CardinalDirection;
-use maplit::hashmap;
 use chargrid::input::KeyboardInput;
+use direction::CardinalDirection;
+use maplit::hashmap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

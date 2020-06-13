@@ -1,6 +1,6 @@
-use game::player::{Ability, AbilityTable, AbilityTarget, Attack, Deck, Defend, Player, Tech, EMPTY_ATTACK};
 use chargrid::render::{ColModify, Coord, Frame, Rgb24, Style, View, ViewContext};
 use chargrid::text::StringViewSingleLine;
+use slime99_game::player::{Ability, AbilityTable, AbilityTarget, Attack, Deck, Defend, Player, Tech, EMPTY_ATTACK};
 
 fn write_attack(attack: Attack, s: &mut String) {
     use std::fmt::Write;

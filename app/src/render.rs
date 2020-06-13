@@ -1,9 +1,9 @@
 use crate::{blink::Blink, depth, game::GameStatus, ui};
-use direction::CardinalDirection;
-use game::{ActionError, CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
-use line_2d::{Config as LineConfig, LineSegment};
 use chargrid::render::{blend_mode, ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
 use chargrid::text::{wrap, StringView, StringViewSingleLine};
+use direction::CardinalDirection;
+use line_2d::{Config as LineConfig, LineSegment};
+use slime99_game::{ActionError, CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
 use std::time::Duration;
 
 #[derive(Clone, Copy)]
@@ -102,13 +102,13 @@ impl GameView {
                         .view(
                             format!(
                                 "COMMANDER: The source of the slime is on the {}th floor.",
-                                game::FINAL_LEVEL
+                                slime99_game::FINAL_LEVEL
                             ),
                             context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
                             frame,
                         );
                     } else {
-                        if current_level == game::FINAL_LEVEL {
+                        if current_level == slime99_game::FINAL_LEVEL {
                             StringView::new(
                                 Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true),
                                 wrap::Word::new(),
@@ -120,7 +120,7 @@ impl GameView {
                             );
                         } else {
                             StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view(
-                                format!("Floor {}/{}", current_level, game::FINAL_LEVEL),
+                                format!("Floor {}/{}", current_level, slime99_game::FINAL_LEVEL),
                                 context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
                                 frame,
                             );
@@ -165,7 +165,7 @@ impl GameView {
                         exclude_start: true,
                         exclude_end: true,
                     }) {
-                        if !node.coord.is_valid(game::MAP_SIZE) {
+                        if !node.coord.is_valid(slime99_game::MAP_SIZE) {
                             break;
                         }
                         for &offset in &quad::OFFSETS {
@@ -181,7 +181,7 @@ impl GameView {
                         }
                     }
                 }
-                if aim_coord.is_valid(game::MAP_SIZE) {
+                if aim_coord.is_valid(slime99_game::MAP_SIZE) {
                     for &offset in &quad::OFFSETS {
                         let alpha = self.blink.alpha(blink_duration);
                         let output_coord = aim_coord * 2 + offset;
