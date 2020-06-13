@@ -12,4 +12,4 @@ force_dedicated_audio_thread = ["slime99_native/force_dedicated_audio_thread"]
 slime99_app = { path = "../app" }
 slime99_native = { path = "../native" }
 env_logger = "0.7"
-chargrid_graphical = 0.1
+chargrid_graphical = "0.1"
