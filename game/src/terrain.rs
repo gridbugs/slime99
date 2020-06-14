@@ -4,7 +4,7 @@ use crate::{
     world::{Layer, Location},
     World,
 };
-use ecs::{ComponentTable, Entity};
+use entity_table::{ComponentTable, Entity};
 use grid_2d::CoordIter;
 use grid_2d::{Coord, Size};
 use procgen::{Sewer, SewerCell, SewerSpec};

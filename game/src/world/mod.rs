@@ -1,5 +1,5 @@
 use crate::{terrain, visibility::Light, ExternalEvent};
-use ecs::{Entity, EntityAllocator};
+use entity_table::{Entity, EntityAllocator};
 use grid_2d::{Coord, Size};
 use rand::{
     seq::{IteratorRandom, SliceRandom},

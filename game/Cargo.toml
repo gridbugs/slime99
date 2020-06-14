@@ -13,7 +13,7 @@ rand = "0.7"
 rand_isaac = { version = "0.2", features = ["serde1"] }
 line_2d = { version = "0.4", features = ["serialize"] }
 rgb24 = { version = "0.2", features = ["serialize", "rand"] }
-ecs = { path = "../ecs" }
+entity_table = "0.1"
 vector = { path = "../vector" }
 rational = { path = "../rational" }
 rand_range = { path = "../rand-range" }

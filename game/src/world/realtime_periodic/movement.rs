@@ -9,7 +9,7 @@ use crate::{
     ExternalEvent,
 };
 use direction::Direction;
-use ecs::Entity;
+use entity_table::Entity;
 use line_2d::{InfiniteStepIter, StepIter};
 use rand::Rng;
 use serde::{Deserialize, Serialize};

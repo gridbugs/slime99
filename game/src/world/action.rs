@@ -9,8 +9,8 @@ use crate::{
     },
     VisibilityGrid,
 };
+use entity_table::Entity;
 use direction::{CardinalDirection, Direction};
-use ecs::Entity;
 use grid_2d::Coord;
 use rand::{seq::IteratorRandom, seq::SliceRandom, Rng};
 use std::collections::{HashSet, VecDeque};

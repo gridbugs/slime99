@@ -12,8 +12,8 @@ mod visibility;
 mod world;
 
 use behaviour::{Agent, BehaviourContext};
-use ecs::ComponentTable;
-pub use ecs::Entity;
+use entity_table::ComponentTable;
+pub use entity_table::Entity;
 use procgen::SewerSpec;
 use terrain::Terrain;
 pub use terrain::FINAL_LEVEL;

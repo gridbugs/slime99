@@ -654,18 +654,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52ba6eb47c2131e784a38b726eb54c1e1484904f013e576a25354d0124161af6"
 
 [[package]]
-name = "ecs"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "either"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
+
+[[package]]
+name = "entity_table"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f5ae694ef296ca0fa58d2faa080979061bf13f5d4b2af6d3fe0d13bb6708cd2"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "env_logger"
@@ -2134,7 +2135,7 @@ name = "slime99_game"
 version = "0.1.0"
 dependencies = [
  "direction",
- "ecs",
+ "entity_table",
  "grid_2d",
  "grid_search_cardinal",
  "line_2d",

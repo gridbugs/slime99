@@ -3,7 +3,7 @@ use crate::world::{
     ExternalEvent, World,
 };
 use direction::Direction;
-use ecs::Entity;
+use entity_table::Entity;
 use grid_2d::Coord;
 use line_2d::LineSegment;
 use rand::Rng;

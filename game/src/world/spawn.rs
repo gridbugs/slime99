@@ -14,7 +14,7 @@ use crate::{
         World,
     },
 };
-use ecs::Entity;
+use entity_table::Entity;
 use grid_2d::Coord;
 use rand::Rng;
 use rational::Rational;

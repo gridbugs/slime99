@@ -11,7 +11,7 @@ use crate::{
     },
     ExternalEvent,
 };
-use ecs::Entity;
+use entity_table::Entity;
 use rand::Rng;
 use rgb24::Rgb24;
 use serde::{Deserialize, Serialize};

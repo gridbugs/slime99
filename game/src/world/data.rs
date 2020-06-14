@@ -4,12 +4,12 @@ pub use crate::world::{
     player::{AbilityTarget, Player},
     spatial::{Layer, Location},
 };
+use entity_table::declare_entity_module;
 use direction::CardinalDirection;
-use ecs::ecs_components;
 use rgb24::Rgb24;
 use serde::{Deserialize, Serialize};
 
-ecs_components! {
+declare_entity_module! {
     components {
         tile: Tile,
         opacity: u8,

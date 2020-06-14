@@ -1,5 +1,5 @@
 use crate::{world::World, ExternalEvent};
-use ecs::Entity;
+use entity_table::Entity;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -39,7 +39,7 @@ macro_rules! realtime_periodic {
                 World,
                 realtime_periodic::core::{RealtimePeriodicState, ScheduledRealtimePeriodicState, TimeConsumingEvent}};
 
-            ecs::ecs_components! {
+            entity_table::declare_entity_module! {
                 components {
                     $($component_name: ScheduledRealtimePeriodicState<$component_type>,)*
                 }
@@ -53,7 +53,7 @@ macro_rules! realtime_periodic {
             impl RealtimeEntityEvents {
                 pub fn animate<R: Rng>(
                     self,
-                    entity: ecs::Entity,
+                    entity: entity_table::Entity,
                     world: &mut World,
                     external_events: &mut Vec<crate::ExternalEvent>,
                     rng: &mut R,

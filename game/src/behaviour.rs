@@ -1,6 +1,6 @@
 use crate::visibility::Visibility;
 use crate::world::{Disposition, NpcAction, World};
-use ecs::Entity;
+use entity_table::Entity;
 use grid_2d::{Coord, Grid, Size};
 use grid_search_cardinal::{
     best::{BestSearch, Context as BestSearchContext, Depth},

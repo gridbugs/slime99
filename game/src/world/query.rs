@@ -1,5 +1,5 @@
 use crate::world::{data::Tile, World};
-use ecs::Entity;
+use entity_table::Entity;
 use grid_2d::Coord;
 use line_2d::LineSegment;
 

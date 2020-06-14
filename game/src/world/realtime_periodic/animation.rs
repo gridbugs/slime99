@@ -2,7 +2,7 @@ use crate::{
     world::{realtime_periodic::core::TimeConsumingEvent, World},
     ExternalEvent,
 };
-use ecs::Entity;
+use entity_table::Entity;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;

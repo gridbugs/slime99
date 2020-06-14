@@ -8,7 +8,7 @@ use crate::{
     },
     ExternalEvent,
 };
-use ecs::Entity;
+use entity_table::Entity;
 use rand::{seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 

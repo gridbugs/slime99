@@ -1,4 +1,4 @@
-use ecs::{ComponentTable, ComponentTableEntries, Entity};
+use entity_table::{ComponentTable, ComponentTableEntries, Entity};
 use grid_2d::{Coord, Grid, Size};
 use serde::{Deserialize, Serialize};
 
