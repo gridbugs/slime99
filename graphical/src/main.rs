@@ -110,7 +110,7 @@ fn main() {
             },
         fullscreen,
     } = Args::arg().with_help_default().parse_env_or_exit();
-    let (context, window_handle) = Context::new_returning_window_handle(ContextDescriptor {
+    let context = Context::new(ContextDescriptor {
         font_bytes: FontBytes {
             normal: include_bytes!("./fonts/PxPlus_IBM_CGAthin-with-quadrant-blocks.ttf").to_vec(),
             bold: include_bytes!("./fonts/PxPlus_IBM_CGA-with-quadrant-blocks.ttf").to_vec(),
@@ -136,7 +136,7 @@ fn main() {
         underline_top_offset: 0.8,
     })
     .unwrap();
-    let env = GraphicalEnv::new(window_handle);
+    let env = GraphicalEnv::new(context.window_handle());
     let app = app(
         game_config,
         Frontend::Graphical,
