@@ -1,4 +1,4 @@
-use chargrid::input::KeyboardInput;
+use chargrid::input::{GamepadButton, KeyboardInput};
 use direction::CardinalDirection;
 use maplit::hashmap;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ pub enum AppInput {
 #[derive(Serialize, Deserialize)]
 pub struct Controls {
     keys: HashMap<KeyboardInput, AppInput>,
+    gamepad: HashMap<GamepadButton, AppInput>,
 }
 
 impl Controls {
@@ -45,10 +46,20 @@ impl Controls {
             KeyboardInput::Char('7') => AppInput::Ability(6),
             KeyboardInput::Char('8') => AppInput::Ability(7),
         ];
-        Self { keys }
+        let gamepad = hashmap![
+            GamepadButton::DPadLeft => AppInput::Move(CardinalDirection::West),
+            GamepadButton::DPadRight => AppInput::Move(CardinalDirection::East),
+            GamepadButton::DPadUp => AppInput::Move(CardinalDirection::North),
+            GamepadButton::DPadDown => AppInput::Move(CardinalDirection::South),
+        ];
+        Self { keys, gamepad }
     }
 
     pub fn get(&self, keyboard_input: KeyboardInput) -> Option<AppInput> {
         self.keys.get(&keyboard_input).cloned()
+    }
+
+    pub fn get_gamepad(&self, gamepad_input: GamepadButton) -> Option<AppInput> {
+        self.gamepad.get(&gamepad_input).cloned()
     }
 }

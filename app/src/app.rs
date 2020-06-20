@@ -316,7 +316,7 @@ impl EventRoutine for TextOverlay {
     {
         event_or_peek_with_handled(event_or_peek, self, |s, event| match event {
             CommonEvent::Input(input) => match input {
-                Input::Keyboard(_) => Handled::Return(()),
+                Input::Keyboard(_) | Input::Gamepad(_) => Handled::Return(()),
                 Input::Mouse(_) => Handled::Continue(s),
             },
             CommonEvent::Frame(_) => Handled::Continue(s),

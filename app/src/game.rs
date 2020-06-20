@@ -399,6 +399,7 @@ impl EventRoutine for ExamineEventRoutine {
             event_or_peek_with_handled(event_or_peek, self, |mut s, event| {
                 let examine = match event {
                     CommonEvent::Input(input) => match input {
+                        Input::Gamepad(_) => Examine::Ignore,
                         Input::Keyboard(keyboard_input) => {
                             if let Some(app_input) = controls.get(keyboard_input) {
                                 match app_input {
@@ -537,6 +538,7 @@ impl EventRoutine for AimEventRoutine {
             event_or_peek_with_handled(event_or_peek, self, |mut s, event| {
                 let aim = match event {
                     CommonEvent::Input(input) => match input {
+                        Input::Gamepad(_) => Aim::Ignore,
                         Input::Keyboard(keyboard_input) => {
                             if let Some(app_input) = controls.get(keyboard_input) {
                                 match app_input {
@@ -731,6 +733,36 @@ impl EventRoutine for GameEventRoutine {
             event_or_peek_with_handled(event_or_peek, self, |mut s, event| match event {
                 CommonEvent::Input(input) => {
                     match input {
+                        Input::Gamepad(gamepad_input) => match gamepad_input.button {
+                            GamepadButton::Start => return Handled::Return(GameReturn::Pause),
+                            other => {
+                                if !instance.game.is_gameplay_blocked() {
+                                    if let Some(app_input) = controls.get_gamepad(other) {
+                                        let game_control_flow = match app_input {
+                                            AppInput::Move(direction) => {
+                                                instance.game.handle_input(GameInput::Walk(direction), game_config)
+                                            }
+                                            _ => Ok(None),
+                                        };
+
+                                        match game_control_flow {
+                                            Err(error) => s.action_error = Some(error),
+                                            Ok(None) => s.action_error = None,
+                                            Ok(Some(game_control_flow)) => match game_control_flow {
+                                                GameControlFlow::Win => return Handled::Return(GameReturn::Win),
+                                                GameControlFlow::GameOver => {
+                                                    return Handled::Return(GameReturn::GameOver)
+                                                }
+                                                GameControlFlow::LevelChange(ability_choice) => {
+                                                    instance.level_change = Some(ability_choice.clone());
+                                                    return Handled::Return(GameReturn::LevelChange(ability_choice));
+                                                }
+                                            },
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         Input::Keyboard(keyboard_input) => {
                             if keyboard_input == keys::ESCAPE {
                                 return Handled::Return(GameReturn::Pause);
@@ -868,7 +900,7 @@ impl EventRoutine for GameOverEventRoutine {
         if let Some(instance) = data.instance.as_mut() {
             event_or_peek_with_handled(event_or_peek, self, |mut s, event| match event {
                 CommonEvent::Input(input) => match input {
-                    Input::Keyboard(_) => Handled::Return(()),
+                    Input::Keyboard(_) | Input::Gamepad(_) => Handled::Return(()),
                     Input::Mouse(_) => Handled::Continue(s),
                 },
                 CommonEvent::Frame(period) => {

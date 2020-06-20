@@ -9,4 +9,4 @@ slime99_native = { path = "../native" }
 slime99_app = { path = "../app" }
 env_logger = "0.7"
 rand = "0.7"
-chargrid_ansi_terminal = "0.1"
+chargrid_ansi_terminal = { version = "0.1", features = ["gamepad"] }
