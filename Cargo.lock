@@ -723,9 +723,9 @@ checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 
 [[package]]
 name = "entity_table"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f5ae694ef296ca0fa58d2faa080979061bf13f5d4b2af6d3fe0d13bb6708cd2"
+checksum = "e7815f3bf5de0872d21ad307c02cb134ebe1c5c9500187c209e1ce62fc2d2758"
 dependencies = [
  "serde",
 ]
@@ -2406,9 +2406,9 @@ dependencies = [
 
 [[package]]
 name = "spatial_table"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5732aaf1a0233523b2541ed77aaeabf9e83f7161cda3a3d5c48cc7333d8625a"
+checksum = "27b9217535cdf2ee98c926f1ae12e23c4a5a811b665bdf14442485d0736c2161"
 dependencies = [
  "entity_table",
  "grid_2d",
