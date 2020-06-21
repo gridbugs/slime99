@@ -3,14 +3,13 @@ use crate::{
         data::{DoorState, DropItemOnDeath, Item, OnCollision, OnDamage, ProjectileDamage, Tile},
         explosion, player,
         realtime_periodic::{core::ScheduledRealtimePeriodicState, movement},
-        spatial::Spatial,
-        spatial::{Layer, Location, OccupiedBy},
+        spatial::{Layer, Location, SpatialTable},
         ExternalEvent, World,
     },
     VisibilityGrid,
 };
-use entity_table::Entity;
 use direction::{CardinalDirection, Direction};
+use entity_table::Entity;
 use grid_2d::Coord;
 use rand::{seq::IteratorRandom, seq::SliceRandom, Rng};
 use std::collections::{HashSet, VecDeque};
@@ -61,7 +60,7 @@ impl World {
     }
 
     pub fn wait<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
-        if let Some(coord) = self.spatial.coord(entity) {
+        if let Some(coord) = self.spatial_table.coord_of(entity) {
             self.after_player_move(entity, coord, rng);
         }
     }
@@ -106,7 +105,7 @@ impl World {
         }
     }
     fn after_player_move<R: Rng>(&mut self, character: Entity, target_coord: Coord, rng: &mut R) {
-        if let Some(&cell) = self.spatial.get_cell(target_coord) {
+        if let Some(&cell) = self.spatial_table.layers_at(target_coord) {
             if let Some(floor_entity) = cell.floor {
                 if self.components.sludge.contains(floor_entity) {
                     self.apply_defend(character, rng);
@@ -132,13 +131,13 @@ impl World {
             }
             move_half_speed.skip_next_move = true;
         }
-        let current_coord = if let Some(coord) = self.spatial.coord(character) {
+        let current_coord = if let Some(coord) = self.spatial_table.coord_of(character) {
             coord
         } else {
             panic!("failed to find coord for {:?}", character);
         };
         let target_coord = current_coord + direction.coord();
-        if let Some(&cell) = self.spatial.get_cell(target_coord) {
+        if let Some(&cell) = self.spatial_table.layers_at(target_coord) {
             if let Some(feature_entity) = cell.feature {
                 if self.components.solid.contains(feature_entity) {
                     if let Some(DoorState::Closed) = self.components.door_state.get(feature_entity).cloned() {
@@ -151,7 +150,11 @@ impl World {
         } else {
             return Err(Error::WalkIntoSolidCell);
         }
-        if let Err(OccupiedBy(occupant)) = self.spatial.update_coord(character, target_coord) {
+        if let Err(occupant) = self
+            .spatial_table
+            .update_coord(character, target_coord)
+            .map_err(|e| e.unwrap_occupied_by())
+        {
             self.melee_attack(character, occupant, direction, rng);
         } else {
             if self.components.player.contains(character) {
@@ -184,10 +187,10 @@ impl World {
     }
 
     fn cleave<R: Rng>(&mut self, entity: Entity, damage: u32, rng: &mut R) {
-        let this_coord = self.spatial.coord(entity).unwrap();
+        let this_coord = self.spatial_table.coord_of(entity).unwrap();
         for direction in Direction::all() {
             let coord = this_coord + direction.coord();
-            if let Some(cell) = self.spatial.get_cell(coord) {
+            if let Some(cell) = self.spatial_table.layers_at(coord) {
                 if let Some(entity) = cell.character {
                     self.damage_character(entity, damage, rng);
                 }
@@ -197,10 +200,10 @@ impl World {
 
     fn skewer<R: Rng>(&mut self, entity: Entity, damage: u32, direction: CardinalDirection, rng: &mut R) {
         const RANGE: u32 = 4;
-        let mut coord = self.spatial.coord(entity).unwrap();
+        let mut coord = self.spatial_table.coord_of(entity).unwrap();
         for _ in 0..RANGE {
             coord += direction.coord();
-            if let Some(cell) = self.spatial.get_cell(coord) {
+            if let Some(cell) = self.spatial_table.layers_at(coord) {
                 if cell.feature.is_some() {
                     break;
                 }
@@ -230,7 +233,7 @@ impl World {
 
     fn teleport<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
         let maybe_coord = self
-            .spatial
+            .spatial_table
             .enumerate()
             .filter_map(|(coord, cell)| {
                 if let Some(floor_entity) = cell.floor {
@@ -249,7 +252,7 @@ impl World {
             })
             .choose(rng);
         if let Some(coord) = maybe_coord {
-            self.spatial.update_coord(entity, coord).unwrap();
+            self.spatial_table.update_coord(entity, coord).unwrap();
         }
     }
 
@@ -263,8 +266,8 @@ impl World {
         if let Some(defend) = player.defend.pop() {
             match defend {
                 Dodge => {
-                    if let Some(player_coord) = self.spatial.coord(victim) {
-                        if let Some(cell) = self.spatial.get_cell(player_coord) {
+                    if let Some(player_coord) = self.spatial_table.coord_of(victim) {
+                        if let Some(cell) = self.spatial_table.layers_at(player_coord) {
                             if let Some(floor) = cell.floor {
                                 if self.components.sludge.contains(floor) {
                                     return;
@@ -277,7 +280,7 @@ impl World {
                             .into_iter()
                             .filter_map(|d| {
                                 let coord = player_coord + d.coord();
-                                if let Some(cell) = self.spatial.get_cell(coord) {
+                                if let Some(cell) = self.spatial_table.layers_at(coord) {
                                     if cell.character.is_none() {
                                         if let Some(floor) = cell.floor {
                                             if self.components.sludge.contains(floor) {
@@ -333,7 +336,7 @@ impl World {
     }
 
     pub fn character_fire_bullet(&mut self, character: Entity, target: Coord) {
-        let character_coord = self.spatial.coord(character).unwrap();
+        let character_coord = self.spatial_table.coord_of(character).unwrap();
         if character_coord == target {
             return;
         }
@@ -342,7 +345,7 @@ impl World {
     }
 
     fn blink<R: Rng>(&mut self, entity: Entity, coord: Coord, rng: &mut R) {
-        self.spatial.update_coord(entity, coord).unwrap();
+        self.spatial_table.update_coord(entity, coord).unwrap();
         if self.components.player.contains(entity) {
             self.after_player_move(entity, coord, rng);
         }
@@ -360,7 +363,7 @@ impl World {
         if let Some(tech) = player.tech.peek() {
             match tech {
                 Blink => {
-                    if let Some(spatial_cell) = self.spatial.get_cell(coord) {
+                    if let Some(spatial_cell) = self.spatial_table.layers_at(coord) {
                         if spatial_cell.character.is_none() && visibility_grid.is_coord_currently_visible(coord) {
                             let can_blink = if let Some(feature) = spatial_cell.feature {
                                 !self.components.solid.contains(feature)
@@ -391,13 +394,13 @@ impl World {
     fn attract(&mut self, entity: Entity) {
         const RANGE: u32 = 12;
         const ATTRACT_BY: u32 = 4;
-        let this_coord = self.spatial.coord(entity).unwrap();
+        let this_coord = self.spatial_table.coord_of(entity).unwrap();
         let mut to_push_back = self
             .components
             .npc
             .entities()
             .filter_map(|entity| {
-                if let Some(coord) = self.spatial.coord(entity) {
+                if let Some(coord) = self.spatial_table.coord_of(entity) {
                     let distance2 = this_coord.distance2(coord);
                     if distance2 < RANGE * RANGE {
                         Some((entity, coord, distance2))
@@ -432,13 +435,13 @@ impl World {
     fn repel(&mut self, entity: Entity) {
         const RANGE: u32 = 12;
         const PUSH_BACK: u32 = 4;
-        let this_coord = self.spatial.coord(entity).unwrap();
+        let this_coord = self.spatial_table.coord_of(entity).unwrap();
         let mut to_push_back = self
             .components
             .npc
             .entities()
             .filter_map(|entity| {
-                if let Some(coord) = self.spatial.coord(entity) {
+                if let Some(coord) = self.spatial_table.coord_of(entity) {
                     let distance2 = this_coord.distance2(coord);
                     if distance2 < RANGE * RANGE {
                         Some((entity, coord, distance2))
@@ -516,7 +519,7 @@ impl World {
 
     pub fn character_fire_shotgun<R: Rng>(&mut self, character: Entity, target: Coord, rng: &mut R) {
         const NUM_BULLETS: usize = 12;
-        let character_coord = self.spatial.coord(character).unwrap();
+        let character_coord = self.spatial_table.coord_of(character).unwrap();
         if character_coord == target {
             return;
         }
@@ -531,7 +534,7 @@ impl World {
     }
 
     pub fn character_fire_rocket(&mut self, character: Entity, target: Coord) {
-        let character_coord = self.spatial.coord(character).unwrap();
+        let character_coord = self.spatial_table.coord_of(character).unwrap();
         if character_coord == target {
             return;
         }
@@ -544,18 +547,18 @@ impl World {
         external_events: &mut Vec<ExternalEvent>,
         rng: &mut R,
     ) {
-        if let Some(current_coord) = self.spatial.coord(projectile_entity) {
+        if let Some(current_coord) = self.spatial_table.coord_of(projectile_entity) {
             if let Some(on_collision) = self.components.on_collision.get(projectile_entity).cloned() {
                 match on_collision {
                     OnCollision::Explode(explosion_spec) => {
                         explosion::explode(self, current_coord, explosion_spec, external_events, rng);
-                        self.spatial.remove(projectile_entity);
+                        self.spatial_table.remove(projectile_entity);
                         self.components.remove_entity(projectile_entity);
                         self.entity_allocator.free(projectile_entity);
                         self.realtime_components.remove_entity(projectile_entity);
                     }
                     OnCollision::Remove => {
-                        self.spatial.remove(projectile_entity);
+                        self.spatial_table.remove(projectile_entity);
                         self.components.remove_entity(projectile_entity);
                         self.entity_allocator.free(projectile_entity);
                         self.realtime_components.remove_entity(projectile_entity);
@@ -578,7 +581,7 @@ impl World {
         external_events: &mut Vec<ExternalEvent>,
         rng: &mut R,
     ) {
-        if let Some(current_coord) = self.spatial.coord(projectile_entity) {
+        if let Some(current_coord) = self.spatial_table.coord_of(projectile_entity) {
             let next_coord = current_coord + movement_direction.coord();
             let collides_with = self
                 .components
@@ -586,7 +589,7 @@ impl World {
                 .get(projectile_entity)
                 .cloned()
                 .unwrap_or_default();
-            if let Some(&spatial_cell) = self.spatial.get_cell(next_coord) {
+            if let Some(&spatial_cell) = self.spatial_table.layers_at(next_coord) {
                 if let Some(character_entity) = spatial_cell.character {
                     if let Some(&projectile_damage) = self.components.projectile_damage.get(projectile_entity) {
                         self.apply_projectile_damage(
@@ -608,7 +611,7 @@ impl World {
                         return;
                     }
                 }
-                let _ignore_if_occupied = self.spatial.update_coord(projectile_entity, next_coord);
+                let _ignore_err = self.spatial_table.update_coord(projectile_entity, next_coord);
             } else {
                 self.projectile_stop(projectile_entity, external_events, rng);
                 return;
@@ -616,12 +619,12 @@ impl World {
         } else {
             self.components.remove_entity(projectile_entity);
             self.realtime_components.remove_entity(projectile_entity);
-            self.spatial.remove(projectile_entity);
+            self.spatial_table.remove(projectile_entity);
         }
     }
 
-    fn nearest_spawn_candidate<R: Rng>(spatial: &Spatial, start: Coord, rng: &mut R) -> Option<Coord> {
-        if let Some(cell) = spatial.get_cell(start) {
+    fn nearest_spawn_candidate<R: Rng>(spatial_table: &SpatialTable, start: Coord, rng: &mut R) -> Option<Coord> {
+        if let Some(cell) = spatial_table.layers_at(start) {
             if cell.feature.is_none() {
                 if cell.character.is_none() {
                     return Some(start);
@@ -638,7 +641,7 @@ impl World {
             for &direction in directions.iter() {
                 let neighbour_coord = coord + direction.coord();
                 if seen.insert(neighbour_coord) {
-                    if let Some(cell) = spatial.get_cell(neighbour_coord) {
+                    if let Some(cell) = spatial_table.layers_at(neighbour_coord) {
                         if cell.feature.is_none() {
                             if cell.character.is_none() {
                                 return Some(neighbour_coord);
@@ -653,7 +656,7 @@ impl World {
     }
 
     fn divide<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
-        if let Some(coord) = self.spatial.coord(entity) {
+        if let Some(coord) = self.spatial_table.coord_of(entity) {
             if let Some(hit_points) = self.components.hit_points.get_mut(entity) {
                 let new_hit_points = {
                     let mut hit_points = *hit_points;
@@ -662,7 +665,7 @@ impl World {
                 };
                 if new_hit_points.current > 0 {
                     *hit_points = new_hit_points;
-                    let spawn_coord = Self::nearest_spawn_candidate(&self.spatial, coord, rng);
+                    let spawn_coord = Self::nearest_spawn_candidate(&self.spatial_table, coord, rng);
                     if let Some(spawn_coord) = spawn_coord {
                         let mut new_entity_data = self.components.clone_entity_data(entity);
                         new_entity_data.next_action = None;
@@ -681,8 +684,8 @@ impl World {
 
     fn divide_and_spawn<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
         self.divide(entity, rng);
-        if let Some(coord) = self.spatial.coord(entity) {
-            if let Some(spawn_coord) = Self::nearest_spawn_candidate(&self.spatial, coord, rng) {
+        if let Some(coord) = self.spatial_table.coord_of(entity) {
+            if let Some(spawn_coord) = Self::nearest_spawn_candidate(&self.spatial_table, coord, rng) {
                 match rng.gen_range(0, 3) {
                     0 => {
                         self.spawn_slime_goo(spawn_coord, rng);
@@ -701,7 +704,7 @@ impl World {
 
     pub fn damage_character<R: Rng>(&mut self, character: Entity, hit_points_to_lose: u32, rng: &mut R) {
         if let Some(hit_points) = self.components.hit_points.get_mut(character) {
-            let coord = self.spatial.coord(character).unwrap();
+            let coord = self.spatial_table.coord_of(character).unwrap();
             let dies = match hit_points.current.checked_sub(hit_points_to_lose) {
                 None | Some(0) => {
                     hit_points.current = 0;
@@ -715,7 +718,7 @@ impl World {
             if let Some(on_damage) = self.components.on_damage.get(character) {
                 match on_damage {
                     OnDamage::Sludge => {
-                        if let Some(coord) = self.spatial.coord(character) {
+                        if let Some(coord) = self.spatial_table.coord_of(character) {
                             self.change_floor_to_sludge(coord);
                         }
                     }
@@ -724,8 +727,8 @@ impl World {
                     OnDamage::Teleport => {
                         let maybe_player_entity = self.components.player.entities().next();
                         if let Some(player_entity) = maybe_player_entity {
-                            if let Some(player_coord) = self.spatial.coord(player_entity) {
-                                if let Some(victim_coord) = self.spatial.coord(character) {
+                            if let Some(player_coord) = self.spatial_table.coord_of(player_entity) {
+                                if let Some(victim_coord) = self.spatial_table.coord_of(character) {
                                     if player_coord.manhattan_distance(victim_coord) == 1 {
                                         self.teleport(player_entity, rng);
                                     }
@@ -737,13 +740,13 @@ impl World {
                     OnDamage::Swap => {
                         let maybe_player_entity = self.components.player.entities().next();
                         if let Some(player_entity) = maybe_player_entity {
-                            if let Some(player_coord) = self.spatial.coord(player_entity) {
-                                if let Some(victim_coord) = self.spatial.coord(character) {
+                            if let Some(player_coord) = self.spatial_table.coord_of(player_entity) {
+                                if let Some(victim_coord) = self.spatial_table.coord_of(character) {
                                     if player_coord.manhattan_distance(victim_coord) == 1 {
-                                        self.spatial.remove(player_entity);
-                                        self.spatial.update_coord(character, player_coord).unwrap();
-                                        self.spatial
-                                            .insert(
+                                        self.spatial_table.remove(player_entity);
+                                        self.spatial_table.update_coord(character, player_coord).unwrap();
+                                        self.spatial_table
+                                            .update(
                                                 player_entity,
                                                 Location {
                                                     coord: victim_coord,
@@ -805,25 +808,25 @@ impl World {
     }
 
     fn character_push_in_direction(&mut self, entity: Entity, direction: Direction) {
-        if let Some(current_coord) = self.spatial.coord(entity) {
+        if let Some(current_coord) = self.spatial_table.coord_of(entity) {
             let target_coord = current_coord + direction.coord();
             if self.is_solid_feature_at_coord(target_coord) {
                 return;
             }
-            let _ignore_if_occupied = self.spatial.update_coord(entity, target_coord);
+            let _ignore_err = self.spatial_table.update_coord(entity, target_coord);
         }
     }
 
     fn change_floor_to_sludge(&mut self, coord: Coord) {
-        if let Some(&cell) = self.spatial.get_cell(coord) {
+        if let Some(&cell) = self.spatial_table.layers_at(coord) {
             if let Some(floor_entity) = cell.floor {
-                self.spatial.remove(floor_entity);
+                self.spatial_table.remove(floor_entity);
                 self.components.remove_entity(floor_entity);
                 self.realtime_components.remove_entity(floor_entity);
             }
             if let Some(feature_entity) = cell.feature {
                 if self.components.door_state.contains(feature_entity) {
-                    self.spatial.remove(feature_entity);
+                    self.spatial_table.remove(feature_entity);
                     self.components.remove_entity(feature_entity);
                     self.realtime_components.remove_entity(feature_entity);
                 }
@@ -836,8 +839,8 @@ impl World {
     fn character_die<R: Rng>(&mut self, character: Entity, rng: &mut R) {
         self.components.to_remove.insert(character, ());
         if let Some(drop_item_on_death) = self.components.drop_item_on_death.get(character) {
-            if let Some(coord) = self.spatial.coord(character) {
-                if let Some(cell) = self.spatial.get_cell(coord) {
+            if let Some(coord) = self.spatial_table.coord_of(character) {
+                if let Some(cell) = self.spatial_table.layers_at(coord) {
                     let spawn_coord = if cell.feature.is_none() {
                         Some(coord)
                     } else {
@@ -852,7 +855,7 @@ impl World {
                             for &direction in directions.iter() {
                                 let neighbour_coord = coord + direction.coord();
                                 if seen.insert(neighbour_coord) {
-                                    if let Some(cell) = self.spatial.get_cell(neighbour_coord) {
+                                    if let Some(cell) = self.spatial_table.layers_at(neighbour_coord) {
                                         if let Some(feature) = cell.feature {
                                             if !self.components.solid.contains(feature) {
                                                 queue.push_front(neighbour_coord);
@@ -905,7 +908,7 @@ impl World {
     }
 
     fn add_blood_stain_to_floor(&mut self, coord: Coord) {
-        if let Some(floor_entity) = self.spatial.get_cell_checked(coord).floor {
+        if let Some(floor_entity) = self.spatial_table.layers_at_checked(coord).floor {
             self.components.blood.insert(floor_entity, ());
         }
     }
@@ -935,8 +938,8 @@ impl World {
                 if self.components.safe_on_sludge.contains(entity) {
                     return false;
                 }
-                if let Some(coord) = self.spatial.coord(entity) {
-                    if let Some(cell) = self.spatial.get_cell(coord) {
+                if let Some(coord) = self.spatial_table.coord_of(entity) {
+                    if let Some(cell) = self.spatial_table.layers_at(coord) {
                         if let Some(floor) = cell.floor {
                             if self.components.sludge.contains(floor) {
                                 return true;

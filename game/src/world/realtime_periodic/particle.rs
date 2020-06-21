@@ -213,7 +213,7 @@ impl RealtimePeriodicState for ParticleEmitterState {
         _: &mut Vec<ExternalEvent>,
         _: &mut R,
     ) {
-        let coord = if let Some(coord) = world.spatial.coord(entity) {
+        let coord = if let Some(coord) = world.spatial_table.coord_of(entity) {
             coord
         } else {
             return;
@@ -228,7 +228,7 @@ impl RealtimePeriodicState for ParticleEmitterState {
                 },
             );
         }
-        world.spatial.update_coord(particle_entity, coord).unwrap();
+        world.spatial_table.update_coord(particle_entity, coord).unwrap();
         if let Some(tile) = spawn_particle.tile {
             world.components.tile.insert(particle_entity, tile);
         }

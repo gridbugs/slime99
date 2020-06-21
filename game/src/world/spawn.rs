@@ -42,15 +42,15 @@ pub fn make_player<R: Rng>(rng: &mut R) -> EntityData {
 impl World {
     pub fn insert_entity_data(&mut self, location: Location, entity_data: EntityData) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial.insert(entity, location).unwrap();
+        self.spatial_table.update(entity, location).unwrap();
         self.components.insert_entity_data(entity, entity_data);
         entity
     }
 
     pub fn spawn_wall(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -66,8 +66,8 @@ impl World {
 
     pub fn spawn_invisible_wall(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -82,8 +82,8 @@ impl World {
 
     pub fn spawn_former_human(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -104,8 +104,8 @@ impl World {
 
     pub fn spawn_human(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -126,8 +126,8 @@ impl World {
 
     pub fn spawn_floor(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -141,7 +141,9 @@ impl World {
 
     pub fn spawn_light(&mut self, coord: Coord, colour: Rgb24) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
+        self.spatial_table
+            .update(entity, Location { coord, layer: None })
+            .unwrap();
         self.components.light.insert(
             entity,
             Light {
@@ -158,7 +160,9 @@ impl World {
 
     pub fn spawn_flickering_light(&mut self, coord: Coord, colour: Rgb24) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
+        self.spatial_table
+            .update(entity, Location { coord, layer: None })
+            .unwrap();
         self.components.light.insert(
             entity,
             Light {
@@ -198,7 +202,9 @@ impl World {
 
     pub fn spawn_flash(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
+        self.spatial_table
+            .update(entity, Location { coord, layer: None })
+            .unwrap();
         self.components.light.insert(
             entity,
             Light {
@@ -223,8 +229,8 @@ impl World {
 
     pub fn spawn_bullet(&mut self, start: Coord, target: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord: start,
@@ -285,8 +291,8 @@ impl World {
 
     pub fn spawn_rocket(&mut self, start: Coord, target: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord: start,
@@ -373,8 +379,8 @@ impl World {
 
     pub fn spawn_explosion_emitter(&mut self, coord: Coord, spec: &explosion::spec::ParticleEmitter) -> Entity {
         let emitter_entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(emitter_entity, Location { coord, layer: None })
+        self.spatial_table
+            .update(emitter_entity, Location { coord, layer: None })
             .unwrap();
         self.realtime_components.fade.insert(
             emitter_entity,
@@ -463,8 +469,8 @@ impl World {
 
     pub fn spawn_door(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -481,8 +487,8 @@ impl World {
 
     pub fn spawn_stairs(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -497,7 +503,9 @@ impl World {
 
     pub fn spawn_sludge_light(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial.insert(entity, Location { coord, layer: None }).unwrap();
+        self.spatial_table
+            .update(entity, Location { coord, layer: None })
+            .unwrap();
         self.components.light.insert(
             entity,
             Light {
@@ -537,8 +545,8 @@ impl World {
 
     pub fn spawn_sludge(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -577,8 +585,8 @@ impl World {
 
     pub fn spawn_bridge(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -592,8 +600,8 @@ impl World {
 
     pub fn spawn_slime_divide<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -621,8 +629,8 @@ impl World {
 
     pub fn spawn_slime_swap<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -650,8 +658,8 @@ impl World {
 
     pub fn spawn_slime_teleport<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -679,8 +687,8 @@ impl World {
 
     pub fn spawn_slime_goo<R: Rng>(&mut self, coord: Coord, rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -709,8 +717,8 @@ impl World {
 
     pub fn spawn_slime_boss<R: Rng>(&mut self, coord: Coord, _rng: &mut R) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -734,8 +742,8 @@ impl World {
 
     pub fn spawn_slime_attack_upgrade(&mut self, coord: Coord, level: u32) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -765,8 +773,8 @@ impl World {
 
     pub fn spawn_slime_defend_upgrade(&mut self, coord: Coord, level: u32) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -796,8 +804,8 @@ impl World {
 
     pub fn spawn_slime_tech_upgrade(&mut self, coord: Coord, level: u32) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -827,8 +835,8 @@ impl World {
 
     pub fn spawn_slime_curse(&mut self, coord: Coord) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -851,8 +859,8 @@ impl World {
 
     pub fn spawn_attack(&mut self, coord: Coord, special: bool) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -867,8 +875,8 @@ impl World {
 
     pub fn spawn_defend(&mut self, coord: Coord, special: bool) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,
@@ -883,8 +891,8 @@ impl World {
 
     pub fn spawn_tech(&mut self, coord: Coord, special: bool) -> Entity {
         let entity = self.entity_allocator.alloc();
-        self.spatial
-            .insert(
+        self.spatial_table
+            .update(
                 entity,
                 Location {
                     coord,

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 mod spatial;
-use spatial::Spatial;
+use spatial::SpatialTable;
 
 pub mod player;
 
@@ -39,7 +39,7 @@ pub struct World {
     pub entity_allocator: EntityAllocator,
     pub components: Components,
     pub realtime_components: RealtimeComponents,
-    pub spatial: Spatial,
+    pub spatial_table: SpatialTable,
 }
 
 impl World {
@@ -47,12 +47,12 @@ impl World {
         let entity_allocator = EntityAllocator::default();
         let components = Components::default();
         let realtime_components = RealtimeComponents::default();
-        let spatial = Spatial::new(size);
+        let spatial_table = SpatialTable::new(size);
         Self {
             entity_allocator,
             components,
             realtime_components,
-            spatial,
+            spatial_table,
             level,
         }
     }
@@ -61,7 +61,7 @@ impl World {
 impl World {
     pub fn to_render_entities<'a>(&'a self) -> impl 'a + Iterator<Item = ToRenderEntity> {
         let tile_component = &self.components.tile;
-        let spatial = &self.spatial;
+        let spatial_table = &self.spatial_table;
         let realtime_fade_component = &self.realtime_components.fade;
         let colour_hint_component = &self.components.colour_hint;
         let blood_component = &self.components.blood;
@@ -69,7 +69,7 @@ impl World {
         let hit_points = &self.components.hit_points;
         let next_action = &self.components.next_action;
         tile_component.iter().filter_map(move |(entity, &tile)| {
-            if let Some(location) = spatial.location(entity) {
+            if let Some(location) = spatial_table.location_of(entity) {
                 let fade = realtime_fade_component.get(entity).and_then(|f| f.state.fading());
                 let colour_hint = colour_hint_component.get(entity).cloned();
                 let blood = blood_component.contains(entity);
@@ -97,11 +97,11 @@ impl World {
         self.components
             .light
             .iter()
-            .filter_map(move |(entity, light)| self.spatial.coord(entity).map(|coord| (coord, light)))
+            .filter_map(move |(entity, light)| self.spatial_table.coord_of(entity).map(|coord| (coord, light)))
     }
 
     pub fn character_info(&self, entity: Entity) -> Option<CharacterInfo> {
-        let coord = self.spatial.coord(entity)?;
+        let coord = self.spatial_table.coord_of(entity)?;
         Some(CharacterInfo { coord })
     }
 
@@ -119,7 +119,7 @@ impl World {
             } else {
                 self.components.remove_entity(entity);
             }
-            self.spatial.remove(entity);
+            self.spatial_table.remove(entity);
             self.entity_allocator.free(entity);
         }
         ret
@@ -130,7 +130,7 @@ pub struct PlayerDied(pub EntityData);
 
 impl World {
     pub fn entity_coord(&self, entity: Entity) -> Option<Coord> {
-        self.spatial.coord(entity)
+        self.spatial_table.coord_of(entity)
     }
     pub fn entity_player(&self, entity: Entity) -> Option<&player::Player> {
         self.components.player.get(entity)
@@ -142,7 +142,7 @@ impl World {
         self.entity_allocator.exists(entity) && !self.components.to_remove.contains(entity)
     }
     pub fn size(&self) -> Size {
-        self.spatial.grid_size()
+        self.spatial_table.grid_size()
     }
     pub fn is_gameplay_blocked(&self) -> bool {
         !self.components.blocks_gameplay.is_empty()

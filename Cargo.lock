@@ -1269,9 +1269,9 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.23.5"
+version = "0.23.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d534e95ad8b9d5aa614322d02352b4f1bf962254adcf02ac6f2def8be18498e8"
+checksum = "b5b0553fec6407d63fe2975b794dfb099f3f790bdc958823851af37b26404ab4"
 dependencies = [
  "bytemuck",
  "byteorder",
@@ -1690,9 +1690,9 @@ dependencies = [
 
 [[package]]
 name = "num-rational"
-version = "0.2.4"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
+checksum = "a5b4d7360f362cfb50dde8143501e6940b22f644be75a4cc90b2d81968908138"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -2342,6 +2342,7 @@ dependencies = [
  "rgb24",
  "serde",
  "shadowcast",
+ "spatial_table",
  "vector",
 ]
 
@@ -2401,6 +2402,17 @@ dependencies = [
  "nix 0.14.1",
  "wayland-client",
  "wayland-protocols",
+]
+
+[[package]]
+name = "spatial_table"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5732aaf1a0233523b2541ed77aaeabf9e83f7161cda3a3d5c48cc7333d8625a"
+dependencies = [
+ "entity_table",
+ "grid_2d",
+ "serde",
 ]
 
 [[package]]
@@ -2491,9 +2503,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.31"
+version = "1.0.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5304cfdf27365b7585c25d4af91b35016ed21ef88f17ced89c7093b43dba8b6"
+checksum = "a994520748611c17d163e81b6c4a4b13d11b7f63884362ab2efac3aa9cf16d00"
 dependencies = [
  "proc-macro2 1.0.18",
  "quote 1.0.7",

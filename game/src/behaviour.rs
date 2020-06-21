@@ -151,7 +151,7 @@ fn can_enter_wrt_sludge(world: &World, step: Step, entity: Entity) -> bool {
     if world.components.safe_on_sludge.contains(entity) {
         return true;
     }
-    if let Some(to_cell) = world.spatial.get_cell(step.to_coord()) {
+    if let Some(to_cell) = world.spatial_table.layers_at(step.to_coord()) {
         if let Some(character) = to_cell.character {
             if world.components.player.contains(character) {
                 return true;
@@ -159,7 +159,7 @@ fn can_enter_wrt_sludge(world: &World, step: Step, entity: Entity) -> bool {
         }
         if let Some(to_floor) = to_cell.floor {
             if world.components.sludge.contains(to_floor) {
-                let from_cell = world.spatial.get_cell_checked(step.from_coord());
+                let from_cell = world.spatial_table.layers_at_checked(step.from_coord());
                 if let Some(from_floor) = from_cell.floor {
                     if !world.components.sludge.contains(from_floor) {
                         return false;

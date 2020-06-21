@@ -203,7 +203,7 @@ fn sewer_mini<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> 
         }
     }
     for coord in CoordIter::new(spec.size) {
-        let &cell = world.spatial.get_cell_checked(coord);
+        let &cell = world.spatial_table.layers_at_checked(coord);
         if cell.floor.is_none() && cell.feature.is_none() {
             world.spawn_invisible_wall(coord);
         }
