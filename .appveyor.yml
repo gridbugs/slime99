@@ -137,7 +137,7 @@ for:
 
           rustup target add $TARGET
 
-          cargo install wasm-bindgen-cli --force --version 0.2.63 # this has to match the version in Cargo.lock
+          cargo install wasm-bindgen-cli --force --version 0.2.65 # this has to match the version in Cargo.lock
 
           cargo install wasm-pack
 

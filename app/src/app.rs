@@ -383,6 +383,7 @@ impl Decorate for DecorateMainMenu {
     type View = AppView;
     type Data = AppData;
     fn view<E, F, C>(
+        &self,
         data: &Self::Data,
         mut event_routine_view: EventRoutineView<E>,
         context: ViewContext<C>,
@@ -434,6 +435,7 @@ impl Decorate for DecorateGame {
     type View = AppView;
     type Data = AppData;
     fn view<E, F, C>(
+        &self,
         data: &Self::Data,
         mut event_routine_view: EventRoutineView<E>,
         context: ViewContext<C>,
@@ -521,6 +523,7 @@ impl Decorate for DecorateLevelChangeMenu {
     type View = AppView;
     type Data = AppData;
     fn view<E, F, C>(
+        &self,
         data: &Self::Data,
         mut event_routine_view: EventRoutineView<E>,
         context: ViewContext<C>,
@@ -669,6 +672,7 @@ impl Decorate for DecorateOptionsMenu {
     type View = AppView;
     type Data = AppData;
     fn view<E, F, C>(
+        &self,
         data: &Self::Data,
         mut event_routine_view: EventRoutineView<E>,
         context: ViewContext<C>,

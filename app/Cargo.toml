@@ -11,7 +11,7 @@ web = ["general_audio_static/web", "general_storage_static/web", "rand/wasm-bind
 [dependencies]
 slime99_game = { path = "../game" }
 log = "0.4"
-chargrid = { version = "0.1", features = ["serialize", "gamepad"] }
+chargrid = { version = "0.3", features = ["serialize", "gamepad"] }
 general_storage_static = { version = "0.1", features = ["bincode", "json"] }
 general_audio_static = "0.2"
 serde = { version = "1.0", features = ["serde_derive"] }
