@@ -13,6 +13,7 @@ enum ColEncodeChoice {
 
 impl ColEncodeChoice {
     fn parser() -> impl meap::Parser<Item = Self> {
+        use meap::Parser;
         use ColEncodeChoice::*;
         meap::choose_at_most_one!(
             flag("true-colour").some_if(TrueColour),
@@ -20,7 +21,7 @@ impl ColEncodeChoice {
             flag("greyscale").some_if(Greyscale),
             flag("ansi").some_if(Ansi),
         )
-        .with_general_default(TrueColour)
+        .with_default_general(TrueColour)
     }
 }
 
@@ -30,7 +31,7 @@ struct Args {
 }
 
 impl Args {
-    fn parser() -> meap::LetMap<impl meap::Parser<Item = Self>> {
+    fn parser() -> impl meap::Parser<Item = Self> {
         meap::let_map! {
             let {
                 native_common = NativeCommon::parser();
@@ -43,6 +44,7 @@ impl Args {
 }
 
 fn main() {
+    use meap::Parser;
     env_logger::init();
     let Args {
         native_common:

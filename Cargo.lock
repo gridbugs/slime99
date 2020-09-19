@@ -255,9 +255,9 @@ dependencies = [
 
 [[package]]
 name = "chargrid_ansi_terminal"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70dee350893da93da501a9ea9b4bbaa40077f34623f39f9cf15ac9940d66b0ec"
+checksum = "eb6f99a0b2f162ae23fe167f0f830a365369cbf46a62c511dbae1c7adf2f6ecb"
 dependencies = [
  "chargrid_app",
  "chargrid_gamepad",
@@ -1612,9 +1612,9 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 
 [[package]]
 name = "meap"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e04ee8d46b18c362294d32ce04e2a9548bd703a2f6c4b34dab77bbc11fe2698f"
+checksum = "116807a384577df3927a3ef69e60b41612477db216b08cbaa27c49c5ab4d80d7"
 
 [[package]]
 name = "memchr"

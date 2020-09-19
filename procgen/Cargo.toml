@@ -11,5 +11,5 @@ rand = "0.7"
 direction = "0.17"
 
 [dev-dependencies]
-meap = "0.3"
+meap = "0.4"
 rand_isaac = "0.2"

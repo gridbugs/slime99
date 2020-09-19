@@ -84,7 +84,7 @@ struct Args {
 }
 
 impl Args {
-    fn parser() -> meap::LetMap<impl meap::Parser<Item = Self>> {
+    fn parser() -> impl meap::Parser<Item = Self> {
         meap::let_map! {
             let {
                 native_common = NativeCommon::parser();
@@ -102,6 +102,7 @@ impl Args {
 }
 
 fn main() {
+    use meap::Parser;
     env_logger::init();
     let Args {
         native_common:

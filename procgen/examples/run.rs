@@ -9,11 +9,11 @@ struct Args {
 }
 
 impl Args {
-    fn parser() -> meap::LetMap<impl meap::Parser<Item = Self>> {
+    fn parser() -> impl meap::Parser<Item = Self> {
         meap::let_map! {
             let {
                 rng_seed = opt_opt::<u64, _>("INT", 'r').name("rng-seed").desc("rng seed")
-                    .with_general_default_lazy(|| rand::thread_rng().gen());
+                    .with_default_lazy_general(|| rand::thread_rng().gen());
                 width = opt_opt("INT", 'x').name("width").with_default(40);
                 height = opt_opt("INT", 'y').name("height").with_default(20);
             } in {{
@@ -30,6 +30,7 @@ impl Args {
 }
 
 fn main() {
+    use meap::Parser;
     let Args { size, mut rng } = Args::parser().with_help_default().parse_env_or_exit();
     let spec = SewerSpec { size };
     let sewer = Sewer::generate(spec, &mut rng);
