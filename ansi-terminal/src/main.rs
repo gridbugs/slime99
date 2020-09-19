@@ -3,7 +3,6 @@ use rand::Rng;
 use slime99_app::{app, AutoPlay, EnvNull, Frontend, RngSeed};
 use slime99_native::{meap, NativeCommon};
 
-#[derive(Clone)]
 enum ColEncodeChoice {
     TrueColour,
     Rgb,
