@@ -4,8 +4,8 @@ pub use crate::world::{
     player::{AbilityTarget, Player},
     spatial::{Layer, Location},
 };
-use entity_table::declare_entity_module;
 use direction::CardinalDirection;
+use entity_table::declare_entity_module;
 use rgb24::Rgb24;
 use serde::{Deserialize, Serialize};
 
@@ -144,7 +144,10 @@ pub enum OnDamage {
     DivideAndSpawn,
     Teleport,
     Swap,
-    Upgrade { level: u32, ability_target: AbilityTarget },
+    Upgrade {
+        level: u32,
+        ability_target: AbilityTarget,
+    },
     Curse,
 }
 

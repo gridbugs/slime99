@@ -28,12 +28,19 @@ impl<'a> Deserialize<'a> for Context {
 }
 
 impl Context {
-    pub fn tick<R: Rng>(&mut self, world: &mut World, external_events: &mut Vec<ExternalEvent>, rng: &mut R) {
-        self.realtime_entities.extend(world.components.realtime.entities());
+    pub fn tick<R: Rng>(
+        &mut self,
+        world: &mut World,
+        external_events: &mut Vec<ExternalEvent>,
+        rng: &mut R,
+    ) {
+        self.realtime_entities
+            .extend(world.components.realtime.entities());
         for entity in self.realtime_entities.drain(..) {
             let mut frame_remaining = FRAME_DURATION;
             while frame_remaining > Duration::from_micros(0) {
-                let mut realtime_entity_components = world.realtime_components.get_mut_of_entity(entity);
+                let mut realtime_entity_components =
+                    world.realtime_components.get_mut_of_entity(entity);
                 let TimeConsumingEvent {
                     event,
                     until_next_event,

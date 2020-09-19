@@ -67,7 +67,9 @@ impl spec::Movement {
                 },
             },
             cardinal_step_duration: self.cardinal_step_duration,
-            ordinal_step_duration: ordinal_duration_from_cardinal_duration(self.cardinal_step_duration),
+            ordinal_step_duration: ordinal_duration_from_cardinal_duration(
+                self.cardinal_step_duration,
+            ),
         }
     }
 }

@@ -117,12 +117,20 @@ pub fn from_str<R: Rng>(s: &str, player_data: EntityData, rng: &mut R) -> Terrai
                     world.spawn_floor(coord);
                     world.spawn_tech(coord, false);
                 }
-                _ => log::warn!("unexpected char in terrain: {} ({})", ch.escape_unicode(), ch),
+                _ => log::warn!(
+                    "unexpected char in terrain: {} ({})",
+                    ch.escape_unicode(),
+                    ch
+                ),
             }
         }
     }
     let player = player.expect("didn't create player");
-    Terrain { world, player, agents }
+    Terrain {
+        world,
+        player,
+        agents,
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -217,10 +225,19 @@ fn sewer_mini<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) -> 
     }
     let player = world.insert_entity_data(player_location, player_data);
     world.spawn_stairs(sewer.goal + offset);
-    Terrain { world, player, agents }
+    Terrain {
+        world,
+        player,
+        agents,
+    }
 }
 
-fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {
+fn sewer_normal<R: Rng>(
+    level: u32,
+    spec: SewerSpec,
+    player_data: EntityData,
+    rng: &mut R,
+) -> Terrain {
     let mut world = World::new(spec.size, level);
     let mut agents = ComponentTable::default();
     let sewer = Sewer::generate(spec, rng);
@@ -259,7 +276,10 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
         .map
         .enumerate()
         .filter_map(|(coord, &cell)| {
-            if (cell == SewerCell::Bridge || cell == SewerCell::Floor) && coord != sewer.start && coord != sewer.goal {
+            if (cell == SewerCell::Bridge || cell == SewerCell::Floor)
+                && coord != sewer.start
+                && coord != sewer.goal
+            {
                 Some(coord)
             } else {
                 None
@@ -282,21 +302,23 @@ fn sewer_normal<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rn
     let special_item_coords = sewer
         .map
         .enumerate()
-        .filter_map(
-            |(coord, &cell)| {
-                if cell == SewerCell::Pool {
-                    Some(coord)
-                } else {
-                    None
-                }
-            },
-        )
+        .filter_map(|(coord, &cell)| {
+            if cell == SewerCell::Pool {
+                Some(coord)
+            } else {
+                None
+            }
+        })
         .choose_multiple(rng, num_special_items);
     for (i, &coord) in special_item_coords.iter().enumerate() {
         let item = ALL_ITEMS[i % ALL_ITEMS.len()];
         item.spawn(&mut world, coord, true);
     }
-    Terrain { world, player, agents }
+    Terrain {
+        world,
+        player,
+        agents,
+    }
 }
 
 pub const FINAL_LEVEL: u32 = 6;
@@ -339,7 +361,10 @@ fn sewer_final<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) ->
         .map
         .enumerate()
         .filter_map(|(coord, &cell)| {
-            if (cell == SewerCell::Bridge || cell == SewerCell::Floor) && coord != sewer.start && coord != sewer.goal {
+            if (cell == SewerCell::Bridge || cell == SewerCell::Floor)
+                && coord != sewer.start
+                && coord != sewer.goal
+            {
                 Some(coord)
             } else {
                 None
@@ -363,21 +388,23 @@ fn sewer_final<R: Rng>(spec: SewerSpec, player_data: EntityData, rng: &mut R) ->
     let special_item_coords = sewer
         .map
         .enumerate()
-        .filter_map(
-            |(coord, &cell)| {
-                if cell == SewerCell::Pool {
-                    Some(coord)
-                } else {
-                    None
-                }
-            },
-        )
+        .filter_map(|(coord, &cell)| {
+            if cell == SewerCell::Pool {
+                Some(coord)
+            } else {
+                None
+            }
+        })
         .choose_multiple(rng, num_special_items);
     for (i, &coord) in special_item_coords.iter().enumerate() {
         let item = ALL_ITEMS[i % ALL_ITEMS.len()];
         item.spawn(&mut world, coord, true);
     }
-    Terrain { world, player, agents }
+    Terrain {
+        world,
+        player,
+        agents,
+    }
 }
 
 pub fn sewer<R: Rng>(level: u32, spec: SewerSpec, player_data: EntityData, rng: &mut R) -> Terrain {

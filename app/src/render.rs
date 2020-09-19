@@ -1,16 +1,25 @@
 use crate::{blink::Blink, depth, game::GameStatus, ui};
-use chargrid::render::{blend_mode, ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext};
+use chargrid::render::{
+    blend_mode, ColModify, Coord, Frame, Rgb24, Style, View, ViewCell, ViewContext,
+};
 use chargrid::text::{wrap, StringView, StringViewSingleLine};
 use direction::CardinalDirection;
 use line_2d::{Config as LineConfig, LineSegment};
-use slime99_game::{ActionError, CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE};
+use slime99_game::{
+    ActionError, CellVisibility, Game, Layer, NpcAction, Tile, ToRenderEntity, MAP_SIZE,
+};
 use std::time::Duration;
 
 #[derive(Clone, Copy)]
 pub enum Mode {
     Normal,
-    Aim { blink_duration: Duration, target: Coord },
-    Examine { target: Coord },
+    Aim {
+        blink_duration: Duration,
+        target: Coord,
+    },
+    Examine {
+        target: Coord,
+    },
 }
 
 pub struct GameToRender<'a> {
@@ -58,8 +67,14 @@ impl GameView {
                     if let Some(mouse_coord) = game_to_render.mouse_coord {
                         let game_coord = mouse_coord / 2;
                         if entity.coord == game_coord {
-                            let verb = match game_to_render.game.visibility_grid().cell_visibility(entity.coord) {
-                                CellVisibility::CurrentlyVisibleWithLightColour(Some(_)) => Some(MessageVerb::See),
+                            let verb = match game_to_render
+                                .game
+                                .visibility_grid()
+                                .cell_visibility(entity.coord)
+                            {
+                                CellVisibility::CurrentlyVisibleWithLightColour(Some(_)) => {
+                                    Some(MessageVerb::See)
+                                }
                                 CellVisibility::PreviouslyVisible => Some(MessageVerb::Remember),
                                 CellVisibility::NeverVisible
                                 | CellVisibility::CurrentlyVisibleWithLightColour(None) => None,
@@ -71,7 +86,8 @@ impl GameView {
                                         entity_under_cursor = Some((depth, entity.tile, verb));
                                     }
                                 } else {
-                                    entity_under_cursor = Some((layer_depth(entity.layer), entity.tile, verb));
+                                    entity_under_cursor =
+                                        Some((layer_depth(entity.layer), entity.tile, verb));
                                 }
                             }
                         }
@@ -86,7 +102,10 @@ impl GameView {
                         let mut buf = String::new();
                         use std::fmt::Write;
                         write!(&mut buf, "You {} {} here.", verb_str, description).unwrap();
-                        StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view(
+                        StringViewSingleLine::new(
+                            Style::new().with_foreground(Rgb24::new_grey(255)),
+                        )
+                        .view(
                             &buf,
                             context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
                             frame,
@@ -96,7 +115,9 @@ impl GameView {
                     let current_level = game_to_render.game.current_level();
                     if current_level == 0 {
                         StringView::new(
-                            Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true),
+                            Style::new()
+                                .with_foreground(Rgb24::new_grey(255))
+                                .with_bold(true),
                             wrap::Word::new(),
                         )
                         .view(
@@ -110,7 +131,9 @@ impl GameView {
                     } else {
                         if current_level == slime99_game::FINAL_LEVEL {
                             StringView::new(
-                                Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true),
+                                Style::new()
+                                    .with_foreground(Rgb24::new_grey(255))
+                                    .with_bold(true),
                                 wrap::Word::new(),
                             )
                             .view(
@@ -119,7 +142,10 @@ impl GameView {
                                 frame,
                             );
                         } else {
-                            StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view(
+                            StringViewSingleLine::new(
+                                Style::new().with_foreground(Rgb24::new_grey(255)),
+                            )
+                            .view(
                                 format!("Floor {}/{}", current_level, slime99_game::FINAL_LEVEL),
                                 context.add_offset(Coord::new(0, MAP_SIZE.height() as i32 * 2)),
                                 frame,
@@ -157,14 +183,19 @@ impl GameView {
         ui::UiView.view(ui, context.add_offset(Coord::new(39, 0)), frame);
         match game_to_render.mode {
             Mode::Normal => (),
-            Mode::Aim { blink_duration, target } => {
+            Mode::Aim {
+                blink_duration,
+                target,
+            } => {
                 let aim_coord = target / 2;
                 let player_coord = game_to_render.game.player_coord();
                 if aim_coord != player_coord {
-                    for node in LineSegment::new(player_coord, aim_coord).config_node_iter(LineConfig {
-                        exclude_start: true,
-                        exclude_end: true,
-                    }) {
+                    for node in
+                        LineSegment::new(player_coord, aim_coord).config_node_iter(LineConfig {
+                            exclude_start: true,
+                            exclude_end: true,
+                        })
+                    {
                         if !node.coord.is_valid(slime99_game::MAP_SIZE) {
                             break;
                         }
@@ -241,7 +272,12 @@ impl GameView {
 
 mod quad {
     use super::Coord;
-    pub const OFFSETS: [Coord; 4] = [Coord::new(0, 0), Coord::new(1, 0), Coord::new(0, 1), Coord::new(1, 1)];
+    pub const OFFSETS: [Coord; 4] = [
+        Coord::new(0, 0),
+        Coord::new(1, 0),
+        Coord::new(0, 1),
+        Coord::new(1, 1),
+    ];
 }
 
 struct Quad {
@@ -262,10 +298,15 @@ impl Quad {
         }
     }
     fn enumerate<'a>(&'a self) -> impl 'a + Iterator<Item = (Coord, ViewCell)> {
-        quad::OFFSETS.iter().cloned().zip(self.cells.iter().cloned())
+        quad::OFFSETS
+            .iter()
+            .cloned()
+            .zip(self.cells.iter().cloned())
     }
     fn new_wall_front(front_col: Rgb24, top_col: Rgb24) -> Self {
-        let front = ViewCell::new().with_character(' ').with_background(front_col);
+        let front = ViewCell::new()
+            .with_character(' ')
+            .with_background(front_col);
         let top = ViewCell::new()
             .with_character('█')
             .with_background(front_col)
@@ -279,7 +320,9 @@ impl Quad {
         Self::new_repeating(top)
     }
     fn new_floor(foreground: Rgb24, background: Rgb24) -> Self {
-        let base = ViewCell::new().with_foreground(foreground).with_background(background);
+        let base = ViewCell::new()
+            .with_foreground(foreground)
+            .with_background(background);
         Self {
             cells: [
                 base.with_character('▗'),
@@ -290,7 +333,9 @@ impl Quad {
         }
     }
     fn new_door_closed(foreground: Rgb24, background: Rgb24) -> Self {
-        let base = ViewCell::new().with_foreground(background).with_background(foreground);
+        let base = ViewCell::new()
+            .with_foreground(background)
+            .with_background(foreground);
         Self {
             cells: [
                 base.with_character('▘'),
@@ -301,7 +346,9 @@ impl Quad {
         }
     }
     fn new_door_open(foreground: Rgb24, background: Rgb24) -> Self {
-        let base = ViewCell::new().with_foreground(foreground).with_background(background);
+        let base = ViewCell::new()
+            .with_foreground(foreground)
+            .with_background(background);
         Self {
             cells: [
                 base.with_character('▄'),
@@ -344,7 +391,9 @@ impl Quad {
         hit_points: u32,
         next_action: NpcAction,
     ) -> Self {
-        let base = ViewCell::new().with_background(background).with_foreground(foreground);
+        let base = ViewCell::new()
+            .with_background(background)
+            .with_foreground(foreground);
         let action_character = match next_action {
             NpcAction::Wait => ' ',
             NpcAction::Walk(direction) => match direction {
@@ -416,13 +465,17 @@ fn entity_to_quad_visible(entity: &ToRenderEntity, game: &Game, game_over: bool)
         Tile::Floor => Quad::new_floor(Rgb24::new(0, 187, 187), Rgb24::new(0, 127, 127)),
         Tile::Wall => {
             let below = entity.coord + Coord::new(0, 1);
-            if game.contains_wall(below) && (game_over || !game.visibility_grid().is_coord_never_visible(below)) {
+            if game.contains_wall(below)
+                && (game_over || !game.visibility_grid().is_coord_never_visible(below))
+            {
                 Quad::new_wall_top(Rgb24::new(255, 0, 255))
             } else {
                 Quad::new_wall_front(Rgb24::new(127, 0, 127), Rgb24::new(255, 0, 255))
             }
         }
-        Tile::DoorClosed => Quad::new_door_closed(Rgb24::new(255, 127, 255), Rgb24::new(127, 0, 127)),
+        Tile::DoorClosed => {
+            Quad::new_door_closed(Rgb24::new(255, 127, 255), Rgb24::new(127, 0, 127))
+        }
         Tile::DoorOpen => Quad::new_door_open(Rgb24::new(255, 127, 255), Rgb24::new(0, 127, 127)),
         Tile::Stairs => Quad::new_stairs(Rgb24::new(255, 255, 255), Rgb24::new(0, 127, 127)),
         Tile::Sludge0 => {
@@ -582,14 +635,25 @@ fn layer_depth(layer: Option<Layer>) -> i8 {
     }
 }
 
-fn render_quad<F: Frame, C: ColModify>(coord: Coord, depth: i8, quad: &Quad, context: ViewContext<C>, frame: &mut F) {
+fn render_quad<F: Frame, C: ColModify>(
+    coord: Coord,
+    depth: i8,
+    quad: &Quad,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
     for (offset, view_cell) in quad.enumerate() {
         let output_coord = coord * 2 + offset;
         frame.set_cell_relative(output_coord, depth, view_cell, context);
     }
 }
 
-fn render_entity<F: Frame, C: ColModify>(entity: &ToRenderEntity, game: &Game, context: ViewContext<C>, frame: &mut F) {
+fn render_entity<F: Frame, C: ColModify>(
+    entity: &ToRenderEntity,
+    game: &Game,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
     match game.visibility_grid().cell_visibility(entity.coord) {
         CellVisibility::CurrentlyVisibleWithLightColour(Some(light_colour)) => {
             let mut quad = entity_to_quad_visible(entity, game, false);

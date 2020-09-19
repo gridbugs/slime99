@@ -2,8 +2,8 @@ use crate::{
     visibility::Light,
     world::{
         data::{
-            CollidesWith, Disposition, DoorState, DropItemOnDeath, EntityData, HitPoints, Item, Layer, Location,
-            MoveHalfSpeed, Npc, OnCollision, OnDamage, Tile,
+            CollidesWith, Disposition, DoorState, DropItemOnDeath, EntityData, HitPoints, Item,
+            Layer, Location, MoveHalfSpeed, Npc, OnCollision, OnDamage, Tile,
         },
         explosion, player,
         realtime_periodic::{
@@ -98,7 +98,9 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(2));
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(2));
         panic!("missing tile")
     }
 
@@ -120,7 +122,9 @@ impl World {
             },
         );
         self.components.character.insert(entity, ());
-        self.components.hit_points.insert(entity, HitPoints::new_full(20));
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(20));
         panic!("missing tile")
     }
 
@@ -240,7 +244,9 @@ impl World {
             .unwrap();
         self.components.realtime.insert(entity, ());
         self.components.blocks_gameplay.insert(entity, ());
-        self.components.on_collision.insert(entity, OnCollision::Remove);
+        self.components
+            .on_collision
+            .insert(entity, OnCollision::Remove);
         self.realtime_components.movement.insert(
             entity,
             ScheduledRealtimePeriodicState {
@@ -377,7 +383,11 @@ impl World {
         panic!("missing tiles")
     }
 
-    pub fn spawn_explosion_emitter(&mut self, coord: Coord, spec: &explosion::spec::ParticleEmitter) -> Entity {
+    pub fn spawn_explosion_emitter(
+        &mut self,
+        coord: Coord,
+        spec: &explosion::spec::ParticleEmitter,
+    ) -> Entity {
         let emitter_entity = self.entity_allocator.alloc();
         self.spatial_table
             .update(emitter_entity, Location { coord, layer: None })
@@ -555,7 +565,9 @@ impl World {
             )
             .unwrap();
         self.components.tile.insert(entity, Tile::Sludge0);
-        self.components.colour_hint.insert(entity, Rgb24::new(0, 255, 0));
+        self.components
+            .colour_hint
+            .insert(entity, Rgb24::new(0, 255, 0));
         self.components.realtime.insert(entity, ());
         self.realtime_components.flicker.insert(
             entity,
@@ -735,8 +747,12 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.safe_on_sludge.insert(entity, ());
-        self.components.on_damage.insert(entity, OnDamage::DivideAndSpawn);
-        self.components.hit_points.insert(entity, HitPoints::new_full(99));
+        self.components
+            .on_damage
+            .insert(entity, OnDamage::DivideAndSpawn);
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(99));
         entity
     }
 
@@ -751,7 +767,9 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::SlimeAttackUpgrade);
+        self.components
+            .tile
+            .insert(entity, Tile::SlimeAttackUpgrade);
         self.components.npc.insert(
             entity,
             Npc {
@@ -766,8 +784,12 @@ impl World {
                 ability_target: player::AbilityTarget::Attack,
             },
         );
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
-        self.components.move_half_speed.insert(entity, MoveHalfSpeed::default());
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(12));
+        self.components
+            .move_half_speed
+            .insert(entity, MoveHalfSpeed::default());
         entity
     }
 
@@ -782,7 +804,9 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::SlimeDefendUpgrade);
+        self.components
+            .tile
+            .insert(entity, Tile::SlimeDefendUpgrade);
         self.components.npc.insert(
             entity,
             Npc {
@@ -797,8 +821,12 @@ impl World {
                 ability_target: player::AbilityTarget::Defend,
             },
         );
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
-        self.components.move_half_speed.insert(entity, MoveHalfSpeed::default());
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(12));
+        self.components
+            .move_half_speed
+            .insert(entity, MoveHalfSpeed::default());
         entity
     }
 
@@ -828,8 +856,12 @@ impl World {
                 ability_target: player::AbilityTarget::Tech,
             },
         );
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
-        self.components.move_half_speed.insert(entity, MoveHalfSpeed::default());
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(12));
+        self.components
+            .move_half_speed
+            .insert(entity, MoveHalfSpeed::default());
         entity
     }
 
@@ -853,7 +885,9 @@ impl World {
         );
         self.components.character.insert(entity, ());
         self.components.on_damage.insert(entity, OnDamage::Curse);
-        self.components.hit_points.insert(entity, HitPoints::new_full(12));
+        self.components
+            .hit_points
+            .insert(entity, HitPoints::new_full(12));
         entity
     }
 
@@ -868,8 +902,12 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::AttackItem { special });
-        self.components.item.insert(entity, Item::Attack { special });
+        self.components
+            .tile
+            .insert(entity, Tile::AttackItem { special });
+        self.components
+            .item
+            .insert(entity, Item::Attack { special });
         entity
     }
 
@@ -884,8 +922,12 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::DefendItem { special });
-        self.components.item.insert(entity, Item::Defend { special });
+        self.components
+            .tile
+            .insert(entity, Tile::DefendItem { special });
+        self.components
+            .item
+            .insert(entity, Item::Defend { special });
         entity
     }
 
@@ -900,7 +942,9 @@ impl World {
                 },
             )
             .unwrap();
-        self.components.tile.insert(entity, Tile::TechItem { special });
+        self.components
+            .tile
+            .insert(entity, Tile::TechItem { special });
         self.components.item.insert(entity, Item::Tech { special });
         entity
     }

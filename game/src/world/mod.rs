@@ -19,7 +19,9 @@ use data::{Components, Npc};
 pub use data::{Disposition, EntityData, HitPoints, Layer, Location, NpcAction, Tile};
 
 mod realtime_periodic;
-pub use realtime_periodic::animation::{Context as AnimationContext, FRAME_DURATION as ANIMATION_FRAME_DURATION};
+pub use realtime_periodic::animation::{
+    Context as AnimationContext, FRAME_DURATION as ANIMATION_FRAME_DURATION,
+};
 use realtime_periodic::data::RealtimeComponents;
 
 mod query;
@@ -70,7 +72,9 @@ impl World {
         let next_action = &self.components.next_action;
         tile_component.iter().filter_map(move |(entity, &tile)| {
             if let Some(location) = spatial_table.location_of(entity) {
-                let fade = realtime_fade_component.get(entity).and_then(|f| f.state.fading());
+                let fade = realtime_fade_component
+                    .get(entity)
+                    .and_then(|f| f.state.fading());
                 let colour_hint = colour_hint_component.get(entity).cloned();
                 let blood = blood_component.contains(entity);
                 let ignore_lighting = ignore_lighting_component.contains(entity);
@@ -97,7 +101,11 @@ impl World {
         self.components
             .light
             .iter()
-            .filter_map(move |(entity, light)| self.spatial_table.coord_of(entity).map(|coord| (coord, light)))
+            .filter_map(move |(entity, light)| {
+                self.spatial_table
+                    .coord_of(entity)
+                    .map(|coord| (coord, light))
+            })
     }
 
     pub fn character_info(&self, entity: Entity) -> Option<CharacterInfo> {

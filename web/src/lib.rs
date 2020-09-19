@@ -10,7 +10,9 @@ const SAVE_KEY: &str = "save";
 pub fn run() -> Result<(), JsValue> {
     wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
     console_error_panic_hook::set_once();
-    let audio_player = Some(StaticAudioPlayer::new(WebAudioPlayer::new_with_mime("video/ogg")));
+    let audio_player = Some(StaticAudioPlayer::new(WebAudioPlayer::new_with_mime(
+        "video/ogg",
+    )));
     let storage = StaticStorage::new(LocalStorage::new());
     let context = Context::new(Size::new(60, 40), "content");
     let app = app(

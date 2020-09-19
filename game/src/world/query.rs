@@ -50,7 +50,8 @@ impl World {
         if let Some(spatial_cell) = self.spatial_table.layers_at(coord) {
             if let Some(feature) = spatial_cell.feature {
                 self.components.door_state.contains(feature)
-                    || !(self.components.solid.contains(feature) || self.components.stairs.contains(feature))
+                    || !(self.components.solid.contains(feature)
+                        || self.components.stairs.contains(feature))
             } else {
                 true
             }
@@ -100,7 +101,9 @@ impl World {
     }
 
     pub fn get_character_at_coord(&self, coord: Coord) -> Option<Entity> {
-        self.spatial_table.layers_at(coord).and_then(|cell| cell.character)
+        self.spatial_table
+            .layers_at(coord)
+            .and_then(|cell| cell.character)
     }
 
     pub fn get_stairs_at_coord(&self, coord: Coord) -> Option<Entity> {

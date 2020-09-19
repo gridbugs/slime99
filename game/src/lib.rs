@@ -20,7 +20,8 @@ pub use terrain::FINAL_LEVEL;
 pub use visibility::{CellVisibility, Omniscient, VisibilityGrid};
 use world::{make_player, AnimationContext, World, ANIMATION_FRAME_DURATION};
 pub use world::{
-    player, ActionError, CharacterInfo, EntityData, HitPoints, Layer, NpcAction, PlayerDied, Tile, ToRenderEntity,
+    player, ActionError, CharacterInfo, EntityData, HitPoints, Layer, NpcAction, PlayerDied, Tile,
+    ToRenderEntity,
 };
 
 pub const MAP_SIZE: Size = Size::new_u16(19, 19);
@@ -99,9 +100,19 @@ impl Game {
         let animation_rng = Isaac64Rng::seed_from_u64(base_rng.gen());
         //let Terrain { world, agents, player } =
         //    terrain::from_str(include_str!("terrain.txt"), make_player(&mut rng), &mut rng);
-        let Terrain { world, agents, player } =
-            terrain::sewer(0, SewerSpec { size: MAP_SIZE }, make_player(&mut rng), &mut rng);
-        let last_player_info = world.character_info(player).expect("couldn't get info for player");
+        let Terrain {
+            world,
+            agents,
+            player,
+        } = terrain::sewer(
+            0,
+            SewerSpec { size: MAP_SIZE },
+            make_player(&mut rng),
+            &mut rng,
+        );
+        let last_player_info = world
+            .character_info(player)
+            .expect("couldn't get info for player");
         let mut gameplay_music = vec![Music::Gameplay0, Music::Gameplay1, Music::Gameplay2];
         gameplay_music.shuffle(&mut rng);
         let events = vec![ExternalEvent::LoopMusic(gameplay_music[0])];
@@ -156,7 +167,11 @@ impl Game {
     }
 
     #[must_use]
-    pub fn handle_tick(&mut self, since_last_tick: Duration, config: &Config) -> Option<GameControlFlow> {
+    pub fn handle_tick(
+        &mut self,
+        since_last_tick: Duration,
+        config: &Config,
+    ) -> Option<GameControlFlow> {
         if let Some(countdown) = self.generate_frame_countdown.as_mut() {
             if countdown.as_millis() == 0 {
                 self.generate_level(config);
@@ -174,7 +189,9 @@ impl Game {
             return None;
         }
         self.since_last_frame += since_last_tick;
-        while let Some(remaining_since_last_frame) = self.since_last_frame.checked_sub(ANIMATION_FRAME_DURATION) {
+        while let Some(remaining_since_last_frame) =
+            self.since_last_frame.checked_sub(ANIMATION_FRAME_DURATION)
+        {
             self.since_last_frame = remaining_since_last_frame;
             if let Some(game_control_flow) = self.handle_tick_inner(since_last_tick, config) {
                 return Some(game_control_flow);
@@ -182,9 +199,16 @@ impl Game {
         }
         None
     }
-    fn handle_tick_inner(&mut self, since_last_tick: Duration, config: &Config) -> Option<GameControlFlow> {
-        self.world
-            .animation_tick(&mut self.animation_context, &mut self.events, &mut self.animation_rng);
+    fn handle_tick_inner(
+        &mut self,
+        since_last_tick: Duration,
+        config: &Config,
+    ) -> Option<GameControlFlow> {
+        self.world.animation_tick(
+            &mut self.animation_context,
+            &mut self.events,
+            &mut self.animation_rng,
+        );
         if !self.is_gameplay_blocked() {
             if let Some(turn_during_animation) = self.turn_during_animation {
                 if let Some(countdown) = self.after_player_turn_countdown.as_mut() {
@@ -192,7 +216,8 @@ impl Game {
                         self.after_player_turn_countdown = None;
                         self.after_turn();
                     } else {
-                        *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick) {
+                        *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick)
+                        {
                             remaining
                         } else {
                             Duration::from_millis(0)
@@ -204,7 +229,8 @@ impl Game {
                     if countdown.as_millis() == 0 {
                         self.before_npc_turn_cooldown = None;
                     } else {
-                        *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick) {
+                        *countdown = if let Some(remaining) = countdown.checked_sub(since_last_tick)
+                        {
                             remaining
                         } else {
                             Duration::from_millis(0)
@@ -230,7 +256,11 @@ impl Game {
     }
 
     #[must_use]
-    pub fn handle_input(&mut self, input: Input, config: &Config) -> Result<Option<GameControlFlow>, ActionError> {
+    pub fn handle_input(
+        &mut self,
+        input: Input,
+        config: &Config,
+    ) -> Result<Option<GameControlFlow>, ActionError> {
         if self.generate_frame_countdown.is_some() {
             return Ok(None);
         }
@@ -273,14 +303,17 @@ impl Game {
 
     fn player_turn(&mut self, input: Input) -> Result<(), ActionError> {
         let result = match input {
-            Input::Walk(direction) => self
-                .world
-                .character_walk_in_direction(self.player, direction, &mut self.rng),
-            Input::Tech => self.world.apply_tech(self.player, &mut self.rng),
-            Input::TechWithCoord(coord) => {
+            Input::Walk(direction) => {
                 self.world
-                    .apply_tech_with_coord(self.player, coord, &self.visibility_grid, &mut self.rng)
+                    .character_walk_in_direction(self.player, direction, &mut self.rng)
             }
+            Input::Tech => self.world.apply_tech(self.player, &mut self.rng),
+            Input::TechWithCoord(coord) => self.world.apply_tech_with_coord(
+                self.player,
+                coord,
+                &self.visibility_grid,
+                &mut self.rng,
+            ),
             Input::Wait => {
                 self.world.wait(self.player, &mut self.rng);
                 Ok(())
@@ -308,11 +341,16 @@ impl Game {
                 self.agents_to_remove.push(entity);
                 continue;
             }
-            let current_action = self.world.next_npc_action(entity).unwrap_or(NpcAction::Wait);
+            let current_action = self
+                .world
+                .next_npc_action(entity)
+                .unwrap_or(NpcAction::Wait);
             match current_action {
                 NpcAction::Wait => (),
                 NpcAction::Walk(direction) => {
-                    let _ = self.world.character_walk_in_direction(entity, direction, &mut self.rng);
+                    let _ =
+                        self.world
+                            .character_walk_in_direction(entity, direction, &mut self.rng);
                 }
             }
         }
@@ -340,7 +378,11 @@ impl Game {
     }
     fn generate_level(&mut self, config: &Config) {
         let player_data = self.world.clone_entity_data(self.player);
-        let Terrain { world, agents, player } = terrain::sewer(
+        let Terrain {
+            world,
+            agents,
+            player,
+        } = terrain::sewer(
             self.world.level + 1,
             SewerSpec {
                 size: self.world.size(),

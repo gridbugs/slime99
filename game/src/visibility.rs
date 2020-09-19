@@ -7,7 +7,8 @@ use shadowcast::{vision_distance, Context as ShadowcastContext, DirectionBitmap,
 
 const AMBIENT_COL: Rgb24 = Rgb24::new_grey(31);
 const VISION_DISTANCE_SQUARED: u32 = 600;
-pub const VISION_DISTANCE: vision_distance::Circle = vision_distance::Circle::new_squared(VISION_DISTANCE_SQUARED);
+pub const VISION_DISTANCE: vision_distance::Circle =
+    vision_distance::Circle::new_squared(VISION_DISTANCE_SQUARED);
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Light {
@@ -146,10 +147,12 @@ impl VisibilityGrid {
                 255,
                 |cell_coord, visible_directions, visibility| {
                     let cell = grid.get_checked_mut(cell_coord);
-                    if cell.last_seen_next == count && !(visible_directions & cell.visible_directions).is_empty() {
+                    if cell.last_seen_next == count
+                        && !(visible_directions & cell.visible_directions).is_empty()
+                    {
                         let distance_squared = (light_coord - cell_coord).magnitude2();
-                        let inverse_light_intensity =
-                            (distance_squared * light.diminish.numerator) / light.diminish.denominator;
+                        let inverse_light_intensity = (distance_squared * light.diminish.numerator)
+                            / light.diminish.denominator;
                         let light_colour = light.colour.scalar_div(inverse_light_intensity.max(1));
                         cell.light_colour = cell
                             .light_colour

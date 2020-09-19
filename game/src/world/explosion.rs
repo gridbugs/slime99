@@ -40,7 +40,10 @@ struct CharacterEffect {
     damage: u32,
 }
 
-fn character_effect_indirect_hit(mechanics: &spec::Mechanics, explosion_to_character: LineSegment) -> CharacterEffect {
+fn character_effect_indirect_hit(
+    mechanics: &spec::Mechanics,
+    explosion_to_character: LineSegment,
+) -> CharacterEffect {
     let character_to_explosion_distance_squared = explosion_to_character.delta().magnitude2();
     let push_back = 1 + (mechanics.range / (2 * (character_to_explosion_distance_squared + 1)));
     CharacterEffect {
@@ -56,7 +59,8 @@ fn apply_indirect_hit<R: Rng>(
     explosion_to_character: LineSegment,
     rng: &mut R,
 ) {
-    let CharacterEffect { push_back, damage } = character_effect_indirect_hit(mechanics, explosion_to_character);
+    let CharacterEffect { push_back, damage } =
+        character_effect_indirect_hit(mechanics, explosion_to_character);
     world.components.realtime.insert(character_entity, ());
     world.realtime_components.movement.insert(
         character_entity,
@@ -119,11 +123,20 @@ fn apply_direct_hit<R: Rng>(
     world.damage_character(character_entity, damage, rng);
 }
 
-fn is_in_explosion_range(explosion_coord: Coord, mechanics: &spec::Mechanics, coord: Coord) -> bool {
+fn is_in_explosion_range(
+    explosion_coord: Coord,
+    mechanics: &spec::Mechanics,
+    coord: Coord,
+) -> bool {
     explosion_coord.distance2(coord) <= mechanics.range.pow(2)
 }
 
-fn apply_mechanics<R: Rng>(world: &mut World, explosion_coord: Coord, mechanics: &spec::Mechanics, rng: &mut R) {
+fn apply_mechanics<R: Rng>(
+    world: &mut World,
+    explosion_coord: Coord,
+    mechanics: &spec::Mechanics,
+    rng: &mut R,
+) {
     for character_entity in world.components.character.entities().collect::<Vec<_>>() {
         if let Some(character_coord) = world.spatial_table.coord_of(character_entity) {
             if character_coord == explosion_coord {
@@ -134,7 +147,13 @@ fn apply_mechanics<R: Rng>(world: &mut World, explosion_coord: Coord, mechanics:
                 }
                 let explosion_to_character = LineSegment::new(explosion_coord, character_coord);
                 if !world.is_solid_feature_in_line_segment(explosion_to_character) {
-                    apply_indirect_hit(world, mechanics, character_entity, explosion_to_character, rng);
+                    apply_indirect_hit(
+                        world,
+                        mechanics,
+                        character_entity,
+                        explosion_to_character,
+                        rng,
+                    );
                 } else {
                     continue;
                 }

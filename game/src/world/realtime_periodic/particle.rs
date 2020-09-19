@@ -172,7 +172,8 @@ impl RealtimePeriodicState for ParticleEmitterState {
                         .fade_duration
                         .map(|d| FadeState::new_with_progress(d, fade_out_progress)),
                     self.particle_spec.light_colour_fade.as_ref().map(|l| {
-                        let fade_state = FadeState::new_with_progress(l.duration, fade_out_progress);
+                        let fade_state =
+                            FadeState::new_with_progress(l.duration, fade_out_progress);
                         LightColourFadeState {
                             fade_state,
                             from: l.from,
@@ -188,7 +189,11 @@ impl RealtimePeriodicState for ParticleEmitterState {
             tile: self.particle_spec.tile,
             colour_hint: self.particle_spec.colour_hint.map(|c| c.choose(rng)),
             light_colour_fade_state,
-            light: self.particle_spec.possible_light.as_ref().and_then(|l| l.choose(rng)),
+            light: self
+                .particle_spec
+                .possible_light
+                .as_ref()
+                .and_then(|l| l.choose(rng)),
             particle_emitter: self
                 .particle_spec
                 .possible_particle_emitter
@@ -228,7 +233,10 @@ impl RealtimePeriodicState for ParticleEmitterState {
                 },
             );
         }
-        world.spatial_table.update_coord(particle_entity, coord).unwrap();
+        world
+            .spatial_table
+            .update_coord(particle_entity, coord)
+            .unwrap();
         if let Some(tile) = spawn_particle.tile {
             world.components.tile.insert(particle_entity, tile);
         }
@@ -243,7 +251,10 @@ impl RealtimePeriodicState for ParticleEmitterState {
         }
         world.components.realtime.insert(particle_entity, ());
         if let Some(colour_hint) = spawn_particle.colour_hint {
-            world.components.colour_hint.insert(particle_entity, colour_hint);
+            world
+                .components
+                .colour_hint
+                .insert(particle_entity, colour_hint);
         }
         if let Some(light) = spawn_particle.light.take() {
             world.components.light.insert(particle_entity, light);

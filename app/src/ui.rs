@@ -1,6 +1,8 @@
 use chargrid::render::{ColModify, Coord, Frame, Rgb24, Style, View, ViewContext};
 use chargrid::text::StringViewSingleLine;
-use slime99_game::player::{Ability, AbilityTable, AbilityTarget, Attack, Deck, Defend, Player, Tech, EMPTY_ATTACK};
+use slime99_game::player::{
+    Ability, AbilityTable, AbilityTarget, Attack, Deck, Defend, Player, Tech, EMPTY_ATTACK,
+};
 
 fn write_attack(attack: Attack, s: &mut String) {
     use std::fmt::Write;
@@ -62,8 +64,13 @@ pub fn write_abiilty(abiilty: Ability, s: &mut String) {
     }
 }
 
-fn view_attack_list<F: Frame, C: ColModify>(attack: &Deck<Attack>, context: ViewContext<C>, frame: &mut F) {
-    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view("Atk:", context, frame);
+fn view_attack_list<F: Frame, C: ColModify>(
+    attack: &Deck<Attack>,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
+    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255)))
+        .view("Atk:", context, frame);
     let padding = attack.max_size() - attack.len();
     for i in 0..padding {
         StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(63))).view(
@@ -81,7 +88,11 @@ fn view_attack_list<F: Frame, C: ColModify>(attack: &Deck<Attack>, context: View
         };
         buf.clear();
         write_attack(attack, &mut buf);
-        view.view(&buf, context.add_offset(Coord::new(0, (i + padding) as i32 + 1)), frame);
+        view.view(
+            &buf,
+            context.add_offset(Coord::new(0, (i + padding) as i32 + 1)),
+            frame,
+        );
     }
     let empty_colour = if attack.len() == 0 {
         Rgb24::new(255, 0, 0)
@@ -96,8 +107,13 @@ fn view_attack_list<F: Frame, C: ColModify>(attack: &Deck<Attack>, context: View
         frame,
     );
 }
-fn view_defend_list<F: Frame, C: ColModify>(defend: &Deck<Defend>, context: ViewContext<C>, frame: &mut F) {
-    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view("Def:", context, frame);
+fn view_defend_list<F: Frame, C: ColModify>(
+    defend: &Deck<Defend>,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
+    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255)))
+        .view("Def:", context, frame);
     let padding = defend.max_size() - defend.len();
     for i in 0..padding {
         StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(63))).view(
@@ -115,7 +131,11 @@ fn view_defend_list<F: Frame, C: ColModify>(defend: &Deck<Defend>, context: View
         };
         buf.clear();
         write_defend(defend, &mut buf);
-        view.view(&buf, context.add_offset(Coord::new(0, (i + padding) as i32 + 1)), frame);
+        view.view(
+            &buf,
+            context.add_offset(Coord::new(0, (i + padding) as i32 + 1)),
+            frame,
+        );
     }
     let die_colour = if defend.len() == 0 {
         Rgb24::new(255, 0, 0)
@@ -128,8 +148,13 @@ fn view_defend_list<F: Frame, C: ColModify>(defend: &Deck<Defend>, context: View
         frame,
     );
 }
-fn view_tech_list<F: Frame, C: ColModify>(tech: &Deck<Tech>, context: ViewContext<C>, frame: &mut F) {
-    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255))).view("(t) Tch:", context, frame);
+fn view_tech_list<F: Frame, C: ColModify>(
+    tech: &Deck<Tech>,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
+    StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(255)))
+        .view("(t) Tch:", context, frame);
     let padding = tech.max_size() - tech.len();
     for i in 0..padding {
         StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new_grey(63))).view(
@@ -147,10 +172,18 @@ fn view_tech_list<F: Frame, C: ColModify>(tech: &Deck<Tech>, context: ViewContex
         };
         buf.clear();
         write_tech(tech, &mut buf);
-        view.view(&buf, context.add_offset(Coord::new(0, (i + padding) as i32 + 1)), frame);
+        view.view(
+            &buf,
+            context.add_offset(Coord::new(0, (i + padding) as i32 + 1)),
+            frame,
+        );
     }
 }
-fn view_abiilty_list<F: Frame, C: ColModify>(ability: &AbilityTable, context: ViewContext<C>, frame: &mut F) {
+fn view_abiilty_list<F: Frame, C: ColModify>(
+    ability: &AbilityTable,
+    context: ViewContext<C>,
+    frame: &mut F,
+) {
     use std::fmt::Write;
     let mut buf = String::new();
     for (i, &abiilty) in ability.iter().enumerate() {
@@ -183,7 +216,11 @@ pub struct UiView;
 impl UiView {
     pub fn view<F: Frame, C: ColModify>(&mut self, ui: Ui, context: ViewContext<C>, frame: &mut F) {
         view_attack_list(&ui.player.attack, context, frame);
-        view_defend_list(&ui.player.defend, context.add_offset(Coord::new(11, 0)), frame);
+        view_defend_list(
+            &ui.player.defend,
+            context.add_offset(Coord::new(11, 0)),
+            frame,
+        );
         view_tech_list(
             &ui.player.tech,
             context.add_offset(Coord::new(
@@ -196,7 +233,9 @@ impl UiView {
             &ui.player.ability,
             context.add_offset(Coord::new(
                 0,
-                (ui.player.attack.max_size().max(ui.player.defend.max_size()) + ui.player.tech.max_size()) as i32 + 6,
+                (ui.player.attack.max_size().max(ui.player.defend.max_size())
+                    + ui.player.tech.max_size()) as i32
+                    + 6,
             )),
             frame,
         );

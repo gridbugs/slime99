@@ -5,7 +5,8 @@ use grid_2d::{Coord, Grid, Size};
 use grid_search_cardinal::{
     best::{BestSearch, Context as BestSearchContext, Depth},
     distance_map::{
-        Distance, DistanceMap, PopulateContext as DistanceMapPopulateContext, SearchContext as DistanceMapSearchContext,
+        Distance, DistanceMap, PopulateContext as DistanceMapPopulateContext,
+        SearchContext as DistanceMapSearchContext,
     },
     point_to_point::{expand, Context as PointToPointSearchContext, NoPath},
     CanEnter, Path, Step,
@@ -17,7 +18,12 @@ use shadowcast::{vision_distance, Context as ShadowcastContext, VisionDistance};
 
 const FLEE_DISTANCE: Distance = 5;
 
-fn has_line_of_sight(eye: Coord, dest: Coord, world: &World, vision_distance: vision_distance::Circle) -> bool {
+fn has_line_of_sight(
+    eye: Coord,
+    dest: Coord,
+    world: &World,
+    vision_distance: vision_distance::Circle,
+) -> bool {
     for coord in LineSegment::new(eye, dest).iter() {
         let eye_to_coord = coord - eye;
         if !vision_distance.in_range(eye_to_coord) {
@@ -77,7 +83,9 @@ impl LastSeenGrid {
                 if let Some(cell) = self.last_seen.get_mut(cell_coord) {
                     cell.count = self.count;
                     if let Some(CanSeePlayer) = can_see_player {
-                        if let Some(distance_to_player) = distance_map_to_player.distance(cell_coord) {
+                        if let Some(distance_to_player) =
+                            distance_map_to_player.distance(cell_coord)
+                        {
                             if distance_to_player < FLEE_DISTANCE {
                                 cell.avoid_until = self.count + 20;
                             }
@@ -116,8 +124,11 @@ impl BehaviourContext {
         if let Some(player_coord) = world.entity_coord(player) {
             let can_enter = WorldCanEnterIgnoreCharacters { world };
             self.distance_map_populate_context.add(player_coord);
-            self.distance_map_populate_context
-                .populate_approach(&can_enter, 20, &mut self.player_approach);
+            self.distance_map_populate_context.populate_approach(
+                &can_enter,
+                20,
+                &mut self.player_approach,
+            );
             self.distance_map_populate_context.add(player_coord);
             self.distance_map_populate_context
                 .populate_flee(&can_enter, 20, &mut self.player_flee);
@@ -193,8 +204,12 @@ impl<'a, R: Rng> BestSearch for Wander<'a, R> {
                 if entity != self.entity {
                     let my_coord = self.world.entity_coord(self.entity).unwrap();
                     if my_coord.manhattan_distance(coord) < 4 {
-                        let can_see_character =
-                            has_line_of_sight(my_coord, coord, self.world, vision_distance::Circle::new_squared(40));
+                        let can_see_character = has_line_of_sight(
+                            my_coord,
+                            coord,
+                            self.world,
+                            vision_distance::Circle::new_squared(40),
+                        );
                         if can_see_character && self.rng.gen_range(0, 4) > 0 {
                             return false;
                         }
@@ -216,7 +231,8 @@ impl<'a, R: Rng> BestSearch for Wander<'a, R> {
         }
     }
     fn can_step_updating_best(&mut self, step: Step) -> bool {
-        can_enter_wrt_sludge(&self.world, step, self.entity) && self.can_enter_initial_updating_best(step.to_coord)
+        can_enter_wrt_sludge(&self.world, step, self.entity)
+            && self.can_enter_initial_updating_best(step.to_coord)
     }
     fn best_coord(&self) -> Option<Coord> {
         self.min_last_seen_coord
@@ -271,11 +287,12 @@ impl Agent {
         };
         let npc = world.entity_npc(entity);
         self.behaviour = if let Some(player_coord) = world.entity_coord(player) {
-            let can_see_player = if has_line_of_sight(coord, player_coord, world, self.vision_distance) {
-                Some(CanSeePlayer)
-            } else {
-                None
-            };
+            let can_see_player =
+                if has_line_of_sight(coord, player_coord, world, self.vision_distance) {
+                    Some(CanSeePlayer)
+                } else {
+                    None
+                };
             self.last_seen_grid.update(
                 coord,
                 self.vision_distance,
@@ -291,7 +308,9 @@ impl Agent {
                         accurate: true,
                     },
                     Disposition::Afraid => {
-                        if behaviour_context.player_approach.distance(coord).unwrap() < FLEE_DISTANCE {
+                        if behaviour_context.player_approach.distance(coord).unwrap()
+                            < FLEE_DISTANCE
+                        {
                             Behaviour::Flee
                         } else {
                             Behaviour::Wander { avoid: true }
@@ -301,7 +320,8 @@ impl Agent {
             } else {
                 match self.behaviour {
                     Behaviour::Chase {
-                        last_seen_player_coord, ..
+                        last_seen_player_coord,
+                        ..
                     } => {
                         if last_seen_player_coord == coord {
                             // walk up to where the player was last seen, then go back to wandering
@@ -347,7 +367,11 @@ impl Agent {
                             world,
                             last_seen_grid: &self.last_seen_grid,
                             min_last_seen_coord: None,
-                            min_last_seen_count: self.last_seen_grid.last_seen.get_checked(coord).count,
+                            min_last_seen_count: self
+                                .last_seen_grid
+                                .last_seen
+                                .get_checked(coord)
+                                .count,
                             entity,
                             avoid,
                             rng,
@@ -364,12 +388,13 @@ impl Agent {
                 }
             }
             Behaviour::Flee => {
-                let maybe_cardinal_direction = behaviour_context.distance_map_search_context.search_first(
-                    &WorldCanEnterAvoidNpcs { world, entity },
-                    coord,
-                    5,
-                    &behaviour_context.player_flee,
-                );
+                let maybe_cardinal_direction =
+                    behaviour_context.distance_map_search_context.search_first(
+                        &WorldCanEnterAvoidNpcs { world, entity },
+                        coord,
+                        5,
+                        &behaviour_context.player_flee,
+                    );
                 match maybe_cardinal_direction {
                     None => {
                         self.behaviour = Behaviour::Wander { avoid: true };
@@ -383,12 +408,13 @@ impl Agent {
                 accurate,
             } => {
                 if accurate {
-                    let maybe_cardinal_direction = behaviour_context.distance_map_search_context.search_first(
-                        &WorldCanEnterAvoidNpcs { world, entity },
-                        coord,
-                        5,
-                        &behaviour_context.player_approach,
-                    );
+                    let maybe_cardinal_direction =
+                        behaviour_context.distance_map_search_context.search_first(
+                            &WorldCanEnterAvoidNpcs { world, entity },
+                            coord,
+                            5,
+                            &behaviour_context.player_approach,
+                        );
                     match maybe_cardinal_direction {
                         None => {
                             self.behaviour = Behaviour::Wander { avoid: true };

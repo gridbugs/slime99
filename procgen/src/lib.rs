@@ -66,14 +66,21 @@ fn input_grid_from_strs(input: &[&str]) -> Grid<CellA> {
     grid
 }
 
-fn wfc_map<R: Rng>(input_grid: Grid<CellA>, output_size: Size, pattern_size: NonZeroU32, rng: &mut R) -> Grid<CellA> {
+fn wfc_map<R: Rng>(
+    input_grid: Grid<CellA>,
+    output_size: Size,
+    pattern_size: NonZeroU32,
+    rng: &mut R,
+) -> Grid<CellA> {
     let mut output_grid = Grid::new_clone(output_size, CellA::Open);
     let overlapping_patterns = OverlappingPatterns::new_all_orientations(input_grid, pattern_size);
     let global_stats = overlapping_patterns.global_stats();
     let run = RunOwn::new_wrap_forbid(output_size, &global_stats, wrap::WrapXY, ForbidNothing, rng);
     let wave = run.collapse_retrying(retry::Forever, rng);
     for (coord, wave_cell) in wave.grid().enumerate() {
-        let pattern_id = wave_cell.chosen_pattern_id().expect("unexpected contradiction");
+        let pattern_id = wave_cell
+            .chosen_pattern_id()
+            .expect("unexpected contradiction");
         let cell = overlapping_patterns.pattern_top_left_value(pattern_id);
         *output_grid.get_checked_mut(coord) = *cell;
     }
@@ -150,12 +157,32 @@ impl PoolCandidates {
         let mut to_remove = Vec::new();
         for (coord, cell) in self.grid.enumerate() {
             if cell.is_some() {
-                if self.grid.get(coord + Coord::new(1, 0)).cloned().flatten().is_none()
-                    && self.grid.get(coord + Coord::new(-1, 0)).cloned().flatten().is_none()
+                if self
+                    .grid
+                    .get(coord + Coord::new(1, 0))
+                    .cloned()
+                    .flatten()
+                    .is_none()
+                    && self
+                        .grid
+                        .get(coord + Coord::new(-1, 0))
+                        .cloned()
+                        .flatten()
+                        .is_none()
                 {
                     to_remove.push(coord);
-                } else if self.grid.get(coord + Coord::new(0, 1)).cloned().flatten().is_none()
-                    && self.grid.get(coord + Coord::new(0, -1)).cloned().flatten().is_none()
+                } else if self
+                    .grid
+                    .get(coord + Coord::new(0, 1))
+                    .cloned()
+                    .flatten()
+                    .is_none()
+                    && self
+                        .grid
+                        .get(coord + Coord::new(0, -1))
+                        .cloned()
+                        .flatten()
+                        .is_none()
                 {
                     to_remove.push(coord);
                 }
@@ -367,7 +394,10 @@ struct BridgeCandidates {
     by_sides: HashMap<(usize, usize), Vec<BridgeCandidate>>,
 }
 
-fn bridge_candidates_axis(grid: &Grid<CellC>, bridge_aligned_to_axis: Axis) -> Vec<BridgeCandidate> {
+fn bridge_candidates_axis(
+    grid: &Grid<CellC>,
+    bridge_aligned_to_axis: Axis,
+) -> Vec<BridgeCandidate> {
     let mut candidates = Vec::new();
     for x in 0..(grid.size().get(bridge_aligned_to_axis.other()) as i32) {
         let mut by_pool_start = None;
@@ -491,14 +521,22 @@ impl DoorCandidates {
     fn graph(&self) -> DoorCandidateGraph {
         let mut graph: DoorCandidateGraph = HashMap::new();
         for (door_candidate_index, door_candidate) in self.candidates.iter().enumerate() {
-            graph.entry(door_candidate.low).or_default().edges.push(RoomEdge {
-                to_room: door_candidate.high,
-                via_door_candidate: door_candidate_index,
-            });
-            graph.entry(door_candidate.high).or_default().edges.push(RoomEdge {
-                to_room: door_candidate.low,
-                via_door_candidate: door_candidate_index,
-            });
+            graph
+                .entry(door_candidate.low)
+                .or_default()
+                .edges
+                .push(RoomEdge {
+                    to_room: door_candidate.high,
+                    via_door_candidate: door_candidate_index,
+                });
+            graph
+                .entry(door_candidate.high)
+                .or_default()
+                .edges
+                .push(RoomEdge {
+                    to_room: door_candidate.low,
+                    via_door_candidate: door_candidate_index,
+                });
         }
         graph
     }
@@ -539,7 +577,11 @@ impl DoorCandidates {
             .collect::<Vec<_>>();
         other_door_indices.shuffle(rng);
         let num_other_door_candidates = other_door_indices.len() / 4;
-        chosen_door_candidate_indices.extend(other_door_indices.into_iter().take(num_other_door_candidates));
+        chosen_door_candidate_indices.extend(
+            other_door_indices
+                .into_iter()
+                .take(num_other_door_candidates),
+        );
         chosen_door_candidate_indices.sort();
         chosen_door_candidate_indices
             .into_iter()
@@ -693,7 +735,12 @@ impl Sewer {
     }
     pub fn try_generate<R: Rng>(spec: SewerSpec, rng: &mut R) -> Option<Self> {
         let pattern_size = NonZeroU32::new(3).unwrap();
-        let map = wfc_map(input_grid_from_strs(WFC_INPUT), spec.size, pattern_size, rng);
+        let map = wfc_map(
+            input_grid_from_strs(WFC_INPUT),
+            spec.size,
+            pattern_size,
+            rng,
+        );
         let mut pool_candidates = PoolCandidates::new(&map);
         for candidate in 0..pool_candidates.num {
             let shrink_by = rng.gen_range(2, 4);
@@ -727,7 +774,9 @@ impl Sewer {
         let start = player_and_goal_candidates.pop()?;
         player_and_goal_candidates.sort_by_key(|coord| coord.distance2(start));
         let goal_start_offset = 9 * (player_and_goal_candidates.len() / 10);
-        let goal = player_and_goal_candidates[goal_start_offset..].choose(rng)?.clone();
+        let goal = player_and_goal_candidates[goal_start_offset..]
+            .choose(rng)?
+            .clone();
         if !map.iter().any(|&cell| cell == SewerCell::Pool) {
             return None;
         }

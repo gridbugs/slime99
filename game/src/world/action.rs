@@ -31,14 +31,28 @@ pub enum Error {
 }
 
 impl World {
-    pub fn apply_ability<R: Rng>(&mut self, entity: Entity, ability_slot: u8, rng: &mut R) -> Result<(), Error> {
+    pub fn apply_ability<R: Rng>(
+        &mut self,
+        entity: Entity,
+        ability_slot: u8,
+        rng: &mut R,
+    ) -> Result<(), Error> {
         let player = self.components.player.get_mut(entity).unwrap();
         if let Some(ability) = player.ability.get(ability_slot as usize) {
             use player::{Ability::*, AbilityTarget::*};
             match ability {
-                SwapTop2(Attack) => player.attack.swap_top_2().map_err(|_| Error::NotEnoughAttacks)?,
-                SwapTop2(Defend) => player.defend.swap_top_2().map_err(|_| Error::NotEnoughDefends)?,
-                SwapTop2(Tech) => player.tech.swap_top_2().map_err(|_| Error::NotEnoughTechs)?,
+                SwapTop2(Attack) => player
+                    .attack
+                    .swap_top_2()
+                    .map_err(|_| Error::NotEnoughAttacks)?,
+                SwapTop2(Defend) => player
+                    .defend
+                    .swap_top_2()
+                    .map_err(|_| Error::NotEnoughDefends)?,
+                SwapTop2(Tech) => player
+                    .tech
+                    .swap_top_2()
+                    .map_err(|_| Error::NotEnoughTechs)?,
                 Stash(Attack) => player.attack.stash().map_err(|_| Error::NotEnoughAttacks)?,
                 Stash(Defend) => player.defend.stash().map_err(|_| Error::NotEnoughDefends)?,
                 Stash(Tech) => player.tech.stash().map_err(|_| Error::NotEnoughTechs)?,
@@ -140,7 +154,9 @@ impl World {
         if let Some(&cell) = self.spatial_table.layers_at(target_coord) {
             if let Some(feature_entity) = cell.feature {
                 if self.components.solid.contains(feature_entity) {
-                    if let Some(DoorState::Closed) = self.components.door_state.get(feature_entity).cloned() {
+                    if let Some(DoorState::Closed) =
+                        self.components.door_state.get(feature_entity).cloned()
+                    {
                         self.open_door(feature_entity);
                     } else {
                         return Err(Error::WalkIntoSolidCell);
@@ -198,7 +214,13 @@ impl World {
         }
     }
 
-    fn skewer<R: Rng>(&mut self, entity: Entity, damage: u32, direction: CardinalDirection, rng: &mut R) {
+    fn skewer<R: Rng>(
+        &mut self,
+        entity: Entity,
+        damage: u32,
+        direction: CardinalDirection,
+        rng: &mut R,
+    ) {
         const RANGE: u32 = 4;
         let mut coord = self.spatial_table.coord_of(entity).unwrap();
         for _ in 0..RANGE {
@@ -321,7 +343,13 @@ impl World {
         }
     }
 
-    fn melee_attack<R: Rng>(&mut self, attacker: Entity, victim: Entity, direction: CardinalDirection, rng: &mut R) {
+    fn melee_attack<R: Rng>(
+        &mut self,
+        attacker: Entity,
+        victim: Entity,
+        direction: CardinalDirection,
+        rng: &mut R,
+    ) {
         if self.components.player.get(attacker).is_some() {
             self.player_melee_attack(attacker, victim, direction, rng);
         } else if self.components.player.get(victim).is_some() {
@@ -364,7 +392,9 @@ impl World {
             match tech {
                 Blink => {
                     if let Some(spatial_cell) = self.spatial_table.layers_at(coord) {
-                        if spatial_cell.character.is_none() && visibility_grid.is_coord_currently_visible(coord) {
+                        if spatial_cell.character.is_none()
+                            && visibility_grid.is_coord_currently_visible(coord)
+                        {
                             let can_blink = if let Some(feature) = spatial_cell.feature {
                                 !self.components.solid.contains(feature)
                             } else {
@@ -428,7 +458,9 @@ impl World {
             );
             self.components.realtime.insert(entity, ());
             self.components.blocks_gameplay.insert(entity, ());
-            self.components.on_collision.insert(entity, OnCollision::RemoveRealtime);
+            self.components
+                .on_collision
+                .insert(entity, OnCollision::RemoveRealtime);
         }
     }
 
@@ -469,7 +501,9 @@ impl World {
             );
             self.components.realtime.insert(entity, ());
             self.components.blocks_gameplay.insert(entity, ());
-            self.components.on_collision.insert(entity, OnCollision::RemoveRealtime);
+            self.components
+                .on_collision
+                .insert(entity, OnCollision::RemoveRealtime);
         }
     }
 
@@ -517,7 +551,12 @@ impl World {
         result
     }
 
-    pub fn character_fire_shotgun<R: Rng>(&mut self, character: Entity, target: Coord, rng: &mut R) {
+    pub fn character_fire_shotgun<R: Rng>(
+        &mut self,
+        character: Entity,
+        target: Coord,
+        rng: &mut R,
+    ) {
         const NUM_BULLETS: usize = 12;
         let character_coord = self.spatial_table.coord_of(character).unwrap();
         if character_coord == target {
@@ -528,7 +567,10 @@ impl World {
                 angle: vector::Radians::random(rng),
                 length: rng.gen_range(0., 3.), // TODO make this depend on the distance
             };
-            self.spawn_bullet(character_coord, target + offset.to_cartesian().to_coord_round_nearest());
+            self.spawn_bullet(
+                character_coord,
+                target + offset.to_cartesian().to_coord_round_nearest(),
+            );
         }
         self.spawn_flash(character_coord);
     }
@@ -548,10 +590,17 @@ impl World {
         rng: &mut R,
     ) {
         if let Some(current_coord) = self.spatial_table.coord_of(projectile_entity) {
-            if let Some(on_collision) = self.components.on_collision.get(projectile_entity).cloned() {
+            if let Some(on_collision) = self.components.on_collision.get(projectile_entity).cloned()
+            {
                 match on_collision {
                     OnCollision::Explode(explosion_spec) => {
-                        explosion::explode(self, current_coord, explosion_spec, external_events, rng);
+                        explosion::explode(
+                            self,
+                            current_coord,
+                            explosion_spec,
+                            external_events,
+                            rng,
+                        );
                         self.spatial_table.remove(projectile_entity);
                         self.components.remove_entity(projectile_entity);
                         self.entity_allocator.free(projectile_entity);
@@ -591,7 +640,9 @@ impl World {
                 .unwrap_or_default();
             if let Some(&spatial_cell) = self.spatial_table.layers_at(next_coord) {
                 if let Some(character_entity) = spatial_cell.character {
-                    if let Some(&projectile_damage) = self.components.projectile_damage.get(projectile_entity) {
+                    if let Some(&projectile_damage) =
+                        self.components.projectile_damage.get(projectile_entity)
+                    {
                         self.apply_projectile_damage(
                             projectile_entity,
                             projectile_damage,
@@ -605,13 +656,16 @@ impl World {
                     if (collides_with.solid
                         && (self.components.solid.contains(entity_in_cell)
                             || self.components.stairs.contains(entity_in_cell)))
-                        || (collides_with.character && self.components.character.contains(entity_in_cell))
+                        || (collides_with.character
+                            && self.components.character.contains(entity_in_cell))
                     {
                         self.projectile_stop(projectile_entity, external_events, rng);
                         return;
                     }
                 }
-                let _ignore_err = self.spatial_table.update_coord(projectile_entity, next_coord);
+                let _ignore_err = self
+                    .spatial_table
+                    .update_coord(projectile_entity, next_coord);
             } else {
                 self.projectile_stop(projectile_entity, external_events, rng);
                 return;
@@ -623,7 +677,11 @@ impl World {
         }
     }
 
-    fn nearest_spawn_candidate<R: Rng>(spatial_table: &SpatialTable, start: Coord, rng: &mut R) -> Option<Coord> {
+    fn nearest_spawn_candidate<R: Rng>(
+        spatial_table: &SpatialTable,
+        start: Coord,
+        rng: &mut R,
+    ) -> Option<Coord> {
         if let Some(cell) = spatial_table.layers_at(start) {
             if cell.feature.is_none() {
                 if cell.character.is_none() {
@@ -665,7 +723,8 @@ impl World {
                 };
                 if new_hit_points.current > 0 {
                     *hit_points = new_hit_points;
-                    let spawn_coord = Self::nearest_spawn_candidate(&self.spatial_table, coord, rng);
+                    let spawn_coord =
+                        Self::nearest_spawn_candidate(&self.spatial_table, coord, rng);
                     if let Some(spawn_coord) = spawn_coord {
                         let mut new_entity_data = self.components.clone_entity_data(entity);
                         new_entity_data.next_action = None;
@@ -685,7 +744,9 @@ impl World {
     fn divide_and_spawn<R: Rng>(&mut self, entity: Entity, rng: &mut R) {
         self.divide(entity, rng);
         if let Some(coord) = self.spatial_table.coord_of(entity) {
-            if let Some(spawn_coord) = Self::nearest_spawn_candidate(&self.spatial_table, coord, rng) {
+            if let Some(spawn_coord) =
+                Self::nearest_spawn_candidate(&self.spatial_table, coord, rng)
+            {
                 match rng.gen_range(0, 3) {
                     0 => {
                         self.spawn_slime_goo(spawn_coord, rng);
@@ -702,7 +763,12 @@ impl World {
         }
     }
 
-    pub fn damage_character<R: Rng>(&mut self, character: Entity, hit_points_to_lose: u32, rng: &mut R) {
+    pub fn damage_character<R: Rng>(
+        &mut self,
+        character: Entity,
+        hit_points_to_lose: u32,
+        rng: &mut R,
+    ) {
         if let Some(hit_points) = self.components.hit_points.get_mut(character) {
             let coord = self.spatial_table.coord_of(character).unwrap();
             let dies = match hit_points.current.checked_sub(hit_points_to_lose) {
@@ -744,7 +810,9 @@ impl World {
                                 if let Some(victim_coord) = self.spatial_table.coord_of(character) {
                                     if player_coord.manhattan_distance(victim_coord) == 1 {
                                         self.spatial_table.remove(player_entity);
-                                        self.spatial_table.update_coord(character, player_coord).unwrap();
+                                        self.spatial_table
+                                            .update_coord(character, player_coord)
+                                            .unwrap();
                                         self.spatial_table
                                             .update(
                                                 player_entity,
@@ -759,27 +827,36 @@ impl World {
                             }
                         }
                     }
-                    OnDamage::Upgrade { level, ability_target } => {
+                    OnDamage::Upgrade {
+                        level,
+                        ability_target,
+                    } => {
                         let maybe_player_entity = self.components.player.entities().next();
                         if let Some(player_entity) = maybe_player_entity {
                             let player = self.components.player.get_mut(player_entity).unwrap();
                             use player::AbilityTarget::*;
                             match ability_target {
                                 Attack => {
-                                    let _ = player
-                                        .attack
-                                        .insert_random(player::choose_attack_upgrade(*level, rng), rng);
-                                    let _ = player
-                                        .attack
-                                        .insert_random(player::choose_attack_upgrade(*level, rng), rng);
+                                    let _ = player.attack.insert_random(
+                                        player::choose_attack_upgrade(*level, rng),
+                                        rng,
+                                    );
+                                    let _ = player.attack.insert_random(
+                                        player::choose_attack_upgrade(*level, rng),
+                                        rng,
+                                    );
                                 }
                                 Defend => {
-                                    let _ = player
-                                        .defend
-                                        .insert_random(player::choose_defend_upgrade(*level, rng), rng);
+                                    let _ = player.defend.insert_random(
+                                        player::choose_defend_upgrade(*level, rng),
+                                        rng,
+                                    );
                                 }
                                 Tech => {
-                                    let _ = player.tech.insert_random(player::choose_tech_upgrade(*level, rng), rng);
+                                    let _ = player.tech.insert_random(
+                                        player::choose_tech_upgrade(*level, rng),
+                                        rng,
+                                    );
                                 }
                             }
                         }
@@ -855,7 +932,9 @@ impl World {
                             for &direction in directions.iter() {
                                 let neighbour_coord = coord + direction.coord();
                                 if seen.insert(neighbour_coord) {
-                                    if let Some(cell) = self.spatial_table.layers_at(neighbour_coord) {
+                                    if let Some(cell) =
+                                        self.spatial_table.layers_at(neighbour_coord)
+                                    {
                                         if let Some(feature) = cell.feature {
                                             if !self.components.solid.contains(feature) {
                                                 queue.push_front(neighbour_coord);

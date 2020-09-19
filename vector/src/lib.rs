@@ -59,7 +59,10 @@ pub const NEG_PI: Radians = Radians(-::std::f64::consts::PI);
 
 impl Radians {
     pub const fn uniform_range_all() -> UniformLeftInclusiveRange<Self> {
-        UniformLeftInclusiveRange { low: NEG_PI, high: PI }
+        UniformLeftInclusiveRange {
+            low: NEG_PI,
+            high: PI,
+        }
     }
     pub fn random<R: Rng>(rng: &mut R) -> Self {
         Self(rng.gen_range(-::std::f64::consts::PI, ::std::f64::consts::PI))

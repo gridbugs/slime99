@@ -3,8 +3,8 @@ use crate::controls::Controls;
 use crate::depth;
 use crate::frontend::Frontend;
 use crate::game::{
-    AbilityChoice, AimEventRoutine, ExamineEventRoutine, GameData, GameEventRoutine, GameOverEventRoutine, GameReturn,
-    GameStatus, InjectedInput, ScreenCoord,
+    AbilityChoice, AimEventRoutine, ExamineEventRoutine, GameData, GameEventRoutine,
+    GameOverEventRoutine, GameReturn, GameStatus, InjectedInput, ScreenCoord,
 };
 pub use crate::game::{GameConfig, Omniscient, RngSeed};
 use crate::render::{GameToRender, GameView, Mode};
@@ -16,7 +16,9 @@ use decorator::*;
 use event_routine::*;
 use general_storage_static::StaticStorage;
 use maplit::hashmap;
-use menu::{fade_spec, FadeMenuInstanceView, MenuEntryStringFn, MenuEntryToRender, MenuInstanceChoose};
+use menu::{
+    fade_spec, FadeMenuInstanceView, MenuEntryStringFn, MenuEntryToRender, MenuInstanceChoose,
+};
 use render::{ColModifyDefaultForeground, ColModifyMap, Coord, Rgb24, Style};
 use slime99_game::player::Ability;
 use std::collections::HashMap;
@@ -86,7 +88,15 @@ impl MainMenuEntry {
         use MainMenuEntry::*;
         let (items, hotkeys) = match frontend {
             Frontend::Graphical | Frontend::AnsiTerminal => (
-                vec![Resume, SaveQuit, NewGame, Options, Keybindings, Story, Clear],
+                vec![
+                    Resume,
+                    SaveQuit,
+                    NewGame,
+                    Options,
+                    Keybindings,
+                    Story,
+                    Clear,
+                ],
                 hashmap!['r' => Resume, 'q' => SaveQuit, 'o' => Options, 'k' => Keybindings, 'b'=> Story, 'n' => NewGame, 'c' => Clear],
             ),
             Frontend::Web => (
@@ -268,9 +278,16 @@ impl<'b, 'a, 'e, 'v, E> View<&'a AppData> for LevelChangeMenu<'b, 'e, 'v, E>
 where
     E: EventRoutine<View = AppView, Data = AppData>,
 {
-    fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData, context: ViewContext<C>, frame: &mut F) {
+    fn view<F: Frame, C: ColModify>(
+        &mut self,
+        app_data: &'a AppData,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) {
         text::StringView::new(
-            Style::new().with_foreground(Rgb24::new_grey(255)).with_bold(true),
+            Style::new()
+                .with_foreground(Rgb24::new_grey(255))
+                .with_bold(true),
             text::wrap::Word::new(),
         )
         .view(
@@ -278,7 +295,8 @@ where
             context.add_offset(Coord::new(1, 1)),
             frame,
         );
-        self.0.view(app_data, context.add_offset(Coord::new(1, 5)), frame);
+        self.0
+            .view(app_data, context.add_offset(Coord::new(1, 5)), frame);
     }
 }
 
@@ -287,13 +305,20 @@ impl<'a, 'e, 'v, E> View<&'a AppData> for InitMenu<'e, 'v, E>
 where
     E: EventRoutine<View = AppView, Data = AppData>,
 {
-    fn view<F: Frame, C: ColModify>(&mut self, app_data: &'a AppData, context: ViewContext<C>, frame: &mut F) {
-        text::StringViewSingleLine::new(Style::new().with_foreground(Rgb24::new(0, 255, 0)).with_bold(true)).view(
-            "slime99",
-            context.add_offset(Coord::new(1, 1)),
-            frame,
-        );
-        self.0.view(app_data, context.add_offset(Coord::new(1, 3)), frame);
+    fn view<F: Frame, C: ColModify>(
+        &mut self,
+        app_data: &'a AppData,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) {
+        text::StringViewSingleLine::new(
+            Style::new()
+                .with_foreground(Rgb24::new(0, 255, 0))
+                .with_bold(true),
+        )
+        .view("slime99", context.add_offset(Coord::new(1, 1)), frame);
+        self.0
+            .view(app_data, context.add_offset(Coord::new(1, 3)), frame);
     }
 }
 
@@ -310,7 +335,12 @@ impl EventRoutine for TextOverlay {
     type Data = AppData;
     type View = AppView;
     type Event = CommonEvent;
-    fn handle<EP>(self, _data: &mut Self::Data, _view: &Self::View, event_or_peek: EP) -> Handled<Self::Return, Self>
+    fn handle<EP>(
+        self,
+        _data: &mut Self::Data,
+        _view: &Self::View,
+        event_or_peek: EP,
+    ) -> Handled<Self::Return, Self>
     where
         EP: EventOrPeek<Event = Self::Event>,
     {
@@ -322,8 +352,13 @@ impl EventRoutine for TextOverlay {
             CommonEvent::Frame(_) => Handled::Continue(s),
         })
     }
-    fn view<F, C>(&self, data: &Self::Data, view: &mut Self::View, context: ViewContext<C>, frame: &mut F)
-    where
+    fn view<F, C>(
+        &self,
+        data: &Self::Data,
+        view: &mut Self::View,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) where
         F: Frame,
         C: ColModify,
     {
@@ -358,8 +393,9 @@ impl EventRoutine for TextOverlay {
                     action_error: None,
                 },
                 context.compose_col_modify(
-                    ColModifyDefaultForeground(Rgb24::new_grey(255))
-                        .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
+                    ColModifyDefaultForeground(Rgb24::new_grey(255)).compose(ColModifyMap(
+                        |col: Rgb24| col.saturating_scalar_mul_div(1, 3),
+                    )),
                 ),
                 frame,
             );
@@ -374,7 +410,11 @@ impl EventRoutine for TextOverlay {
                     },
                 },
             }
-            .view(self.text.iter().map(|t| t.as_rich_text_part()), context, frame);
+            .view(
+                self.text.iter().map(|t| t.as_rich_text_part()),
+                context,
+                frame,
+            );
         }
     }
 }
@@ -414,8 +454,9 @@ impl Decorate for DecorateMainMenu {
                     action_error: None,
                 },
                 context.compose_col_modify(
-                    ColModifyDefaultForeground(Rgb24::new_grey(255))
-                        .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
+                    ColModifyDefaultForeground(Rgb24::new_grey(255)).compose(ColModifyMap(
+                        |col: Rgb24| col.saturating_scalar_mul_div(1, 3),
+                    )),
                 ),
                 frame,
             );
@@ -467,14 +508,20 @@ impl<E: EventRoutine<Data = AppData, Event = CommonEvent>> EventRoutine for Mous
     type Data = AppData;
     type Event = CommonEvent;
 
-    fn handle<EP>(self, data: &mut Self::Data, view: &Self::View, event_or_peek: EP) -> Handled<Self::Return, Self>
+    fn handle<EP>(
+        self,
+        data: &mut Self::Data,
+        view: &Self::View,
+        event_or_peek: EP,
+    ) -> Handled<Self::Return, Self>
     where
         EP: EventOrPeek<Event = Self::Event>,
     {
         event_or_peek.with(
             (self, data),
             |(s, data), event| {
-                if let CommonEvent::Input(Input::Mouse(MouseInput::MouseMove { coord, .. })) = event {
+                if let CommonEvent::Input(Input::Mouse(MouseInput::MouseMove { coord, .. })) = event
+                {
                     data.last_mouse_coord = coord;
                 }
                 s.e.handle(data, view, event_routine::Event::new(event))
@@ -486,8 +533,13 @@ impl<E: EventRoutine<Data = AppData, Event = CommonEvent>> EventRoutine for Mous
             },
         )
     }
-    fn view<F, C>(&self, data: &Self::Data, view: &mut Self::View, context: ViewContext<C>, frame: &mut F)
-    where
+    fn view<F, C>(
+        &self,
+        data: &Self::Data,
+        view: &mut Self::View,
+        context: ViewContext<C>,
+        frame: &mut F,
+    ) where
         F: Frame,
         C: ColModify,
     {
@@ -557,8 +609,9 @@ impl Decorate for DecorateLevelChangeMenu {
                     action_error: None,
                 },
                 context.compose_col_modify(
-                    ColModifyDefaultForeground(Rgb24::new_grey(255))
-                        .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
+                    ColModifyDefaultForeground(Rgb24::new_grey(255)).compose(ColModifyMap(
+                        |col: Rgb24| col.saturating_scalar_mul_div(1, 3),
+                    )),
                 ),
                 frame,
             );
@@ -574,7 +627,12 @@ impl Decorate for DecorateLevelChangeMenu {
 
 fn level_change_menu(
     AbilityChoice(choices): AbilityChoice,
-) -> impl EventRoutine<Return = Result<Ability, menu::Escape>, Data = AppData, View = AppView, Event = CommonEvent> {
+) -> impl EventRoutine<
+    Return = Result<Ability, menu::Escape>,
+    Data = AppData,
+    View = AppView,
+    Event = CommonEvent,
+> {
     SideEffectThen::new_with_view(|data: &mut AppData, _: &_| {
         data.level_change_menu = Some(
             menu::MenuInstanceBuilder {
@@ -582,7 +640,12 @@ fn level_change_menu(
                     choices
                         .iter()
                         .enumerate()
-                        .map(|(i, choice)| (std::char::from_digit(i as u32 + 1, 10).unwrap(), choice.clone()))
+                        .map(|(i, choice)| {
+                            (
+                                std::char::from_digit(i as u32 + 1, 10).unwrap(),
+                                choice.clone(),
+                            )
+                        })
                         .collect::<HashMap<_, _>>(),
                 ),
                 items: choices,
@@ -592,11 +655,12 @@ fn level_change_menu(
             .unwrap()
             .into_choose_or_escape(),
         );
-        let menu_entry_string = MenuEntryStringFn::new(move |entry: MenuEntryToRender<Ability>, buf: &mut String| {
-            use std::fmt::Write;
-            write!(buf, "({}) ", entry.index + 1).unwrap();
-            ui::write_abiilty(*entry.entry, buf);
-        });
+        let menu_entry_string =
+            MenuEntryStringFn::new(move |entry: MenuEntryToRender<Ability>, buf: &mut String| {
+                use std::fmt::Write;
+                write!(buf, "({}) ", entry.index + 1).unwrap();
+                ui::write_abiilty(*entry.entry, buf);
+            });
         menu::FadeMenuInstanceRoutine::new(menu_entry_string)
             .select(SelectLevelChangeMenu)
             .decorated(DecorateLevelChangeMenu)
@@ -703,8 +767,9 @@ impl Decorate for DecorateOptionsMenu {
                     action_error: None,
                 },
                 context.compose_col_modify(
-                    ColModifyDefaultForeground(Rgb24::new_grey(255))
-                        .compose(ColModifyMap(|col: Rgb24| col.saturating_scalar_mul_div(1, 3))),
+                    ColModifyDefaultForeground(Rgb24::new_grey(255)).compose(ColModifyMap(
+                        |col: Rgb24| col.saturating_scalar_mul_div(1, 3),
+                    )),
                 ),
                 frame,
             );
@@ -736,10 +801,18 @@ fn options_menu() -> impl EventRoutine<
                 match entry.entry {
                     Back => write!(buf, "back").unwrap(),
                     Selection(entry) => match entry {
-                        ToggleMusic => {
-                            write!(buf, "(m) Music enabled [{}]", if config.music { '*' } else { ' ' }).unwrap()
-                        }
-                        ToggleSfx => write!(buf, "(s) Sfx enabled [{}]", if config.sfx { '*' } else { ' ' }).unwrap(),
+                        ToggleMusic => write!(
+                            buf,
+                            "(m) Music enabled [{}]",
+                            if config.music { '*' } else { ' ' }
+                        )
+                        .unwrap(),
+                        ToggleSfx => write!(
+                            buf,
+                            "(s) Sfx enabled [{}]",
+                            if config.sfx { '*' } else { ' ' }
+                        )
+                        .unwrap(),
                         ToggleFullscreen => {
                             if fullscreen_requires_restart {
                                 write!(
@@ -749,7 +822,12 @@ fn options_menu() -> impl EventRoutine<
                                 )
                                 .unwrap()
                             } else {
-                                write!(buf, "(f) Fullscreen [{}]", if fullscreen { '*' } else { ' ' }).unwrap()
+                                write!(
+                                    buf,
+                                    "(f) Fullscreen [{}]",
+                                    if fullscreen { '*' } else { ' ' }
+                                )
+                                .unwrap()
                             }
                         }
                     },
@@ -762,7 +840,8 @@ fn options_menu() -> impl EventRoutine<
     })
 }
 
-fn options_menu_cycle() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent> {
+fn options_menu_cycle(
+) -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent> {
     make_either!(Ei = A | B);
     use OptionsMenuEntry::*;
     use OrBack::*;
@@ -795,8 +874,12 @@ pub struct FirstRun;
 fn main_menu(
     auto_play: Option<AutoPlay>,
     first_run: Option<FirstRun>,
-) -> impl EventRoutine<Return = Result<MainMenuEntry, menu::Escape>, Data = AppData, View = AppView, Event = CommonEvent>
-{
+) -> impl EventRoutine<
+    Return = Result<MainMenuEntry, menu::Escape>,
+    Data = AppData,
+    View = AppView,
+    Event = CommonEvent,
+> {
     make_either!(Ei = A | B | C | D);
     SideEffectThen::new_with_view(move |data: &mut AppData, _: &_| {
         if auto_play.is_some() {
@@ -817,7 +900,8 @@ fn main_menu(
             if data.game.has_instance() {
                 match data.main_menu_type {
                     MainMenuType::Init => {
-                        data.main_menu = MainMenuEntry::pause(data.frontend).into_choose_or_escape();
+                        data.main_menu =
+                            MainMenuEntry::pause(data.frontend).into_choose_or_escape();
                         data.main_menu_type = MainMenuType::Pause;
                     }
                     MainMenuType::Pause => (),
@@ -833,7 +917,8 @@ fn main_menu(
                     match data.main_menu_type {
                         MainMenuType::Init => (),
                         MainMenuType::Pause => {
-                            data.main_menu = MainMenuEntry::init(data.frontend).into_choose_or_escape();
+                            data.main_menu =
+                                MainMenuEntry::init(data.frontend).into_choose_or_escape();
                             data.main_menu_type = MainMenuType::Init;
                         }
                     }
@@ -865,8 +950,11 @@ fn main_menu(
     })
 }
 
-fn game() -> impl EventRoutine<Return = GameReturn, Data = AppData, View = AppView, Event = CommonEvent> {
-    GameEventRoutine::new().select(SelectGame).decorated(DecorateGame)
+fn game(
+) -> impl EventRoutine<Return = GameReturn, Data = AppData, View = AppView, Event = CommonEvent> {
+    GameEventRoutine::new()
+        .select(SelectGame)
+        .decorated(DecorateGame)
 }
 
 fn game_injecting_inputs(
@@ -877,12 +965,17 @@ fn game_injecting_inputs(
         .decorated(DecorateGame)
 }
 
-fn game_over() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent> {
-    GameOverEventRoutine::new().select(SelectGame).decorated(DecorateGame)
+fn game_over() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
+{
+    GameOverEventRoutine::new()
+        .select(SelectGame)
+        .decorated(DecorateGame)
 }
 
 fn win_text() -> TextOverlay {
-    let bold = Style::new().with_foreground(Rgb24::new(255, 0, 0)).with_bold(true);
+    let bold = Style::new()
+        .with_foreground(Rgb24::new(255, 0, 0))
+        .with_bold(true);
     let normal = Style::new().with_foreground(Rgb24::new_grey(255));
     let faint = Style::new().with_foreground(Rgb24::new_grey(127));
     TextOverlay::new(vec![
@@ -892,7 +985,10 @@ fn win_text() -> TextOverlay {
         text::RichTextPartOwned::new("YOU HAVE WON.".to_string(), bold),
         text::RichTextPartOwned::new(" You emerge from the sewers into ".to_string(), normal),
         text::RichTextPartOwned::new("THE CITY ABOVE.".to_string(), bold),
-        text::RichTextPartOwned::new("\n\nThe city which you saved. Repairs to a ".to_string(), normal),
+        text::RichTextPartOwned::new(
+            "\n\nThe city which you saved. Repairs to a ".to_string(),
+            normal,
+        ),
         text::RichTextPartOwned::new("WAR-TORN WORLD".to_string(), bold),
         text::RichTextPartOwned::new(" are progressing smoothly, and a ".to_string(), normal),
         text::RichTextPartOwned::new("NEW MILLENNIUM".to_string(), bold),
@@ -900,8 +996,14 @@ fn win_text() -> TextOverlay {
             " is just around the corner. Things are finally looking up.".to_string(),
             normal,
         ),
-        text::RichTextPartOwned::new("\n\nExcept for you. After all, what's a ".to_string(), normal),
-        text::RichTextPartOwned::new("GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER".to_string(), bold),
+        text::RichTextPartOwned::new(
+            "\n\nExcept for you. After all, what's a ".to_string(),
+            normal,
+        ),
+        text::RichTextPartOwned::new(
+            "GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER".to_string(),
+            bold,
+        ),
         text::RichTextPartOwned::new(
             " to do during peace time. You long for the day when more ".to_string(),
             normal,
@@ -921,7 +1023,9 @@ fn win() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event
 }
 
 fn story() -> TextOverlay {
-    let bold = Style::new().with_foreground(Rgb24::new(0, 255, 255)).with_bold(true);
+    let bold = Style::new()
+        .with_foreground(Rgb24::new(0, 255, 255))
+        .with_bold(true);
     let normal = Style::new().with_foreground(Rgb24::new_grey(255));
     let faint = Style::new().with_foreground(Rgb24::new_grey(127));
     TextOverlay::new(vec![
@@ -934,12 +1038,18 @@ fn story() -> TextOverlay {
         text::RichTextPartOwned::new(" to appear in the sewers of ".to_string(), normal),
         text::RichTextPartOwned::new("THE CITY.".to_string(), bold),
         text::RichTextPartOwned::new(" You are a ".to_string(), normal),
-        text::RichTextPartOwned::new("GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER,".to_string(), bold),
+        text::RichTextPartOwned::new(
+            "GENETICALLY-MODIFIED PRECOG SUPER-SOLDIER,".to_string(),
+            bold,
+        ),
         text::RichTextPartOwned::new(
             " whose free-will was in-part traded for the power to ".to_string(),
             normal,
         ),
-        text::RichTextPartOwned::new("PREDICT THE OUTCOME OF COMBAT ENCOUNTERS.".to_string(), bold),
+        text::RichTextPartOwned::new(
+            "PREDICT THE OUTCOME OF COMBAT ENCOUNTERS.".to_string(),
+            bold,
+        ),
         text::RichTextPartOwned::new(" Go into the sewers and ".to_string(), normal),
         text::RichTextPartOwned::new("ELIMINATE THE SOURCE OF SLIME!".to_string(), bold),
         text::RichTextPartOwned::new("\n\n\n\n\n\nPress any key...".to_string(), faint),
@@ -959,7 +1069,9 @@ fn keybindings() -> TextOverlay {
     ])
 }
 
-fn aim() -> impl EventRoutine<Return = Option<Coord>, Data = AppData, View = AppView, Event = CommonEvent> {
+fn aim(
+) -> impl EventRoutine<Return = Option<Coord>, Data = AppData, View = AppView, Event = CommonEvent>
+{
     make_either!(Ei = A | B);
     SideEffectThen::new_with_view(|data: &mut AppData, _view: &AppView| {
         let game_relative_mouse_coord = ScreenCoord(data.last_mouse_coord);
@@ -975,7 +1087,8 @@ fn aim() -> impl EventRoutine<Return = Option<Coord>, Data = AppData, View = App
     })
 }
 
-fn examine() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent> {
+fn examine() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
+{
     make_either!(Ei = A | B);
     SideEffectThen::new_with_view(|data: &mut AppData, _view: &AppView| {
         let game_relative_mouse_coord = ScreenCoord(data.last_mouse_coord);
@@ -997,22 +1110,29 @@ enum GameLoopBreak {
     Pause,
 }
 
-fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent> {
+fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent>
+{
     make_either!(Ei = A | B | C | D);
     SideEffect::new_with_view(|data: &mut AppData, _: &_| data.game.pre_game_loop())
         .then(|| {
             Ei::A(game())
                 .repeat(|game_return| match game_return {
                     GameReturn::LevelChange(ability_choice) => {
-                        Handled::Continue(Ei::C(level_change_menu(ability_choice).and_then(|choice| {
-                            make_either!(Ei = A | B);
-                            match choice {
-                                Err(menu::Escape) => Ei::A(Value::new(GameReturn::Pause)),
-                                Ok(ability) => Ei::B(game_injecting_inputs(vec![InjectedInput::LevelChange(ability)])),
-                            }
-                        })))
+                        Handled::Continue(Ei::C(level_change_menu(ability_choice).and_then(
+                            |choice| {
+                                make_either!(Ei = A | B);
+                                match choice {
+                                    Err(menu::Escape) => Ei::A(Value::new(GameReturn::Pause)),
+                                    Ok(ability) => Ei::B(game_injecting_inputs(vec![
+                                        InjectedInput::LevelChange(ability),
+                                    ])),
+                                }
+                            },
+                        )))
                     }
-                    GameReturn::Examine => Handled::Continue(Ei::D(examine().and_then(|()| game()))),
+                    GameReturn::Examine => {
+                        Handled::Continue(Ei::D(examine().and_then(|()| game())))
+                    }
                     GameReturn::Pause => Handled::Return(GameLoopBreak::Pause),
                     GameReturn::GameOver => Handled::Return(GameLoopBreak::GameOver),
                     GameReturn::Win => Handled::Return(GameLoopBreak::Win),
@@ -1028,10 +1148,12 @@ fn game_loop() -> impl EventRoutine<Return = (), Data = AppData, View = AppView,
                 .and_then(|game_loop_break| {
                     make_either!(Ei = A | B | C);
                     match game_loop_break {
-                        GameLoopBreak::Win => Ei::C(SideEffectThen::new_with_view(|data: &mut AppData, _: &_| {
-                            data.game.clear_instance();
-                            win()
-                        })),
+                        GameLoopBreak::Win => Ei::C(SideEffectThen::new_with_view(
+                            |data: &mut AppData, _: &_| {
+                                data.game.clear_instance();
+                                win()
+                            },
+                        )),
                         GameLoopBreak::Pause => Ei::A(Value::new(())),
                         GameLoopBreak::GameOver => Ei::B(game_over().and_then(|()| {
                             SideEffect::new_with_view(|data: &mut AppData, _: &_| {
@@ -1051,38 +1173,46 @@ fn main_menu_cycle(
     make_either!(Ei = A | B | C | D | E | F | G | H | I | J);
     main_menu(auto_play, first_run).and_then(|entry| match entry {
         Ok(MainMenuEntry::Quit) => Ei::A(Value::new(Some(Quit))),
-        Ok(MainMenuEntry::SaveQuit) => Ei::D(SideEffect::new_with_view(|data: &mut AppData, _: &_| {
-            data.game.save_instance();
-            Some(Quit)
-        })),
-        Ok(MainMenuEntry::Save) => Ei::E(SideEffectThen::new_with_view(|data: &mut AppData, _: &_| {
-            make_either!(Ei = A | B);
-            data.game.save_instance();
-            if data.game.has_instance() {
-                Ei::A(game_loop().map(|_| None))
-            } else {
-                Ei::B(Value::new(None))
-            }
-        })),
-        Ok(MainMenuEntry::Clear) => Ei::F(SideEffect::new_with_view(|data: &mut AppData, _: &_| {
-            data.game.clear_instance();
-            None
-        })),
-        Ok(MainMenuEntry::Resume) | Err(menu::Escape) => {
-            Ei::B(SideEffectThen::new_with_view(|data: &mut AppData, _: &_| {
+        Ok(MainMenuEntry::SaveQuit) => {
+            Ei::D(SideEffect::new_with_view(|data: &mut AppData, _: &_| {
+                data.game.save_instance();
+                Some(Quit)
+            }))
+        }
+        Ok(MainMenuEntry::Save) => Ei::E(SideEffectThen::new_with_view(
+            |data: &mut AppData, _: &_| {
+                make_either!(Ei = A | B);
+                data.game.save_instance();
+                if data.game.has_instance() {
+                    Ei::A(game_loop().map(|_| None))
+                } else {
+                    Ei::B(Value::new(None))
+                }
+            },
+        )),
+        Ok(MainMenuEntry::Clear) => {
+            Ei::F(SideEffect::new_with_view(|data: &mut AppData, _: &_| {
+                data.game.clear_instance();
+                None
+            }))
+        }
+        Ok(MainMenuEntry::Resume) | Err(menu::Escape) => Ei::B(SideEffectThen::new_with_view(
+            |data: &mut AppData, _: &_| {
                 make_either!(Ei = A | B);
                 if data.game.has_instance() {
                     Ei::A(game_loop().map(|()| None))
                 } else {
                     Ei::B(Value::new(None))
                 }
-            }))
-        }
-        Ok(MainMenuEntry::NewGame) => Ei::C(SideEffectThen::new_with_view(|data: &mut AppData, _: &_| {
-            data.game.instantiate();
-            data.main_menu.menu_instance_mut().set_index(0);
-            game_loop().map(|()| None)
-        })),
+            },
+        )),
+        Ok(MainMenuEntry::NewGame) => Ei::C(SideEffectThen::new_with_view(
+            |data: &mut AppData, _: &_| {
+                data.game.instantiate();
+                data.main_menu.menu_instance_mut().set_index(0);
+                game_loop().map(|()| None)
+            },
+        )),
         Ok(MainMenuEntry::Options) => Ei::G(options_menu_cycle().map(|_| None)),
         Ok(MainMenuEntry::Story) => Ei::H(story().map(|()| None)),
         Ok(MainMenuEntry::Keybindings) => Ei::I(keybindings().map(|()| None)),
@@ -1093,25 +1223,27 @@ fn main_menu_cycle(
 fn event_routine(
     initial_auto_play: Option<AutoPlay>,
 ) -> impl EventRoutine<Return = (), Data = AppData, View = AppView, Event = CommonEvent> {
-    MouseTracker::new(SideEffectThen::new_with_view(move |data: &mut AppData, _: &_| {
-        let mut config = data.game.config();
-        let first_run = config.first_run;
-        config.first_run = false;
-        data.game.set_config(config);
-        let first_run = if first_run { Some(FirstRun) } else { None };
-        main_menu_cycle(initial_auto_play, first_run)
-            .repeat(|maybe_quit| {
-                if let Some(Quit) = maybe_quit {
-                    Handled::Return(())
-                } else {
-                    Handled::Continue(main_menu_cycle(None, None))
-                }
-            })
-            .return_on_exit(|data| {
-                data.game.save_instance();
-                ()
-            })
-    }))
+    MouseTracker::new(SideEffectThen::new_with_view(
+        move |data: &mut AppData, _: &_| {
+            let mut config = data.game.config();
+            let first_run = config.first_run;
+            config.first_run = false;
+            data.game.set_config(config);
+            let first_run = if first_run { Some(FirstRun) } else { None };
+            main_menu_cycle(initial_auto_play, first_run)
+                .repeat(|maybe_quit| {
+                    if let Some(Quit) = maybe_quit {
+                        Handled::Return(())
+                    } else {
+                        Handled::Continue(main_menu_cycle(None, None))
+                    }
+                })
+                .return_on_exit(|data| {
+                    data.game.save_instance();
+                    ()
+                })
+        },
+    ))
 }
 
 pub trait Env {
