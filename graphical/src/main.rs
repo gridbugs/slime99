@@ -1,7 +1,7 @@
 #![windows_subsystem = "windows"]
 use chargrid_graphical as graphical;
 use slime99_app::{app, AutoPlay, Frontend, Fullscreen};
-use slime99_native::{simon::*, NativeCommon};
+use slime99_native::{meap, NativeCommon};
 
 const FULLSCREEN_SUPPORTED: bool = true;
 
@@ -84,14 +84,19 @@ struct Args {
 }
 
 impl Args {
-    fn arg() -> impl Arg<Item = Self> {
-        args_map! {
+    fn parser() -> meap::LetMap<impl meap::Parser<Item = Self>> {
+        meap::let_map! {
             let {
-                native_common = NativeCommon::arg();
-                fullscreen = flag("", "fullscreen", "start in fullscreen").some_if(Fullscreen);
-            } in {
+                native_common = NativeCommon::parser();
+                fullscreen = flag('f').name("fullscreen").desc("start in fullscreen");
+            } in {{
+                let fullscreen = if fullscreen {
+                    Some(Fullscreen)
+                } else {
+                    None
+                };
                 Self { native_common, fullscreen }
-            }
+            }}
         }
     }
 }
@@ -109,7 +114,7 @@ fn main() {
                 game_config,
             },
         fullscreen,
-    } = Args::arg().with_help_default().parse_env_or_exit();
+    } = Args::parser().with_help_default().parse_env_or_exit();
     let context = Context::new(ContextDescriptor {
         font_bytes: FontBytes {
             normal: include_bytes!("./fonts/PxPlus_IBM_CGAthin-with-quadrant-blocks.ttf").to_vec(),

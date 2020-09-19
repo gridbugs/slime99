@@ -2,7 +2,6 @@ use grid_2d::{Coord, Size};
 use procgen::{Sewer, SewerCell, SewerSpec};
 use rand::{Rng, SeedableRng};
 use rand_isaac::Isaac64Rng;
-use simon::*;
 
 struct Args {
     size: Size,
@@ -10,17 +9,17 @@ struct Args {
 }
 
 impl Args {
-    fn arg() -> impl Arg<Item = Self> {
-        args_map! {
+    fn parser() -> meap::LetMap<impl meap::Parser<Item = Self>> {
+        meap::let_map! {
             let {
-                rng_seed = opt::<u64>("r", "rng-seed", "rng seed", "INT")
-                    .with_default_lazy(|| rand::thread_rng().gen());
-                size = opt::<u32>("x", "width", "width", "INT").with_default(40)
-                        .both(opt::<u32>("y", "height", "height", "INT").with_default(20))
-                        .map(|(width, height)| Size::new(width, height));
+                rng_seed = opt_opt::<u64, _>("INT", 'r').name("rng-seed").desc("rng seed")
+                    .with_general_default_lazy(|| rand::thread_rng().gen());
+                width = opt_opt("INT", 'x').name("width").with_default(40);
+                height = opt_opt("INT", 'y').name("height").with_default(20);
             } in {{
                 println!("RNG Seed: {}", rng_seed);
                 let rng = Isaac64Rng::seed_from_u64(rng_seed);
+                let size = Size::new(width, height);
                 Self {
                     rng,
                     size,
@@ -31,7 +30,7 @@ impl Args {
 }
 
 fn main() {
-    let Args { size, mut rng } = Args::arg().with_help_default().parse_env_or_exit();
+    let Args { size, mut rng } = Args::parser().with_help_default().parse_env_or_exit();
     let spec = SewerSpec { size };
     let sewer = Sewer::generate(spec, &mut rng);
     println!("    abcdefghijklmnopqrstuvwxyz");

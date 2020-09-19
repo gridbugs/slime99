@@ -4,8 +4,7 @@ use general_audio_static::{
 };
 use general_storage_static::backend::{FileStorage, IfDirectoryMissing};
 pub use general_storage_static::StaticStorage;
-pub use simon;
-use simon::*;
+pub use meap;
 use slime99_app::{AppAudioPlayer, Controls, GameConfig, Omniscient, RngSeed};
 use std::env;
 use std::fs::File;
@@ -33,21 +32,20 @@ fn read_controls_file(path: &PathBuf) -> Option<Controls> {
 }
 
 impl NativeCommon {
-    pub fn arg() -> impl Arg<Item = Self> {
-        args_map! {
+    pub fn parser() -> impl meap::Parser<Item = Self> {
+        meap::let_map! {
             let {
-                rng_seed = opt::<u64>("r", "rng-seed", "rng seed to use for first new game", "INT")
-                    .option_map(|seed| RngSeed::U64(seed))
-                    .with_default(RngSeed::Random);
-                save_file = opt("s", "save-file", "save file", "PATH")
+                rng_seed = opt_opt::<u64, _>("INT", 'r').name("rng-seed").desc("rng seed to use for first new game");
+                save_file = opt_opt("PATH", 's').name("save-file").desc("save file")
                     .with_default(DEFAULT_SAVE_FILE.to_string());
-                save_dir = opt("d", "save-dir", "save dir", "PATH")
+                save_dir = opt_opt("PATH", 'd').name("save-dir").desc("save dir")
                     .with_default(DEFAULT_NEXT_TO_EXE_SAVE_DIR.to_string());
-                controls_file = opt::<String>("c", "controls-file", "controls file", "PATH");
-                delete_save = flag("", "delete-save", "delete save game file");
-                omniscient = flag("", "omniscient", "enable omniscience").some_if(Omniscient);
-                mute = flag("m", "mute", "mute audio");
+                controls_file = opt_opt::<String, _>("PATH", 'c').name("controls-file").desc("controls file");
+                delete_save = flag("delete-save").desc("delete save game file");
+                omniscient = flag("omniscient").desc("enable omniscience");
+                mute = flag('m').name("mute").desc("mute audio");
             } in {{
+                let rng_seed = rng_seed.map(RngSeed::U64).unwrap_or(RngSeed::Random);
                 let controls_file = if let Some(controls_file) = controls_file {
                     controls_file.into()
                 } else {
@@ -76,7 +74,13 @@ impl NativeCommon {
                         }
                     }
                 };
-                let game_config = GameConfig { omniscient };
+                let game_config = GameConfig {
+                    omniscient: if omniscient {
+                        Some(Omniscient)
+                    } else {
+                        None
+                    }
+                };
                 Self {
                     rng_seed,
                     save_file,

@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 image = "0.23"
-simon = "0.4"
+meap = "0.3"

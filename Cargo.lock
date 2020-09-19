@@ -1009,15 +1009,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "getopts"
-version = "0.2.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14dbbfd5c71d70241ecf9e6f13737f7b5ce823821063188d7e46c41d371eebd5"
-dependencies = [
- "unicode-width",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1387,7 +1378,7 @@ name = "image-to-text"
 version = "0.1.0"
 dependencies = [
  "image",
- "simon",
+ "meap",
 ]
 
 [[package]]
@@ -1618,6 +1609,12 @@ name = "maybe-uninit"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
+
+[[package]]
+name = "meap"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e04ee8d46b18c362294d32ce04e2a9548bd703a2f6c4b34dab77bbc11fe2698f"
 
 [[package]]
 name = "memchr"
@@ -2084,9 +2081,9 @@ version = "0.1.0"
 dependencies = [
  "direction",
  "grid_2d",
+ "meap",
  "rand",
  "rand_isaac",
- "simon",
  "wfc",
 ]
 
@@ -2433,15 +2430,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 
 [[package]]
-name = "simon"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2386cddce383b3e6b1cc51033bf078cce0afd0ab0afbb012988676f553fba23"
-dependencies = [
- "getopts",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2514,8 +2502,8 @@ dependencies = [
  "general_audio_static",
  "general_storage_static",
  "log",
+ "meap",
  "serde_json",
- "simon",
  "slime99_app",
 ]
 
@@ -2798,12 +2786,6 @@ name = "typed-arena"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0685c84d5d54d1c26f7d3eb96cd41550adb97baed141a761cf335d3d33bcd0ae"
-
-[[package]]
-name = "unicode-width"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"
 
 [[package]]
 name = "unicode-xid"

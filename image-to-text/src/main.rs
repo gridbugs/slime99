@@ -1,8 +1,8 @@
-use simon::*;
-
 fn main() {
-    let in_path = opt::<String>("i", "in", "path to input image file", "PATH")
-        .required()
+    use meap::prelude::*;
+    let in_path = opt_req::<String, _>("PATH", 'i')
+        .name("in")
+        .desc("path to input image file")
         .with_help_default()
         .parse_env_or_exit();
     let in_image = image::open(in_path).unwrap().to_rgb();
