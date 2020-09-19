@@ -134,6 +134,7 @@ fn main() {
         },
         underline_width: 0.1,
         underline_top_offset: 0.8,
+        resizable: false,
     })
     .unwrap();
     let env = GraphicalEnv::new(context.window_handle());
