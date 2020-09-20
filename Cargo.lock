@@ -2267,7 +2267,7 @@ dependencies = [
 [[package]]
 name = "rodio"
 version = "0.11.0"
-source = "git+https://github.com/stevebob/rodio.git?rev=0650ba2d869f52b1a736e1c305eaa876b84a364c#0650ba2d869f52b1a736e1c305eaa876b84a364c"
+source = "git+https://github.com/stevebob/rodio.git?branch=fix-frame-drop-stack-overflow-pinned-cpal#a68f14645b20fbf6fcd2f9b5c87a68bb57992795"
 dependencies = [
  "cpal",
  "lazy_static",

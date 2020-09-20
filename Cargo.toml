@@ -19,4 +19,4 @@ lto = true
 [patch.crates-io]
 # I forked rodio to fix a bug where the dedicated audio thread overflows its stack when the track changes.
 # PR to fix this issue is here: https://github.com/RustAudio/rodio/pull/285
-rodio = { git = "https://github.com/stevebob/rodio.git", rev = "0650ba2d869f52b1a736e1c305eaa876b84a364c" }
+rodio = { git = "https://github.com/stevebob/rodio.git", branch = "fix-frame-drop-stack-overflow-pinned-cpal" }
