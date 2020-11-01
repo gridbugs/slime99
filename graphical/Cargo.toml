@@ -11,5 +11,5 @@ force_dedicated_audio_thread = ["slime99_native/force_dedicated_audio_thread"]
 [dependencies]
 slime99_app = { path = "../app" }
 slime99_native = { path = "../native" }
-env_logger = "0.7"
+env_logger = "0.8"
 chargrid_graphical = { version = "0.3", features = ["gamepad"] }
