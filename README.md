@@ -8,13 +8,7 @@ In the not-too-distant future, the year 1999, fallout from **THE WAR** has cause
 for the power to **PREDICT THE OUTCOME OF COMBAT ENCOUNTERS**. Go into the sewers
 and **ELIMINATE THE SOURCE OF SLIME!**
 
-## Latest Builds
-
-- [Play in Browser](https://games.gridbugs.org/slime99/master)
-- [Windows](https://files.gridbugs.org/slime99-windows-x86_64-master.zip)
-- [MacOS (app)](https://files.gridbugs.org/Slime99-master.dmg)
-- [MacOS (binaries)](https://files.gridbugs.org/slime99-macos-x86_64-master.zip)
-- [Linux](https://files.gridbugs.org/slime99-linux-x86_64-master.zip)
+Play in browser or download from [slime99's itch.io page](https://gridbugs.itch.io/slime99).
 
 ## Music
 
