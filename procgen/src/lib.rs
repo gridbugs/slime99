@@ -469,7 +469,7 @@ impl DoorCandidate {
     fn choose<R: Rng>(&self, rng: &mut R) -> Coord {
         let low_index = self.coords.len() / 4;
         let high_index = (self.coords.len() - 1 - low_index).max(low_index + 1);
-        self.coords[rng.gen_range(low_index, high_index)]
+        self.coords[rng.gen_range(low_index..high_index)]
     }
 }
 
@@ -547,9 +547,9 @@ impl DoorCandidates {
         if self.candidates.is_empty() {
             return mst;
         }
-        let mut to_visit = vec![rng.gen_range(0, self.candidates.len())];
+        let mut to_visit = vec![rng.gen_range(0..self.candidates.len())];
         while !to_visit.is_empty() {
-            let door_candidate_id = to_visit.swap_remove(rng.gen_range(0, to_visit.len()));
+            let door_candidate_id = to_visit.swap_remove(rng.gen_range(0..to_visit.len()));
             let door_candidate = &self.candidates[door_candidate_id];
             let new_low = visited_room_ids.insert(door_candidate.low);
             let new_high = visited_room_ids.insert(door_candidate.high);
@@ -692,7 +692,7 @@ fn pool_light_coords<R: Rng>(grid: &Grid<SewerCell>, rng: &mut R) -> Vec<Coord> 
     let mut coords = Vec::new();
     for (coord, cell) in grid.enumerate() {
         if let SewerCell::Pool = cell {
-            if rng.gen_range(0, 20) == 0
+            if rng.gen_range(0..20) == 0
                 || CardinalDirection::all()
                     .map(|d| grid.get(coord + d.coord()).cloned())
                     .any(|maybe_cell| maybe_cell == Some(SewerCell::Floor) || maybe_cell.is_none())
@@ -743,7 +743,7 @@ impl Sewer {
         );
         let mut pool_candidates = PoolCandidates::new(&map);
         for candidate in 0..pool_candidates.num {
-            let shrink_by = rng.gen_range(2, 4);
+            let shrink_by = rng.gen_range(2..4);
             pool_candidates.shrink_candidate_by(candidate, shrink_by);
         }
         pool_candidates.remove_sharp_edges();

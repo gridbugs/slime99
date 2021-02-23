@@ -565,7 +565,7 @@ impl World {
         for _ in 0..NUM_BULLETS {
             let offset = vector::Radial {
                 angle: vector::Radians::random(rng),
-                length: rng.gen_range(0., 3.), // TODO make this depend on the distance
+                length: rng.gen_range(0.0..3.0), // TODO make this depend on the distance
             };
             self.spawn_bullet(
                 character_coord,
@@ -747,7 +747,7 @@ impl World {
             if let Some(spawn_coord) =
                 Self::nearest_spawn_candidate(&self.spatial_table, coord, rng)
             {
-                match rng.gen_range(0, 3) {
+                match rng.gen_range(0..3) {
                     0 => {
                         self.spawn_slime_goo(spawn_coord, rng);
                     }
@@ -951,7 +951,7 @@ impl World {
                     };
                     if let Some(spawn_coord) = spawn_coord {
                         match drop_item_on_death {
-                            DropItemOnDeath::GuaranteeSpecial => match rng.gen_range(0, 5) {
+                            DropItemOnDeath::GuaranteeSpecial => match rng.gen_range(0..5) {
                                 0 => {
                                     self.spawn_defend(spawn_coord, true);
                                 }
@@ -963,8 +963,8 @@ impl World {
                                 }
                                 _ => unreachable!(),
                             },
-                            DropItemOnDeath::RandomNormal => match rng.gen_range(0, 2) {
-                                0 => match rng.gen_range(0, 5) {
+                            DropItemOnDeath::RandomNormal => match rng.gen_range(0..2) {
+                                0 => match rng.gen_range(0..5) {
                                     0 => {
                                         self.spawn_defend(spawn_coord, false);
                                     }

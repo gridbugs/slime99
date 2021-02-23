@@ -65,7 +65,7 @@ impl Radians {
         }
     }
     pub fn random<R: Rng>(rng: &mut R) -> Self {
-        Self(rng.gen_range(-::std::f64::consts::PI, ::std::f64::consts::PI))
+        Self(rng.gen_range(-::std::f64::consts::PI..::std::f64::consts::PI))
     }
 }
 

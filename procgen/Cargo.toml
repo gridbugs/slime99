@@ -5,11 +5,11 @@ authors = ["Stephen Sherratt <stephen@sherra.tt>"]
 edition = "2018"
 
 [dependencies]
-wfc = "0.9"
-grid_2d = "0.14"
-rand = "0.7"
-direction = "0.17"
+wfc = "0.10"
+grid_2d = "0.15"
+rand = "0.8"
+direction = "0.18"
 
 [dev-dependencies]
 meap = "0.4"
-rand_isaac = "0.2"
+rand_isaac = "0.3"

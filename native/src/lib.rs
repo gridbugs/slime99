@@ -68,7 +68,7 @@ impl NativeCommon {
                 } else {
                     match NativeAudioPlayer::try_new_default_device() {
                         Ok(audio_player) => Some(StaticAudioPlayer::new(audio_player)),
-                        Err(NativeAudioError::NoOutputDevice) => {
+                        Err(NativeAudioError::FailedToCreateOutputStream) => {
                             log::warn!("no output audio device - continuing without audio");
                             None
                         }

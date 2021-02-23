@@ -6,18 +6,18 @@ edition = "2018"
 
 [dependencies]
 log = "0.4"
-grid_2d = { version = "0.14", features = ["serialize"] }
-direction = { version = "0.17", features = ["serialize"] }
+grid_2d = { version = "0.15", features = ["serialize"] }
+direction = { version = "0.18", features = ["serialize"] }
 serde = { version = "1.0", features = ["serde_derive"] }
-rand = "0.7"
-rand_isaac = { version = "0.2", features = ["serde1"] }
-line_2d = { version = "0.4", features = ["serialize"] }
-rgb24 = { version = "0.2", features = ["serialize", "rand"] }
+rand = "0.8"
+rand_isaac = { version = "0.3", features = ["serde1"] }
+line_2d = { version = "0.5", features = ["serialize"] }
+rgb24 = { version = "0.3", features = ["serialize", "rand"] }
 entity_table = { version = "0.2", features = ["serialize"] }
-spatial_table = { version = "0.2", features = ["serialize"] }
+spatial_table = { version = "0.3", features = ["serialize"] }
 vector = { path = "../vector" }
 rational = { path = "../rational" }
 rand_range = { path = "../rand-range" }
 procgen = { path = "../procgen" }
-shadowcast = { version = "0.7", features = ["serialize"] }
-grid_search_cardinal = { version = "0.2", features = ["serialize"] }
+shadowcast = { version = "0.8", features = ["serialize"] }
+grid_search_cardinal = { version = "0.3", features = ["serialize"] }

@@ -635,7 +635,7 @@ impl World {
             .insert(entity, DropItemOnDeath::RandomNormal);
         self.components
             .hit_points
-            .insert(entity, HitPoints::new_full(rng.gen_range(20, 40)));
+            .insert(entity, HitPoints::new_full(rng.gen_range(20..40)));
         entity
     }
 
@@ -664,7 +664,7 @@ impl World {
             .insert(entity, DropItemOnDeath::RandomNormal);
         self.components
             .hit_points
-            .insert(entity, HitPoints::new_full(rng.gen_range(10, 20)));
+            .insert(entity, HitPoints::new_full(rng.gen_range(10..20)));
         entity
     }
 
@@ -693,7 +693,7 @@ impl World {
             .insert(entity, DropItemOnDeath::RandomNormal);
         self.components
             .hit_points
-            .insert(entity, HitPoints::new_full(rng.gen_range(2, 8)));
+            .insert(entity, HitPoints::new_full(rng.gen_range(2..8)));
         entity
     }
 
@@ -723,7 +723,7 @@ impl World {
             .insert(entity, DropItemOnDeath::GuaranteeSpecial);
         self.components
             .hit_points
-            .insert(entity, HitPoints::new_full(rng.gen_range(8, 16)));
+            .insert(entity, HitPoints::new_full(rng.gen_range(8..16)));
         entity
     }
 

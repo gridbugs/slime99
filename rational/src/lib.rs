@@ -9,6 +9,6 @@ pub struct Rational {
 
 impl Rational {
     pub fn roll<R: Rng>(self, rng: &mut R) -> bool {
-        rng.gen_range(0, self.denominator) < self.numerator
+        rng.gen_range(0..self.denominator) < self.numerator
     }
 }

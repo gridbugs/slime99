@@ -210,7 +210,7 @@ impl<'a, R: Rng> BestSearch for Wander<'a, R> {
                             self.world,
                             vision_distance::Circle::new_squared(40),
                         );
-                        if can_see_character && self.rng.gen_range(0, 4) > 0 {
+                        if can_see_character && self.rng.gen_range(0..4) > 0 {
                             return false;
                         }
                     }
