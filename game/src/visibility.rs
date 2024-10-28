@@ -10,6 +10,8 @@ const VISION_DISTANCE_SQUARED: u32 = 600;
 pub const VISION_DISTANCE: vision_distance::Circle =
     vision_distance::Circle::new_squared(VISION_DISTANCE_SQUARED);
 
+const ORIGINAL_LIGHTING: bool = true;
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Light {
     pub colour: Rgb24,
@@ -153,7 +155,16 @@ impl VisibilityGrid {
                         let distance_squared = (light_coord - cell_coord).magnitude2();
                         let inverse_light_intensity = (distance_squared * light.diminish.numerator)
                             / light.diminish.denominator;
-                        let light_colour = light.colour.scalar_div(inverse_light_intensity.max(1));
+                        let light_colour = if ORIGINAL_LIGHTING {
+                            light.colour.scalar_div(inverse_light_intensity.max(1))
+                        } else {
+                            light.colour.saturating_scalar_mul_div(
+                                light.diminish.denominator,
+                                light.diminish.denominator
+                                    + (distance_squared * light.diminish.numerator),
+                            )
+                        };
+
                         cell.light_colour = cell
                             .light_colour
                             .saturating_add(light_colour.normalised_scalar_mul(visibility));
